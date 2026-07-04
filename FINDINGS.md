@@ -4,12 +4,13 @@
 
 - **상태:** M0 · M1 · M3 · M2 완료. **M4(독푸딩) 검증 완료 · 커터오버 게이트됨.** 다음 = **M4 커터오버 실행 → M5**.
 - **순서(재-시퀀싱):** M1 → M3 → M2 → **M4** → M5. (spec §12의 M2-before-M3를 codex 지적대로 뒤집음.)
-- **M4 상태(중요):** 검증(A)은 이번 세션에 끝냄 — behavioral parity 성립(이식본≡원본, **마커 선주입
-  조건부**) + 결정론 3-op을 second-brain 실제 파일에 dry-run 통과(마커 주입 OK·훅 dedup no-op·CLAUDE
-  no-op). **커터오버(B)는 게이트**: (a) second-brain AGENTS.md 2줄 마커 주입 (b) doc-reconcile 이식본 교체
-  [둘 다 git-reversible] (c) 터미널 `/plugin install` (d) global setup-docs 제거[(c) 후]. 런북 =
-  `docs/plans/M4-dogfooding.md`. **second-brain은 현재 MESSY**(broken=8/orphan=10, 자체 문서부채 — docsherpa
-  스코프 밖). (a)(b) 적용 여부는 사용자 승인 대기.
+- **M4 상태(중요):** 검증(A) + **격리 워크트리 실동작 확인 완료.** behavioral parity 성립(이식본≡원본,
+  **마커 선주입 조건부**). **(a)(b) 커터오버를 second-brain 격리 워크트리에서 실제 적용·검증함**:
+  워크트리 `~/Desktop/private/second-brain-dogfood`, 브랜치 `docsherpa-dogfood`(커밋 55f407c) —
+  메인 `feat/ask-deploy` 무영향. 실동작 결과: 마커 2개(중복 섹션 0)·`has_contract_markers=True`·
+  gate `markers_ok=True`·이식본 doc-reconcile 리터럴 0. broken=8/orphan=9는 second-brain **자체 문서부채**
+  (MESSY, docsherpa 스코프 밖). **메인 브랜치 반영·(c) 터미널 `/plugin install`·(d) global 제거는 여전히
+  게이트**(사용자가 깨끗한 정지점에 실행). 런북 = `docs/plans/M4-dogfooding.md`.
 - **M2가 닫은 것:** ① `scaffold.py` — 호출 가능한 설치자 본체(라우터/docs 골격 + inject/merge 재사용 +
   prime/doc-reconcile 복사+stamp). M3의 "산문만" 결정을 사용자 승인 하에 뒤집음(자동 end-to-end 위해).
   ② 4종 fixture end-to-end GREEN(gate `--require-markers` + no-hollow 구체 산출물 + 마커 + 기존 보존).
