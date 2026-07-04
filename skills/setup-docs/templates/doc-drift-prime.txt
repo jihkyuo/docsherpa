@@ -1,0 +1,4 @@
+[docsherpa] 이 세션에서 코드·정책·구조를 바꿨다면, 커밋 전에 doc-reconcile을 돌려
+문서를 갱신/신설하라(낡은 문서 고치기 + AGENTS.md 아키텍처가 요구하는 새 문서).
+스킬: /docsherpa:doc-reconcile (또는 .claude/skills/doc-reconcile/SKILL.md).
+바꾼 게 없으면 무시하라.
