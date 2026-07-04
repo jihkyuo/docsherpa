@@ -2,9 +2,14 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
-- **상태:** M0·M1·M3·M2 완료. **docsherpa 자기-독푸딩 완료**(자기 repo에 아키텍처 적용). 다음 = **M5 공개**
-  (+ 남은 갭: 재사용 §7.5, second-brain 실제 커터오버는 사용자 정지점에).
-- **순서(재-시퀀싱):** M1 → M3 → M2 → M4 → **자기-독푸딩** → M5.
+- **상태:** M0·M1·M3·M2 · 자기-독푸딩 · **갭1(재사용 §7.5) 완료.** 다음 = **M5 공개**
+  (second-brain 실제 커터오버는 사용자 정지점에 — 런북 `docs/plans/M4-dogfooding.md`).
+- **순서(재-시퀀싱):** M1 → M3 → M2 → M4 → 자기-독푸딩 → **갭1** → M5.
+- **갭1(재사용 §7.5) 완료:** 앵커 특화를 어느 repo든 재사용 가능하게. ① `anchor_signals.py` — target에
+  실재하는 문서-타입(design_spec/decisions/codemap/how_to) 탐지(확신되는 것만 특화 → hollow 방지).
+  ② 정본 doc-reconcile 앵커 블록을 `<!-- docsherpa:anchors:start/end -->`로 구분(가드가 강제).
+  ③ SKILL 성장-루프 설치 5단계에 "§7.5 특화" 절차(signals로 근거, 신호 없으면 일반형 유지, 정본은 generic).
+  **49 tests GREEN.** (앵커 특화 자체는 판단이라 산문 — 코드는 signals+delimiters가 검증 spine.)
 - **자기-독푸딩(정체성 자기모순 해소):** "문서 아키텍처를 세워주는 도구가 정작 자기 repo엔 없다"를 해소.
   ① docsherpa에 자기 라우터(`AGENTS.md` North Star 정체성 + 마커) + `CLAUDE.md` 생성 → self-gate PASS.
   ② `scaffold()`를 docsherpa 자신에 실행 → 성장 루프 설치(SessionStart 훅·prime·커밋 doc-reconcile+stamp).
