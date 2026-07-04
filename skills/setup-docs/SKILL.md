@@ -28,7 +28,10 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
 
 1. `python3 <skill>/scripts/gate.py <repo>` 실행 → broken/orphan 측정.
 2. 진입 라우터(AGENTS.md/CLAUDE.md)·docs 트리·안티패턴 스캔 (휴리스틱은 [reference/knowledge.md](reference/knowledge.md)).
-3. 상태 분류 → 분기:
+3. **성장 루프 존재 확인**(`ls` 수준, spec §7.4 — 별도 스크립트 안 만듦): `.claude/doc-drift-prime.txt` ·
+   `.claude/settings.json`의 SessionStart 훅 · `.claude/skills/doc-reconcile/SKILL.md` 3종이 있는지.
+   없으면 아래 "성장 루프 설치" 대상. (HEALTHY 판정도 루프 부재면 "골격은 건강, 루프 미설치"로 분리 보고.)
+4. 상태 분류 → 분기:
 
 | 상태 | 조건 | 동작 |
 |---|---|---|
@@ -56,12 +59,47 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
 5. **빈칸 채움.** 명령어·스택은 코드 읽어 채운다. 못 채우면 `<!-- TODO: ... -->`로 명시.
 6. **무결성 게이트.** `scripts/gate.py` 실행 → broken=0·orphan=0·도달성=100%. 실패 시 **STOP·보고**.
 
+### 성장 루프 설치 (opt-in — spec §7·D7)
+
+문서 골격이 서면, doc-reconcile 성장 루프를 target repo에 **커밋 스캐폴드**한다(collaborator가
+플러그인 없이도 규율을 얻도록 — D2). **반드시 opt-in:** 무엇을 쓸지 먼저 보여주고 승인받는다.
+
+1. **계획 diff-preview.** 쓸 파일 목록을 먼저 보여준다:
+   - `.claude/skills/doc-reconcile/SKILL.md` (플러그인 정본 복사 + version stamp)
+   - `.claude/doc-drift-prime.txt` (`<skill>/templates/doc-drift-prime.txt` 복사)
+   - `.claude/settings.json` (SessionStart 훅 **병합** — 덮어쓰기 아님)
+   - `CLAUDE.md` (`@AGENTS.md` 안전 주입 — 기존 보존)
+2. **비대화형 fallback(§7.1).** 대화형이 아니면(headless/CI) 기본 **dry-run**: 위 계획만 출력하고
+   **아무것도 쓰지 않는다.** 실제 쓰기는 명시 승인(`--yes` 상당의 사용자 확정) 후에만.
+3. **doc-reconcile 복사 + version stamp.** 플러그인 정본
+   `<plugin>/skills/doc-reconcile/SKILL.md`를 target `.claude/skills/doc-reconcile/SKILL.md`로
+   복사하고, 파일 끝에 `<!-- docsherpa-scaffold: v<plugin.version> -->` 스탬프를 붙인다.
+   **재실행 정책(R4):** 이미 있고 로컬 편집이 감지되면 **기본 skip + diff 표시**, 조용한 overwrite 금지.
+4. **prime 복사.** `<skill>/templates/doc-drift-prime.txt` → `.claude/doc-drift-prime.txt`.
+5. **settings 훅 병합.** `<skill>/scripts/merge_settings.py`의
+   `merge_settings_file(target/.claude, "cat .claude/doc-drift-prime.txt 2>/dev/null || true")`로
+   **`settings.json`(공유·커밋)** 에 SessionStart 훅을 멱등 병합한다. 기존 훅 보존·경로표기 dedup.
+   ⚠️ `settings.json`이 표준 JSON이 아니면(주석/JSONC) 함수가 `ValueError`로 거부한다 → 그 메시지를
+   사용자에게 전달하고 수동 병합을 안내한다. 절대 `settings.local.json`에 쓰지 않는다(D2).
+6. **CLAUDE.md 주입.** `<skill>/scripts/inject_claude_md.py`의 `inject_claude_md_file(target)`로
+   `@AGENTS.md`를 안전 주입한다 — 없으면 생성, 이미 import면 무변경, 다른 내용이면 첫 줄
+   (또는 BOM/frontmatter 뒤) prepend. 기존 내용 절대 파괴 안 함.
+7. **훅 신뢰 투명성(D7).** prime은 커밋된 신뢰 경계임을 사용자에게 알린다: SessionStart에 `cat`
+   한 줄이 붙고, collaborator가 clone하면 Claude Code 훅-승인 게이트가 첫 실행 전 승인을 요구한다
+   (harness safe-by-default). 비활성화는 settings.json에서 그 훅 항목 삭제.
+8. **스캐폴드 검증.** `python3 <skill>/scripts/gate.py <repo> --require-markers` → broken=0·orphan=0
+   **+ 마커 계약 PASS**. 실패 시 STOP·보고.
+
 ### 멱등 · 병합 규칙 (다시 돌려도 안전)
 
 **클로버 금지 — 덮지 말고 병합·보존.**
 
 - **기존 `AGENTS.md` 있으면:** 기존 항시룰·명령어·인덱스를 **보존**한다. `## 문서 라우팅 룰`
   섹션이 **없을 때만** 추가하고, 있으면 skip. 새 인덱스 줄은 중복 없을 때만 append.
+- **마커 계약(D8):** 라우팅/인덱스 섹션이 있으면(헤딩이 번역/재작성됐더라도 의미로 식별)
+  그 헤딩 줄 끝에 `<!-- docsherpa:routing -->`·`<!-- docsherpa:index -->`를 없을 때만 붙인다.
+  섹션 자체가 없어 새로 추가하는 경우엔 위 템플릿처럼 마커를 포함해 쓴다. 헤딩을 못 찾으면
+  마커를 억지로 넣지 말고 사용자에게 "라우팅/인덱스 섹션 위치 확인 필요"로 보고한다(조용한 오배치 금지).
 - **`CLAUDE.md`:** 없으면 `@AGENTS.md` 한 줄로 생성. 있고 이미 `@AGENTS.md`를 import하면 그대로 둔다.
 - **`docs/decisions/`:** 디렉터리 있으면 `_template.md`·`README.md` 중 **없는 것만** 생성.
 - **`docs/how-to/`:** `_README.md` 없을 때만 생성.
@@ -80,7 +118,7 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
 ## 명령어
 - [채움: build/test/dev/lint — 못 찾으면 <!-- TODO -->]
 
-## 먼저 읽기 (문서 인덱스 — 진입점만, 린)
+## 먼저 읽기 (문서 인덱스 — 진입점만, 린) <!-- docsherpa:index -->
 - 코드 맵 → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)            [있으면만 — 없으면 줄 삭제]
 - 결정 기록(ADR) → [docs/decisions/README.md](docs/decisions/README.md)
 - 작업 가이드 → [docs/how-to/](docs/how-to/)
@@ -99,7 +137,7 @@ trailing slash(`[docs/how-to/](docs/how-to/)`)로 — 게이트가 그 안 `_REA
 ### 문서 라우팅 룰 블록 (모든 프로젝트 동일 — 바꾸지 않음)
 
 ```markdown
-## 문서 라우팅 룰 (새 문서가 어디로)
+## 문서 라우팅 룰 (새 문서가 어디로) <!-- docsherpa:routing -->
 분류 순서대로 판정(위에서 먼저 맞는 것):
 1. 구조적 결정(왜) → docs/decisions/NNNN-*.md (_template 복사) + README 로그 추가
 2. 절차/복구(어떻게) → docs/how-to/*.md (3개↑면 _README 인덱스화)
@@ -164,6 +202,9 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
 디렉터리 링크(`docs/how-to/`)는 그 안의 `_README.md`/`README.md`로 도달한 것으로 본다.
 종료코드 0=PASS. **FAIL이면 멈추고 보고** — 조용히 고치지 않는다.
 
+성장 루프를 설치한 경우 `--require-markers`를 붙여 마커 계약(D8)까지 검증한다
+(`gate.py <repo> --require-markers`). 스캐폴드 전 순수 골격 검증은 플래그 없이 돌린다.
+
 ---
 
 ## 마이그레이션 파이프라인 (MESSY)
@@ -201,3 +242,6 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
 - **새 문서를 인덱스에 등록 안 함** → 고아. 게이트 orphan>0로 잡힘.
 - **근거등급 누락** → 🟡/🔴를 🟢인 척. 폴더화·1홉은 정설 아님을 명시.
 - **게이트 FAIL을 조용히 우회** → STOP·보고가 원칙.
+- **settings.local.json에 훅 씀** → D2 위반. 반드시 공유 `settings.json`(collaborator가 못 받음).
+- **마커 없이 라우팅/인덱스 섹션 생성** → doc-reconcile이 섹션을 못 찾음(D8). 헤딩에 마커 필수.
+- **기존 CLAUDE.md/settings.json 덮어씀** → 병합·주입 함수로만 건드린다(inject_claude_md/merge_settings).
