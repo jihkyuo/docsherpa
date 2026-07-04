@@ -1,4 +1,5 @@
 import json
+import pytest
 from merge_settings import merge_hook, merge_settings_file
 
 
@@ -39,3 +40,15 @@ def test_writes_to_settings_json_not_local(tmp_path):
     cmds = [h["command"] for e in data["hooks"]["SessionStart"] for h in e["hooks"]]
     assert "echo keep" in cmds and any("doc-drift-prime" in c for c in cmds)
     assert not (claude / "settings.local.json").exists()   # .local 건드리지 않음
+
+
+def test_jsonc_with_comments_refuses_without_clobber(tmp_path):
+    claude = tmp_path / ".claude"
+    claude.mkdir()
+    original = '{\n  // user comment\n  "hooks": {}\n}\n'
+    (claude / "settings.json").write_text(original)
+    with pytest.raises(ValueError) as exc:
+        merge_settings_file(claude, "cat .claude/doc-drift-prime.txt 2>/dev/null || true")
+    assert "manually" in str(exc.value).lower() or "수동" in str(exc.value)
+    # 파일은 절대 손상되지 않는다 (클로버 금지)
+    assert (claude / "settings.json").read_text() == original

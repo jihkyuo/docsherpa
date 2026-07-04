@@ -1,6 +1,7 @@
 """SessionStart 훅 멱등 병합 — 기존 settings.json을 보존하며 doc-drift prime 훅만 추가.
 
 spec R1의 3-파트 계약: dedup 술어(_norm) + 포맷 보존(최소 침습) + 파일 선택(settings.json, .local 아님).
+JSONC(주석)면 comment-preserving을 짓지 않고 fail-safe로 거부한다(M3 결정 — settings는 표준 JSON이 정상, YAGNI).
 """
 import json
 from pathlib import Path
@@ -26,11 +27,21 @@ def merge_hook(settings: dict, command: str):
 def merge_settings_file(claude_dir, command: str) -> bool:
     """.claude/settings.json(공유)만 대상. 없으면 생성. (.local엔 절대 안 씀.) changed? 반환.
 
-    ⚠️ json.load→dump라 주석·키순서를 재작성한다 — settings.json이 표준 JSON일 때만 무손실.
-    JSONC(주석 허용)면 M3에서 comment-preserving 편집으로 승격(spike T2 Step 11 결정).
+    표준 JSON만 무손실 병합한다. 주석(JSONC) 등으로 파싱 실패하면 파일을 건드리지 않고
+    ValueError로 수동 병합을 안내한다(클로버·크래시 대신 fail-safe — spec §14 JSONC 결정:
+    comment-preserving을 짓지 않고 거부한다. settings는 표준 JSON이 정상, YAGNI).
     """
     path = Path(claude_dir) / "settings.json"
-    settings = json.loads(path.read_text()) if path.exists() else {}
+    if path.exists():
+        try:
+            settings = json.loads(path.read_text())
+        except json.JSONDecodeError:
+            raise ValueError(
+                f"{path} 가 표준 JSON이 아니다(주석/JSONC 추정). 자동 병합을 건너뛴다 — "
+                f"SessionStart 훅을 수동으로 추가하라(merge this hook manually): {command}"
+            )
+    else:
+        settings = {}
     settings, changed = merge_hook(settings, command)
     if changed:
         path.write_text(json.dumps(settings, indent=2, ensure_ascii=False) + "\n")
