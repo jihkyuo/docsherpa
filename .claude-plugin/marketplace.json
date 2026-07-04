@@ -1,0 +1,7 @@
+{
+  "name": "docsherpa",
+  "owner": { "name": "지오현" },
+  "plugins": [
+    { "name": "docsherpa", "source": "./", "description": "Agent-readable docs architecture." }
+  ]
+}

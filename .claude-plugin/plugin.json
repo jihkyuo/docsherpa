@@ -1,0 +1,7 @@
+{
+  "name": "docsherpa",
+  "description": "Build and grow an agent-readable documentation architecture.",
+  "version": "0.0.1",
+  "author": { "name": "지오현" },
+  "license": "MIT"
+}
