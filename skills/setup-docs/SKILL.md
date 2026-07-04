@@ -71,23 +71,21 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
    - `CLAUDE.md` (`@AGENTS.md` 안전 주입 — 기존 보존)
 2. **비대화형 fallback(§7.1).** 대화형이 아니면(headless/CI) 기본 **dry-run**: 위 계획만 출력하고
    **아무것도 쓰지 않는다.** 실제 쓰기는 명시 승인(`--yes` 상당의 사용자 확정) 후에만.
-3. **doc-reconcile 복사 + version stamp.** 플러그인 정본
-   `<plugin>/skills/doc-reconcile/SKILL.md`를 target `.claude/skills/doc-reconcile/SKILL.md`로
-   복사하고, 파일 끝에 `<!-- docsherpa-scaffold: v<plugin.version> -->` 스탬프를 붙인다.
-   **재실행 정책(R4):** 이미 있고 로컬 편집이 감지되면 **기본 skip + diff 표시**, 조용한 overwrite 금지.
-4. **prime 복사.** `<skill>/templates/doc-drift-prime.txt` → `.claude/doc-drift-prime.txt`.
-5. **settings 훅 병합.** `<skill>/scripts/merge_settings.py`의
-   `merge_settings_file(target/.claude, "cat .claude/doc-drift-prime.txt 2>/dev/null || true")`로
-   **`settings.json`(공유·커밋)** 에 SessionStart 훅을 멱등 병합한다. 기존 훅 보존·경로표기 dedup.
-   ⚠️ `settings.json`이 표준 JSON이 아니면(주석/JSONC) 함수가 `ValueError`로 거부한다 → 그 메시지를
-   사용자에게 전달하고 수동 병합을 안내한다. 절대 `settings.local.json`에 쓰지 않는다(D2).
-6. **CLAUDE.md 주입.** `<skill>/scripts/inject_claude_md.py`의 `inject_claude_md_file(target)`로
-   `@AGENTS.md`를 안전 주입한다 — 없으면 생성, 이미 import면 무변경, 다른 내용이면 첫 줄
-   (또는 BOM/frontmatter 뒤) prepend. 기존 내용 절대 파괴 안 함.
-7. **훅 신뢰 투명성(D7).** prime은 커밋된 신뢰 경계임을 사용자에게 알린다: SessionStart에 `cat`
+3. **결정론적 설치 실행.** 승인(대화형) 또는 `--yes`(비대화형) 후,
+   `<skill>/scripts/scaffold.py`의 `scaffold(repo_root, project_name=...)`를 호출한다. 이 함수가
+   결정론적으로: 라우터 생성/마커 주입(기존 보존·append) + `docs/decisions`·`docs/how-to` 골격 +
+   `inject_claude_md_file`로 CLAUDE.md 안전 주입(없음/import/prepend/BOM/frontmatter) +
+   `merge_settings_file`로 **`settings.json`(공유)** 훅 멱등 병합(기존 보존·dedup, `.local` 금지 D2) +
+   prime/doc-reconcile 복사(+`<!-- docsherpa-scaffold: v<version> -->` 스탬프)를 수행하고, 무엇이
+   바뀌었는지 dict로 보고한다. **재실행 정책(R4):** 이미 있는 파일은 스캐폴드가 덮지 않는다(no-op/append);
+   로컬 편집 감지 시 **skip + diff 표시**, 조용한 overwrite 금지. ⚠️ `settings.json`이 JSONC면
+   `merge_settings_file`가 `ValueError`로 거부 → 그 메시지로 사용자에게 수동 병합을 안내한다.
+4. **프로젝트 빈칸 채움(산문).** scaffold가 만든 라우터의 `[채움]`(항시룰·명령어)을 스택 신호로 채운다.
+   확신되는 것만, 불확실하면 생략(hollow 방지). 기존 라우터였으면 append된 중복 섹션을 사용자와 상의해 정리.
+5. **훅 신뢰 투명성(D7).** prime은 커밋된 신뢰 경계임을 사용자에게 알린다: SessionStart에 `cat`
    한 줄이 붙고, collaborator가 clone하면 Claude Code 훅-승인 게이트가 첫 실행 전 승인을 요구한다
    (harness safe-by-default). 비활성화는 settings.json에서 그 훅 항목 삭제.
-8. **스캐폴드 검증.** `python3 <skill>/scripts/gate.py <repo> --require-markers` → broken=0·orphan=0
+6. **스캐폴드 검증.** `python3 <skill>/scripts/gate.py <repo> --require-markers` → broken=0·orphan=0
    **+ 마커 계약 PASS**. 실패 시 STOP·보고.
 
 ### 멱등 · 병합 규칙 (다시 돌려도 안전)
@@ -106,6 +104,8 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
 - **2회차 실행 = 변경 0.** 게이트는 항상 다시 돌려 PASS 확인.
 
 ### AGENTS.md 템플릿 (`[채움]`만 프로젝트별)
+
+> **정본은 `scripts/scaffold.py`의 `router_skeleton()`** — 아래 블록은 구조 설명용. 실제 생성은 scaffold가 한다.
 
 ```markdown
 # [프로젝트명] 에이전트 가이드
