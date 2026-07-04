@@ -1,8 +1,22 @@
-# docsherpa M0 spike — FINDINGS
+# docsherpa — STATUS & FINDINGS
 
-M0의 목적은 M1–M5 계획의 가정을 확정하는 것. 각 미지수의 결정을 여기 한 줄로 기록한다.
+## 🔜 다음 세션 시작점 (여기부터)
 
-## 미지수 → 결정
+- **상태:** M0(spike) · M1(doc-reconcile 이식화) **완료.** 다음 = **M3 설치자**.
+- **순서(재-시퀀싱):** M1 → **M3** → M2 → M4 → M5. (spec §12의 M2-before-M3를 codex 지적대로 뒤집음.)
+- **M3이 하는 일:** setup-docs가 ① AGENTS.md에 마커(`<!-- docsherpa:routing -->`·`:index`) 삽입
+  ② doc-reconcile+prime+훅을 target repo에 스캐폴드 ③ `merge_settings`로 settings.json 병합
+  ④ 기존 CLAUDE.md 안전 주입 ⑤ loop-presence를 Phase 0에 흡수.
+- **이어가려면 이 순서로 읽어라:** ① 이 파일(무엇이 닫혔나) → ② `docs/DESIGN.md` §7(M3 설계)·§14(M3이
+  확정할 디테일: CLAUDE.md 엣지·JSONC) → ③ `docs/plans/`(M0·M1 실행 기록·패턴). 그다음 **writing-plans로
+  M3 계획 작성 → subagent 없이 인라인 실행**(산문 편집 포함이라).
+- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **18 passed**).
+- **핵심 계약:** doc-reconcile은 헤딩이 아니라 **마커**를 소비한다(D8) → M3의 마커 삽입과 맞물림.
+  정본 doc-reconcile은 도메인 리터럴 0(가드 `test_doc_reconcile_portable.py`가 강제).
+
+---
+
+## 미지수 → 결정 (M0)
 
 - **① 설치 · 네임스페이스 (T1):** ✅ **확정.** 시퀀스: `/plugin marketplace add ~/Desktop/private/docsherpa`
   (로컬 경로) → `/plugin install docsherpa@docsherpa` (**user scope**) → `/docsherpa:hello` →
