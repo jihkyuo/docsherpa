@@ -5,11 +5,14 @@
 - **상태:** M0·M1·M3·M2 · 자기-독푸딩 · **갭1(재사용 §7.5) 완료.** 다음 = **M5 공개**
   (second-brain 실제 커터오버는 사용자 정지점에 — 런북 `docs/plans/M4-dogfooding.md`).
 - **순서(재-시퀀싱):** M1 → M3 → M2 → M4 → 자기-독푸딩 → **갭1** → M5.
-- **갭1(재사용 §7.5) 완료:** 앵커 특화를 어느 repo든 재사용 가능하게. ① `anchor_signals.py` — target에
-  실재하는 문서-타입(design_spec/decisions/codemap/how_to) 탐지(확신되는 것만 특화 → hollow 방지).
-  ② 정본 doc-reconcile 앵커 블록을 `<!-- docsherpa:anchors:start/end -->`로 구분(가드가 강제).
-  ③ SKILL 성장-루프 설치 5단계에 "§7.5 특화" 절차(signals로 근거, 신호 없으면 일반형 유지, 정본은 generic).
-  **49 tests GREEN.** (앵커 특화 자체는 판단이라 산문 — 코드는 signals+delimiters가 검증 spine.)
+- **갭1(재사용 §7.5) 완료 — 산문+마커, 코드 없음:** ① 정본 doc-reconcile 앵커 블록을
+  `<!-- docsherpa:anchors:start/end -->`로 구분(가드가 강제 — 특화 대상 명확). ② SKILL 5단계에 "§7.5 특화"
+  **에이전트 절차**: target `docs/`·AGENTS.md를 직접 보고 **실재하는 정확 경로(대소문자)로만** 특화,
+  없으면 일반형 유지(대체 문서 지어내기 금지), 정본은 generic. **45 tests GREEN.**
+  - **⚠️ 리뷰 교훈(/code-review + /codex 합치):** 처음엔 `anchor_signals.py`(탐지 헬퍼)를 지었다가
+    **삭제함.** 이유: M3 계획의 "§7.5 추가 코드 불요" 결정을 뒤집었고(YAGNI), 대소문자-무시 FS에서 잘못된
+    경로 반환, `.claude` 사본이 `docs/` 접두어 빠진 경로를 가리켜 **일반본보다 나쁜 특화**(hollow). §7.5는
+    본질이 판단이라 산문이 정답 — 코드로 굳히면 오히려 해로움. (교훈: 판단 작업을 코드로 박제하지 말 것.)
 - **자기-독푸딩(정체성 자기모순 해소):** "문서 아키텍처를 세워주는 도구가 정작 자기 repo엔 없다"를 해소.
   ① docsherpa에 자기 라우터(`AGENTS.md` North Star 정체성 + 마커) + `CLAUDE.md` 생성 → self-gate PASS.
   ② `scaffold()`를 docsherpa 자신에 실행 → 성장 루프 설치(SessionStart 훅·prime·커밋 doc-reconcile+stamp).

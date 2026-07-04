@@ -51,9 +51,9 @@ description: 프로젝트에서 코드·정책·구조 변경을 마무리하고
 아래는 "자주 새는 앵커"일 뿐 — **바닥이지 천장이 아니다. 이것만 보지 마라**. 어떤 앵커의 대상
 문서가 이 프로젝트에 없으면 그 앵커는 조용히 건너뛴다(빈 자리표시를 남기지 말 것):
 
-<!-- docsherpa:anchors:start — docsherpa용 특화됨(§7.5). codemap 문서가 없어 그 앵커는 AGENTS.md 인덱스로 대체. -->
-- gate.py·scaffold.py·merge_settings.py의 계약/상수(마커 문자열·HOOK_CMD·시그니처) 변경 → DESIGN.md의 해당 § + decisions/의 관련 ADR
-- 핵심 설계 결정(D-번호) 변경 → decisions/의 해당 ADR **+ 근거가 뒤집힌 기존 ADR은 supersede**
+<!-- docsherpa:anchors:start — docsherpa용 특화(§7.5, 정확 repo-상대 경로). -->
+- gate.py·scaffold.py·merge_settings.py의 계약/상수(마커 문자열·HOOK_CMD·시그니처) 변경 → docs/DESIGN.md의 해당 § + docs/decisions/의 관련 ADR
+- 핵심 설계 결정(D-번호) 변경 → docs/decisions/의 해당 ADR **+ 근거가 뒤집힌 기존 ADR은 supersede**
 - 새 스킬/스크립트 추가 → AGENTS.md 인덱스 등록 (+ FINDINGS.md 테스트 수 `N passed` 갱신)
 <!-- docsherpa:anchors:end -->
 - **이번 세션에 어렵게 진단·복구한 문제**(반복 가능 + 비쌈 + 예방/재현 절차 있음) → `how-to/`에

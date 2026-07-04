@@ -82,15 +82,14 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
    `merge_settings_file`가 `ValueError`로 거부 → 그 메시지로 사용자에게 수동 병합을 안내한다.
 4. **프로젝트 빈칸 채움(산문).** scaffold가 만든 라우터의 `[채움]`(항시룰·명령어)을 스택 신호로 채운다.
    확신되는 것만, 불확실하면 생략(hollow 방지). 기존 라우터였으면 append된 중복 섹션을 사용자와 상의해 정리.
-5. **doc-reconcile 앵커 특화(§7.5 — 일반본을 이 프로젝트에 맞춤).** 설치된
-   `.claude/skills/doc-reconcile/SKILL.md`의 `<!-- docsherpa:anchors:start -->`~`:end` 경계 안 앵커
-   예시를, `<skill>/scripts/anchor_signals.py`의 `anchor_signals(repo)`가 보고한 **실재 문서로만** 특화한다:
-   - `design_spec` 있으면 → "상수/설정 변경 → <그 경로>의 수치". 없으면 일반형 유지.
-   - `decisions` 있으면 → "구조적 결정 → <그 경로>의 ADR". 없으면 일반형.
-   - `codemap` 있으면 → "새 모듈 → <그 경로>의 행". 없으면 일반형(억지 특화 금지 — hollow 방지).
-   **뼈대(`→` 앞뒤 구조)는 그대로, 대상 경로만 갈아끼운다. 신호 없는 앵커는 지어내지 마라.** 특화는
-   target 사본에만 — **정본 `skills/doc-reconcile`는 generic 유지**(가드가 강제). (예: docsherpa 자기
-   특화 = gate.py/scaffold.py → DESIGN.md·decisions/, codemap 없어서 그 앵커는 AGENTS.md 인덱스로.)
+5. **doc-reconcile 앵커 특화(§7.5 — 코드 없이 에이전트 판단).** 설치된
+   `.claude/skills/doc-reconcile/SKILL.md`의 `<!-- docsherpa:anchors:start -->`~`:end` 경계 안 앵커를,
+   **target repo의 실제 문서 트리(AGENTS.md·`docs/`)를 직접 보고** 특화한다:
+   - 앵커 대상을 **실재하는 정확한 repo-상대 경로(대소문자까지)**로만 바꾼다 (예: `docs/DESIGN.md`,
+     `docs/decisions/`). 트리에 안 보이는 경로는 절대 쓰지 마라.
+   - 정확히 대응하는 문서가 없으면 그 앵커는 **일반형 그대로 둔다** — 대체 문서를 지어내지 마라(hollow 방지).
+   - **뼈대(`→` 앞뒤 구조)는 유지, 대상 경로만** 갈아끼운다.
+   - 특화는 **target 사본에만** — 정본 `skills/doc-reconcile`는 generic 유지(가드가 강제).
 6. **훅 신뢰 투명성(D7).** prime은 커밋된 신뢰 경계임을 사용자에게 알린다: SessionStart에 `cat`
    한 줄이 붙고, collaborator가 clone하면 Claude Code 훅-승인 게이트가 첫 실행 전 승인을 요구한다
    (harness safe-by-default). 비활성화는 settings.json에서 그 훅 항목 삭제.
