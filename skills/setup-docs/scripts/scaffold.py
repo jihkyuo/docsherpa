@@ -54,10 +54,14 @@ def write_router(repo_root, project_name: str = "[프로젝트명]") -> bool:
     text = path.read_text(encoding="utf-8")
     if ROUTING_MARKER in text and INDEX_MARKER in text:
         return False
-    # 번역/재작성된 기존 라우터 — 헤딩 매칭 대신 마커 섹션을 append(기존 전부 보존).
+    # 번역/재작성된 기존 라우터 — 헤딩 매칭 대신, 빠진 마커 섹션만 append(기존 전부 보존, 중복 방지).
+    parts = []
+    if INDEX_MARKER not in text:
+        parts.append(_INDEX_SECTION)
+    if ROUTING_MARKER not in text:
+        parts.append(_ROUTING_SECTION)
     suffix = "" if text.endswith("\n") else "\n"
-    path.write_text(text + suffix + "\n" + _INDEX_SECTION + "\n" + _ROUTING_SECTION,
-                    encoding="utf-8")
+    path.write_text(text + suffix + "\n" + "\n".join(parts), encoding="utf-8")
     return True
 
 
@@ -70,15 +74,9 @@ def write_docs_skeleton(repo_root) -> bool:
     dec.mkdir(parents=True, exist_ok=True)
     howto.mkdir(parents=True, exist_ok=True)
 
-    tmpl = dec / "_template.md"
-    if not tmpl.exists():
-        tmpl.write_text(
-            "# NNNN. [결정 제목]\n- 상태: 제안 | 수락 | 폐기 | 대체됨(→ NNNN)\n"
-            "- 날짜: YYYY-MM-DD\n\n## 맥락\n[무엇이 이 결정을 강제했나]\n\n"
-            "## 결정\n[무엇을 하기로 했나]\n\n## 결과\n[트레이드오프]\n",
-            encoding="utf-8")
-        changed = True
-
+    # decisions README와 _template.md는 한 쌍 — README가 _template.md를 링크하므로, README를
+    # 새로 만들 때만 template도 만든다. 기존 README가 있으면 둘 다 건드리지 않는다(template만
+    # 신설하면 기존 README가 링크 안 해 고아가 됨).
     readme = dec / "README.md"
     if not readme.exists():
         readme.write_text(
@@ -87,10 +85,18 @@ def write_docs_skeleton(repo_root) -> bool:
             "| # | 결정 | 상태 | 날짜 |\n|---|------|------|------|\n| — | (아직 없음) | — | — |\n",
             encoding="utf-8")
         changed = True
+        tmpl = dec / "_template.md"
+        if not tmpl.exists():
+            tmpl.write_text(
+                "# NNNN. [결정 제목]\n- 상태: 제안 | 수락 | 폐기 | 대체됨(→ NNNN)\n"
+                "- 날짜: YYYY-MM-DD\n\n## 맥락\n[무엇이 이 결정을 강제했나]\n\n"
+                "## 결정\n[무엇을 하기로 했나]\n\n## 결과\n[트레이드오프]\n",
+                encoding="utf-8")
 
-    howto_readme = howto / "_README.md"
-    if not howto_readme.exists():
-        howto_readme.write_text(
+    # how-to 인덱스가 이미 있으면(README.md 또는 _README.md) placeholder를 만들지 않는다 —
+    # gate가 _README.md를 우선하므로 placeholder가 기존 README.md를 그늘 지워 고아로 만든다.
+    if not (howto / "_README.md").exists() and not (howto / "README.md").exists():
+        (howto / "_README.md").write_text(
             "# 작업 가이드 (how-to)\n<!-- PLACEHOLDER: 실제 절차(명령·진단·복구)가 생기면 *.md로 "
             "추가하고 여기 링크. 3개↑면 이 파일을 목록 인덱스로 전환. -->\n",
             encoding="utf-8")
@@ -132,12 +138,14 @@ def install_loop_files(repo_root, plugin_root_dir) -> bool:
 def scaffold(repo_root, plugin_root_dir=None, project_name="[프로젝트명]") -> dict:
     """전체 결정론적 설치. SKILL.md 산문이 opt-in/dry-run 승인 후 이걸 호출한다."""
     plug = plugin_root_dir if plugin_root_dir is not None else plugin_root()
-    # merge_settings_file은 .claude가 존재한다고 가정(부모 생성 안 함) → 먼저 보장.
+    # settings 병합이 유일하게 던지는 단계(JSONC 거부)다 — 다른 파일을 쓰기 전에 먼저 돌려
+    # 실패하면 부분 설치를 남기지 않는다(atomic-ish). merge_settings_file은 .claude 존재를 가정.
     (Path(repo_root) / ".claude").mkdir(exist_ok=True)
+    settings = merge_settings_file(Path(repo_root) / ".claude", HOOK_CMD)
     return {
+        "settings": settings,
         "router": write_router(repo_root, project_name),
         "docs": write_docs_skeleton(repo_root),
         "claude_md": inject_claude_md_file(repo_root),
-        "settings": merge_settings_file(Path(repo_root) / ".claude", HOOK_CMD),
         "loop": install_loop_files(repo_root, plug),
     }

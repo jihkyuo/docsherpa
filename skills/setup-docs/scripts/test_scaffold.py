@@ -1,4 +1,5 @@
 import json
+import pytest
 import gate
 import scaffold
 
@@ -59,3 +60,43 @@ def test_scaffold_full_install_on_empty_repo(tmp_path):
     dr = (tmp_path / ".claude/skills/doc-reconcile/SKILL.md").read_text(encoding="utf-8")
     assert "docsherpa-scaffold: v" in dr
     assert result["router"] and result["loop"]
+
+
+def test_docs_skeleton_preserves_existing_howto_readme(tmp_path):
+    # 사용자의 실제 how-to 인덱스가 README.md로 이미 있음 — placeholder _README.md가 그늘 지우면 고아
+    howto = tmp_path / "docs" / "how-to"
+    howto.mkdir(parents=True)
+    (howto / "README.md").write_text("# How-To Index\n- real guide\n", encoding="utf-8")
+    scaffold.scaffold(tmp_path, project_name="Demo")
+    assert gate.main([str(tmp_path), "--require-markers"]) == 0          # 고아 없음
+    assert "real guide" in (howto / "README.md").read_text(encoding="utf-8")  # 보존
+    assert not (howto / "_README.md").exists()                          # 그늘 안 침
+
+
+def test_no_orphan_template_when_decisions_readme_preexists(tmp_path):
+    # 사용자의 decisions/README.md가 이미 있고 _template.md를 안 링크 → template 신설하면 고아
+    dec = tmp_path / "docs" / "decisions"
+    dec.mkdir(parents=True)
+    (dec / "README.md").write_text("# My ADRs\n표만 있고 템플릿 링크 없음\n", encoding="utf-8")
+    scaffold.scaffold(tmp_path, project_name="Demo")
+    assert gate.main([str(tmp_path), "--require-markers"]) == 0          # _template 고아 없음
+    assert "My ADRs" in (dec / "README.md").read_text(encoding="utf-8")  # 보존
+
+
+def test_scaffold_jsonc_settings_is_atomic(tmp_path):
+    # JSONC settings면 설정 병합이 던지는데, 그 전에 다른 파일을 쓰면 부분 설치가 남는다
+    claude = tmp_path / ".claude"
+    claude.mkdir()
+    (claude / "settings.json").write_text('{\n // c\n "hooks":{}\n}\n', encoding="utf-8")
+    with pytest.raises(ValueError):
+        scaffold.scaffold(tmp_path, project_name="Demo")
+    assert not (tmp_path / "AGENTS.md").exists()                         # 부분 설치 방지
+
+
+def test_write_router_appends_only_missing_marker_section(tmp_path):
+    # INDEX 마커만 있고 ROUTING 없음 — ROUTING만 추가돼야(INDEX 중복 금지)
+    (tmp_path / "AGENTS.md").write_text(f"# G\n## Idx {INDEX}\n- a\n", encoding="utf-8")
+    scaffold.write_router(tmp_path, "Demo")
+    out = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    assert out.count(INDEX) == 1        # 중복 안 됨
+    assert out.count(ROUTING) == 1      # 추가됨
