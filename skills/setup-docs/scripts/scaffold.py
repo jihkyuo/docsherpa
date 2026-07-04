@@ -96,3 +96,48 @@ def write_docs_skeleton(repo_root) -> bool:
             encoding="utf-8")
         changed = True
     return changed
+
+
+def plugin_root() -> Path:
+    # scripts/scaffold.py → setup-docs → skills → <plugin>
+    return Path(__file__).resolve().parents[3]
+
+
+def install_loop_files(repo_root, plugin_root_dir) -> bool:
+    """prime 텍스트 + doc-reconcile 정본 복사(+version stamp)를 target .claude/에. changed? 반환."""
+    root = Path(repo_root)
+    plug = Path(plugin_root_dir)
+    changed = False
+    claude = root / ".claude"
+    claude.mkdir(exist_ok=True)
+
+    prime_src = plug / "skills" / "setup-docs" / "templates" / "doc-drift-prime.txt"
+    prime_dst = claude / "doc-drift-prime.txt"
+    if prime_src.is_file() and not prime_dst.exists():
+        shutil.copyfile(prime_src, prime_dst)
+        changed = True
+
+    dr_src = plug / "skills" / "doc-reconcile" / "SKILL.md"
+    dr_dst = claude / "skills" / "doc-reconcile" / "SKILL.md"
+    if dr_src.is_file() and not dr_dst.exists():
+        dr_dst.parent.mkdir(parents=True, exist_ok=True)
+        version = json.loads(
+            (plug / ".claude-plugin" / "plugin.json").read_text()).get("version", "0")
+        stamp = f"\n<!-- docsherpa-scaffold: v{version} -->\n"
+        dr_dst.write_text(dr_src.read_text(encoding="utf-8") + stamp, encoding="utf-8")
+        changed = True
+    return changed
+
+
+def scaffold(repo_root, plugin_root_dir=None, project_name="[프로젝트명]") -> dict:
+    """전체 결정론적 설치. SKILL.md 산문이 opt-in/dry-run 승인 후 이걸 호출한다."""
+    plug = plugin_root_dir if plugin_root_dir is not None else plugin_root()
+    # merge_settings_file은 .claude가 존재한다고 가정(부모 생성 안 함) → 먼저 보장.
+    (Path(repo_root) / ".claude").mkdir(exist_ok=True)
+    return {
+        "router": write_router(repo_root, project_name),
+        "docs": write_docs_skeleton(repo_root),
+        "claude_md": inject_claude_md_file(repo_root),
+        "settings": merge_settings_file(Path(repo_root) / ".claude", HOOK_CMD),
+        "loop": install_loop_files(repo_root, plug),
+    }
