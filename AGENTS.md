@@ -30,9 +30,11 @@ docsherpa는 **비파괴적 보조 도구**다. 아래 셋이 정체성이고, �
 
 ## 먼저 읽기 (문서 인덱스 — 진입점만, 린) <!-- docsherpa:index -->
 
-- 설계·핵심 결정(D1~D9) → [docs/DESIGN.md](docs/DESIGN.md)
+- 설계·전체 근거 → [docs/DESIGN.md](docs/DESIGN.md)
+- 결정 기록(ADR) → [docs/decisions/README.md](docs/decisions/README.md)
 - 상태·진행·다음 세션 시작점 → [FINDINGS.md](FINDINGS.md)
 - 마일스톤 실행 계획(M0~M4) → [docs/plans/](docs/plans/)
+- 작업 가이드 → [docs/how-to/](docs/how-to/)
 
 ## 문서 라우팅 룰 (새 문서가 어디로) <!-- docsherpa:routing -->
 
