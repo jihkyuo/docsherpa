@@ -2,8 +2,18 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
-- **상태:** M0 · M1 · M3 · M2 완료. **M4(독푸딩) 검증 완료 · 커터오버 게이트됨.** 다음 = **M4 커터오버 실행 → M5**.
-- **순서(재-시퀀싱):** M1 → M3 → M2 → **M4** → M5. (spec §12의 M2-before-M3를 codex 지적대로 뒤집음.)
+- **상태:** M0·M1·M3·M2 완료. **docsherpa 자기-독푸딩 완료**(자기 repo에 아키텍처 적용). 다음 = **M5 공개**
+  (+ 남은 갭: 재사용 §7.5, second-brain 실제 커터오버는 사용자 정지점에).
+- **순서(재-시퀀싱):** M1 → M3 → M2 → M4 → **자기-독푸딩** → M5.
+- **자기-독푸딩(정체성 자기모순 해소):** "문서 아키텍처를 세워주는 도구가 정작 자기 repo엔 없다"를 해소.
+  ① docsherpa에 자기 라우터(`AGENTS.md` North Star 정체성 + 마커) + `CLAUDE.md` 생성 → self-gate PASS.
+  ② `scaffold()`를 docsherpa 자신에 실행 → 성장 루프 설치(SessionStart 훅·prime·커밋 doc-reconcile+stamp).
+  ③ §7.5 실전: 설치된 doc-reconcile 앵커를 docsherpa용으로 특화(정본은 generic 유지, 가드 GREEN).
+  ④ **D1~D9 결정을 `docs/decisions/` ADR 9개로 마이그레이션**(자기 라우팅 룰 #1) — **content_oracle로
+  내용 소실 0 증명**(base_segments=43 unaccounted=0) + gate PASS. **핵심가치(내용 보존 마이그레이션)를
+  우리 repo에서 실증함.** ⑤ gate.py 코드펜스 false-positive 버그 수정.
+- **정체성(불가침):** `AGENTS.md` 최상단 North Star = 비파괴 마이그레이션 · **내용 소실 0(깨지면 끝장)** ·
+  자가성장. 흔들리면 방향 이탈. (메모리 `docsherpa-identity`에도 기록.)
 - **M4 상태(중요):** 검증(A) + **격리 워크트리 실동작 확인 완료.** behavioral parity 성립(이식본≡원본,
   **마커 선주입 조건부**). **(a)(b) 커터오버를 second-brain 격리 워크트리에서 실제 적용·검증함**:
   워크트리 `~/Desktop/private/second-brain-dogfood`, 브랜치 `docsherpa-dogfood`(커밋 55f407c) —
