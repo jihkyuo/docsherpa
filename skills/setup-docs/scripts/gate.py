@@ -15,13 +15,16 @@
   - http(s)/mailto/앵커-전용(#...) 링크는 무시한다.
 
 사용:
-  python3 gate.py [REPO_ROOT]    # 기본: 현재 디렉터리
+  python3 gate.py [REPO_ROOT]                     # 기본: 현재 디렉터리
+  python3 gate.py [REPO_ROOT] --require-markers   # 스캐폴드 검증 시 마커 계약(D8)까지 강제
 종료코드: 0 = PASS, 1 = FAIL.
 """
 import re
 import sys
 from collections import deque
 from pathlib import Path
+
+import check_markers
 
 LINK_RE = re.compile(r"\]\(([^)]+)\)")           # 마크다운 링크 ](target)
 IMPORT_RE = re.compile(r"(?:^|\s)@([^\s)]+\.md)")  # @path.md import
@@ -61,8 +64,11 @@ def resolve(base: Path, raw: str):
     return ("file", p)
 
 
-def main():
-    root = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    require_markers = "--require-markers" in argv
+    argv = [a for a in argv if a != "--require-markers"]
+    root = Path(argv[0] if argv else ".").resolve()
 
     roots = [p for p in (root / "AGENTS.md", root / "CLAUDE.md") if p.is_file()]
     if not roots:
@@ -104,9 +110,17 @@ def main():
     all_docs = sorted(docs_dir.rglob("*.md")) if docs_dir.is_dir() else []
     orphans = [d for d in all_docs if d.resolve() not in visited]
 
-    ok = not broken and not orphans
+    markers_ok = True
+    if require_markers:
+        agents = root / "AGENTS.md"
+        markers_ok = agents.is_file() and check_markers.has_contract_markers(
+            agents.read_text(encoding="utf-8", errors="ignore")
+        )
+
+    ok = not broken and not orphans and markers_ok
     print(f"{'PASS' if ok else 'FAIL'}: broken={len(broken)} orphan={len(orphans)} "
-          f"(docs={len(all_docs)}, reachable={len(visited)})")
+          f"(docs={len(all_docs)}, reachable={len(visited)})"
+          + ("" if not require_markers else f" markers_ok={markers_ok}"))
 
     if broken:
         print("\n깨진 링크:")
@@ -116,6 +130,8 @@ def main():
         print("\n고아 문서(인덱스에서 도달 불가):")
         for d in orphans:
             print(f"  {d.relative_to(root)}")
+    if require_markers and not markers_ok:
+        print("\n마커 누락: AGENTS.md에 <!-- docsherpa:routing -->·<!-- docsherpa:index --> 둘 다 필요.")
 
     return 0 if ok else 1
 
