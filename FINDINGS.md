@@ -2,18 +2,23 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
-- **상태:** M0(spike) · M1(doc-reconcile 이식화) · **M3(설치자) 완료.** 다음 = **M2 이식성 fixture**.
-- **순서(재-시퀀싱):** M1 → M3 → **M2** → M4 → M5. (spec §12의 M2-before-M3를 codex 지적대로 뒤집음.)
-- **M3이 닫은 것:** ① AGENTS.md 마커 삽입(템플릿 인라인 + 기존 병합 규칙) ② doc-reconcile+prime+훅
-  스캐폴드 산문(opt-in·dry-run·D2·R4·D7) ③ settings JSONC 결정(**fail-safe 거부**, YAGNI — comment-preserving
-  안 지음) ④ 기존 CLAUDE.md 안전 주입(`inject_claude_md.py` — 없음/import/prepend/BOM/frontmatter 엣지)
-  ⑤ loop-presence를 Phase 0에 흡수 ⑥ gate `--require-markers`로 D8 계약 강제(opt-in).
-- **M2가 할 일:** DESIGN §10.2 4종 fixture(빈 JS / 기존 AGENTS.md·번역본 / 기존 settings.json / 비영어)를
-  GREENFIELD로 돌려 **gate PASS + degrade 후 실제 문서 신설 지시(hollow 아님) + 마커 계약 grep PASS**.
-  M3 설치자 산문을 end-to-end로 검증한다. **먼저 writing-plans로 M2 계획 작성.**
-- **이어가려면 이 순서로 읽어라:** ① 이 파일 → ② `docs/DESIGN.md` §10.2(fixture 계약)·§9(behavioral parity
-  교훈) → ③ `docs/plans/M3-setup-docs-installer.md`(설치자가 무엇을 산출하는지).
-- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **30 passed**).
+- **상태:** M0(spike) · M1 · M3 · **M2(이식성 fixture) 완료.** 다음 = **M4 독푸딩**.
+- **순서(재-시퀀싱):** M1 → M3 → M2 → **M4** → M5. (spec §12의 M2-before-M3를 codex 지적대로 뒤집음.)
+- **M2가 닫은 것:** ① `scaffold.py` — 호출 가능한 설치자 본체(라우터/docs 골격 + inject/merge 재사용 +
+  prime/doc-reconcile 복사+stamp). M3의 "산문만" 결정을 사용자 승인 하에 뒤집음(자동 end-to-end 위해).
+  ② 4종 fixture end-to-end GREEN(gate `--require-markers` + no-hollow 구체 산출물 + 마커 + 기존 보존).
+  ③ SKILL 산문을 scaffold 위임으로 개정(결정론 부분 단일 소스). ④ 리뷰 발견 4버그 수정(howto-shadow ·
+  orphan-template · JSONC-atomicity · dup-marker).
+- **scaffold 스코프(중요, M4 주의):** `scaffold()`는 **greenfield/healthy 전용**. 기존에 라우터에 안 걸린
+  `docs/**` 문서가 있으면(MESSY) scaffold가 자동 인덱싱 안 함 → orphan으로 gate FAIL. MESSY는 마이그레이션
+  파이프라인(에이전트 discovery) 몫. **second-brain은 성숙한 docs → M4는 loop-install만 하되, 기존 docs가
+  라우터에 도달 가능한지(HEALTHY) 먼저 확인**하고 scaffold를 돌려야 한다.
+- **M4가 할 일(§9):** second-brain 재스캐폴드 + **behavioral parity**(재생성 doc-reconcile ↔ 원본이 동일
+  변경 시나리오에 같은 신설/갱신 판정) + **기존 SessionStart 훅 보존 첫 실증** + 로컬 플러그인 경로 동작
+  확인 후 중복 global setup-docs 제거. **먼저 writing-plans로 M4 계획 작성.**
+- **이어가려면 이 순서로 읽어라:** ① 이 파일 → ② `docs/DESIGN.md` §9(독푸딩·behavioral parity)·§10.3 →
+  ③ `docs/plans/M2-portability-fixtures.md`(scaffold가 무엇을 하는지).
+- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **43 passed**).
 - **핵심 계약:** doc-reconcile은 헤딩이 아니라 **마커**를 소비한다(D8) → M3의 마커 삽입과 맞물림.
   정본 doc-reconcile은 도메인 리터럴 0(가드 `test_doc_reconcile_portable.py`가 강제 — M3 후에도 GREEN).
 
@@ -86,3 +91,24 @@ Phase0 loop 체크). 그 다음 **M2** (end-to-end fixture — 설치자 필요)
 **설치-현실 테스트(§10.4)는 이연** — VSCode 채팅에서 `/plugin` 불가 → M4 독푸딩에서 실제 설치·스캐폴드 검증.
 
 **다음 = M2 이식성 fixture**(§10.2 4종): 설치자 산문을 end-to-end로 돌려 gate PASS + hollow-없음 + 마커 grep.
+
+## M2 완료 (이식성 fixture + scaffold 오케스트레이터)
+
+**GREEN.** M3가 산문으로 남긴 결정론적 스캐폴드를 **호출 가능한 `scaffold.py`로 추출**(사용자 승인 하에
+M3의 "산문만" 결정 뒤집음 — 자동 end-to-end 검증엔 호출 가능한 본체가 필수). `scaffold()`는 라우터/docs
+골격 + `inject_claude_md_file`·`merge_settings_file`(M3 재사용) + prime/doc-reconcile 복사(+version stamp)를
+한 번에 수행. SKILL 산문은 opt-in/dry-run/빈칸-채움만 담당하도록 개정(결정론 부분 단일 소스, drift 방지).
+
+- **4종 fixture end-to-end GREEN**(§10.2): 빈 JS / 기존 AGENTS.md·번역본 / 기존 settings.json / 비영어 문서.
+  각: gate `--require-markers` PASS + **hollow 아님**(`](_template.md)` 등 구체 산출물 assert, §14) +
+  마커 계약(`has_contract_markers`) + 기존 내용(커스텀 룰·훅·비영어 문서) 보존.
+- **리뷰 발견 4버그 수정**(subagent code-review): ① how-to 기존 `README.md`를 placeholder `_README.md`가
+  그늘 져 고아 만듦 → 인덱스 있으면 placeholder 안 만듦 ② `decisions/README.md` 기존이면 `_template.md`
+  신설이 고아 → README 신설 시에만 template를 쌍으로 ③ JSONC settings가 병합 중간에 던져 부분 설치 →
+  settings를 **먼저** 돌려 실패 시 다른 파일 안 씀(atomic-ish) ④ 마커 하나만 있으면 둘 다 append해 중복 →
+  빠진 섹션만 append.
+- **scaffold 스코프 = greenfield/healthy 전용**(리뷰 #3): 기존 미인덱스 `docs/**`가 있으면 orphan으로 gate
+  FAIL(MESSY는 마이그레이션 파이프라인 몫). **M4가 second-brain에 적용 전 HEALTHY 확인 필수.**
+
+전체 **43 tests GREEN**(30→43), 이식성 가드 GREEN. **다음 = M4 독푸딩**(behavioral parity + 기존 훅 보존
+실증 + 설치-현실 + global 제거).
