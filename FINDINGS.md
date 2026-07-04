@@ -43,7 +43,7 @@
   확인 후 중복 global setup-docs 제거. **먼저 writing-plans로 M4 계획 작성.**
 - **이어가려면 이 순서로 읽어라:** ① 이 파일 → ② `docs/DESIGN.md` §9(독푸딩·behavioral parity)·§10.3 →
   ③ `docs/plans/M2-portability-fixtures.md`(scaffold가 무엇을 하는지).
-- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **43 passed**).
+- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **45 passed**).
 - **핵심 계약:** doc-reconcile은 헤딩이 아니라 **마커**를 소비한다(D8) → M3의 마커 삽입과 맞물림.
   정본 doc-reconcile은 도메인 리터럴 0(가드 `test_doc_reconcile_portable.py`가 강제 — M3 후에도 GREEN).
 
