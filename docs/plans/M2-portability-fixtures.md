@@ -512,7 +512,7 @@ git push
 
 **Spec coverage:**
 - §10.2 4종 fixture(빈 JS / 기존 AGENTS.md·번역본 / 기존 settings.json / 비영어) → Task 3.
-- §10.2 각 fixture "gate PASS + degrade 후 문서 신설 지시(hollow 아님) + 마커 grep PASS" → Task 3 `_assert_installed_and_reachable`(gate --require-markers + `](_template.md)` 구체 산출물 + has_contract_markers).
+- §10.2 각 fixture "gate PASS + degrade 후 문서 신설 지시(hollow 아님) + 마커 grep PASS" → Task 3 `_assert_installed_and_reachable`(gate --require-markers + `_template.md` 링크 구체 산출물 + has_contract_markers).
 - §14 "fixture의 문서 신설 지시 → 구체 기대 산출물 assert" → Task 1 `test_docs_skeleton_not_hollow` + Task 3 구체 링크/파일 assert.
 - §7.1 opt-in + 비대화형 dry-run → Task 4(산문 유지). §7.2 settings 병합·§7.3 CLAUDE.md 주입 → scaffold가 M3 함수 재사용(Task 2).
 - R4 version stamp → Task 2 `install_loop_files`. D2 settings.json → Task 2·3 assert(`.local` 없음). D8 마커 → 전 fixture assert.

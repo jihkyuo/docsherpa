@@ -107,7 +107,7 @@ M3의 "산문만" 결정 뒤집음 — 자동 end-to-end 검증엔 호출 가능
 한 번에 수행. SKILL 산문은 opt-in/dry-run/빈칸-채움만 담당하도록 개정(결정론 부분 단일 소스, drift 방지).
 
 - **4종 fixture end-to-end GREEN**(§10.2): 빈 JS / 기존 AGENTS.md·번역본 / 기존 settings.json / 비영어 문서.
-  각: gate `--require-markers` PASS + **hollow 아님**(`](_template.md)` 등 구체 산출물 assert, §14) +
+  각: gate `--require-markers` PASS + **hollow 아님**(`_template.md` 링크 등 구체 산출물 assert, §14) +
   마커 계약(`has_contract_markers`) + 기존 내용(커스텀 룰·훅·비영어 문서) 보존.
 - **리뷰 발견 4버그 수정**(subagent code-review): ① how-to 기존 `README.md`를 placeholder `_README.md`가
   그늘 져 고아 만듦 → 인덱스 있으면 placeholder 안 만듦 ② `decisions/README.md` 기존이면 `_template.md`

@@ -28,6 +28,7 @@ import check_markers
 
 LINK_RE = re.compile(r"\]\(([^)]+)\)")           # 마크다운 링크 ](target)
 IMPORT_RE = re.compile(r"(?:^|\s)@([^\s)]+\.md)")  # @path.md import
+FENCE_RE = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)  # 펜스 코드블록(예시, live 링크 아님)
 
 
 def index_of(directory: Path):
@@ -40,8 +41,11 @@ def index_of(directory: Path):
 
 
 def targets_in(path: Path):
-    """파일 안의 모든 링크/임포트 타겟 문자열을 (raw) 리스트로 반환."""
+    """파일 안의 모든 링크/임포트 타겟 문자열을 (raw) 리스트로 반환.
+
+    펜스 코드블록(``` … ```)은 예시라 live 링크가 아니므로 추출 전에 제거한다."""
     text = path.read_text(encoding="utf-8", errors="ignore")
+    text = FENCE_RE.sub("", text)
     out = [m.group(1) for m in IMPORT_RE.finditer(text)]
     out += [m.group(1) for m in LINK_RE.finditer(text)]
     return out

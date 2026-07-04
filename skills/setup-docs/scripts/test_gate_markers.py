@@ -30,3 +30,15 @@ def test_require_markers_fails_when_absent(tmp_path):
 def test_require_markers_passes_when_present(tmp_path):
     _router_with_markers(tmp_path)
     assert gate.main([str(tmp_path), "--require-markers"]) == 0
+
+
+def test_links_inside_code_fences_are_not_broken(tmp_path):
+    # 코드 펜스 안 링크는 예시일 뿐 — live 링크 아님(고아/broken으로 세면 안 됨).
+    (tmp_path / "AGENTS.md").write_text(
+        "# R\n## 먼저 읽기\n- real → [docs/real.md](docs/real.md)\n\n"
+        "```\nexample: [nope](does-not-exist.md) and @ghost.md\n```\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs/real.md").write_text("# real\n", encoding="utf-8")
+    assert gate.main([str(tmp_path)]) == 0   # 펜스 안 does-not-exist.md 무시 → broken=0
