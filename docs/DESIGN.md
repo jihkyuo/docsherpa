@@ -43,17 +43,19 @@ second-brain repo는 강력한 문서 아키텍처를 갖고 있다: **얇은 �
 
 ## 3. 핵심 결정 (근거 포함)
 
+> 각 결정의 **정본 ADR**은 [docs/decisions/](decisions/README.md)에 있다(라우팅 룰 #1 — 구조적 결정은 ADR). 아래는 요약 인덱스.
+
 | # | 결정 | 근거 | 거부한 대안 |
 |---|---|---|---|
-| D1 | 단일-플러그인 repo + `marketplace.json` self-host | 마켓플레이스가 같은 repo에 `source:"./"`로 공존 | 멀티-플러그인 모노레포(YAGNI) |
-| D2 | **B: target repo에 커밋 스캐폴드**(self-contained) | public이라 collaborator가 플러그인 없이도 규율 획득 | A: 순수 플러그인 제공(클론자 규율 소실) |
-| D3 | **독푸딩: 플러그인 = 단일 원본** | drift 0 + 포트폴리오 서사 | 포크(두 원본 drift) |
-| D4 | doc-reconcile = **한 파일, 두 쓰임**(척추+범용앵커, 스캐폴드 시 특화) | 유지보수 단순 + B·D3 화해 | 앵커 삭제(방법론 빈약) |
-| D5 | **훅은 target repo에만 산다**(플러그인은 훅 *템플릿*만 담음) | 문서 없는 repo에서 prime 오발동 방지 | user-scope 플러그인 훅(전역 발동) |
-| D6 | 이름 = **docsherpa** | docs 포함 + AI-읽기 하네스 + 충돌0 | throughline·doctender·agentmap(충돌) |
-| **D7** | **훅 신뢰 모델**: (설치자) opt-in + inspect-before-write + easy-disable. (**collaborator**) 클론한 repo의 커밋된 훅은 **Claude Code 자체 훅-승인 게이트**(첫 실행 전 승인 요청)가 safe-by-default를 제공 — 우리는 신뢰층 재발명 안 함, M0에서 실검증. prime은 커밋된 신뢰 경계임을 명시 | opt-in은 설치자만 보호. collaborator 보호는 harness가 담당(codex #4) | 조용히 훅 설치 / 자체 신뢰층 재발명 |
-| **D8** | **섹션명 계약 = 언어-불문 마커** `<!-- docsherpa:routing -->`·`<!-- docsherpa:index -->`. 한국어 리터럴 폐기 | 소비자가 AGENTS.md를 번역하면 한국어 헤딩이 무효화 → 앵커 전멸(둘 다 지적) | 헤딩 문자열 매칭(번역·wording에 취약) |
-| **D9** | doc-reconcile 트리거를 **SessionStart + 수동 호출로 좁힘**. "pre-commit docs-impact 게이트" 언급 제거 | 그 게이트는 이 repo에도 없음(의도적 보류) — 광고하면 phantom이 소비자로 복제(architect) | 게이트 구현(YAGNI, 보류 결정 뒤집기) |
+| [D1](decisions/0001-single-plugin-repo-self-host.md) | 단일-플러그인 repo + `marketplace.json` self-host | 마켓플레이스가 같은 repo에 `source:"./"`로 공존 | 멀티-플러그인 모노레포(YAGNI) |
+| [D2](decisions/0002-committed-scaffold-in-target.md) | **B: target repo에 커밋 스캐폴드**(self-contained) | public이라 collaborator가 플러그인 없이도 규율 획득 | A: 순수 플러그인 제공(클론자 규율 소실) |
+| [D3](decisions/0003-dogfooding-single-source.md) | **독푸딩: 플러그인 = 단일 원본** | drift 0 + 포트폴리오 서사 | 포크(두 원본 drift) |
+| [D4](decisions/0004-doc-reconcile-one-file-two-uses.md) | doc-reconcile = **한 파일, 두 쓰임**(척추+범용앵커, 스캐폴드 시 특화) | 유지보수 단순 + B·D3 화해 | 앵커 삭제(방법론 빈약) |
+| [D5](decisions/0005-hooks-live-in-target-only.md) | **훅은 target repo에만 산다**(플러그인은 훅 *템플릿*만 담음) | 문서 없는 repo에서 prime 오발동 방지 | user-scope 플러그인 훅(전역 발동) |
+| [D6](decisions/0006-name-docsherpa.md) | 이름 = **docsherpa** | docs 포함 + AI-읽기 하네스 + 충돌0 | throughline·doctender·agentmap(충돌) |
+| [**D7**](decisions/0007-hook-trust-model.md) | **훅 신뢰 모델**: (설치자) opt-in + inspect-before-write + easy-disable. (**collaborator**) 클론한 repo의 커밋된 훅은 **Claude Code 자체 훅-승인 게이트**(첫 실행 전 승인 요청)가 safe-by-default를 제공 — 우리는 신뢰층 재발명 안 함, M0에서 실검증. prime은 커밋된 신뢰 경계임을 명시 | opt-in은 설치자만 보호. collaborator 보호는 harness가 담당(codex #4) | 조용히 훅 설치 / 자체 신뢰층 재발명 |
+| [**D8**](decisions/0008-language-agnostic-markers.md) | **섹션명 계약 = 언어-불문 마커** `<!-- docsherpa:routing -->`·`<!-- docsherpa:index -->`. 한국어 리터럴 폐기 | 소비자가 AGENTS.md를 번역하면 한국어 헤딩이 무효화 → 앵커 전멸(둘 다 지적) | 헤딩 문자열 매칭(번역·wording에 취약) |
+| [**D9**](decisions/0009-narrow-doc-reconcile-triggers.md) | doc-reconcile 트리거를 **SessionStart + 수동 호출로 좁힘**. "pre-commit docs-impact 게이트" 언급 제거 | 그 게이트는 이 repo에도 없음(의도적 보류) — 광고하면 phantom이 소비자로 복제(architect) | 게이트 구현(YAGNI, 보류 결정 뒤집기) |
 
 **감사(2026-07-04):** 개인·회사 식별자 유출 **0**. 도메인 특이성은 이식성 문제(프라이버시 아님).
 **단, license/provenance 감사는 별개**(§8) — "식별자 0"이 "발행 가능"을 증명하진 않음(codex).
