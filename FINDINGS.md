@@ -2,17 +2,20 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
-- **상태:** M0(spike) · M1(doc-reconcile 이식화) **완료.** 다음 = **M3 설치자**.
-- **순서(재-시퀀싱):** M1 → **M3** → M2 → M4 → M5. (spec §12의 M2-before-M3를 codex 지적대로 뒤집음.)
-- **M3이 하는 일:** setup-docs가 ① AGENTS.md에 마커(`<!-- docsherpa:routing -->`·`:index`) 삽입
-  ② doc-reconcile+prime+훅을 target repo에 스캐폴드 ③ `merge_settings`로 settings.json 병합
-  ④ 기존 CLAUDE.md 안전 주입 ⑤ loop-presence를 Phase 0에 흡수.
-- **이어가려면 이 순서로 읽어라:** ① 이 파일(무엇이 닫혔나) → ② `docs/DESIGN.md` §7(M3 설계)·§14(M3이
-  확정할 디테일: CLAUDE.md 엣지·JSONC) → ③ `docs/plans/`(M0·M1 실행 기록·패턴). 그다음 **writing-plans로
-  M3 계획 작성 → subagent 없이 인라인 실행**(산문 편집 포함이라).
-- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **18 passed**).
+- **상태:** M0(spike) · M1(doc-reconcile 이식화) · **M3(설치자) 완료.** 다음 = **M2 이식성 fixture**.
+- **순서(재-시퀀싱):** M1 → M3 → **M2** → M4 → M5. (spec §12의 M2-before-M3를 codex 지적대로 뒤집음.)
+- **M3이 닫은 것:** ① AGENTS.md 마커 삽입(템플릿 인라인 + 기존 병합 규칙) ② doc-reconcile+prime+훅
+  스캐폴드 산문(opt-in·dry-run·D2·R4·D7) ③ settings JSONC 결정(**fail-safe 거부**, YAGNI — comment-preserving
+  안 지음) ④ 기존 CLAUDE.md 안전 주입(`inject_claude_md.py` — 없음/import/prepend/BOM/frontmatter 엣지)
+  ⑤ loop-presence를 Phase 0에 흡수 ⑥ gate `--require-markers`로 D8 계약 강제(opt-in).
+- **M2가 할 일:** DESIGN §10.2 4종 fixture(빈 JS / 기존 AGENTS.md·번역본 / 기존 settings.json / 비영어)를
+  GREENFIELD로 돌려 **gate PASS + degrade 후 실제 문서 신설 지시(hollow 아님) + 마커 계약 grep PASS**.
+  M3 설치자 산문을 end-to-end로 검증한다. **먼저 writing-plans로 M2 계획 작성.**
+- **이어가려면 이 순서로 읽어라:** ① 이 파일 → ② `docs/DESIGN.md` §10.2(fixture 계약)·§9(behavioral parity
+  교훈) → ③ `docs/plans/M3-setup-docs-installer.md`(설치자가 무엇을 산출하는지).
+- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **30 passed**).
 - **핵심 계약:** doc-reconcile은 헤딩이 아니라 **마커**를 소비한다(D8) → M3의 마커 삽입과 맞물림.
-  정본 doc-reconcile은 도메인 리터럴 0(가드 `test_doc_reconcile_portable.py`가 강제).
+  정본 doc-reconcile은 도메인 리터럴 0(가드 `test_doc_reconcile_portable.py`가 강제 — M3 후에도 GREEN).
 
 ---
 
@@ -64,3 +67,22 @@ setup-docs 도메인-무관 자산(SKILL·knowledge·gate·content_oracle) as-is
 **다음 = M3 설치자** (setup-docs가 마커 삽입 + 루프 스캐폴드 + `merge_settings` 통합 + CLAUDE.md 주입 +
 Phase0 loop 체크). 그 다음 **M2** (end-to-end fixture — 설치자 필요), **M4** 독푸딩, **M5** 공개.
 (재-시퀀싱: M1→M3→M2→M4→M5. spec §12의 M2-before-M3를 codex 지적대로 뒤집음.)
+
+## M3 완료 (setup-docs 설치자)
+
+**GREEN.** setup-docs가 골격 생성기 → **성장 루프 설치자**로 확장됨. 위험한 것만 테스트된 코드로 격리:
+- **`inject_claude_md.py`** — 기존 CLAUDE.md에 `@AGENTS.md` 안전 주입(없음/이미-import/prepend/BOM/
+  frontmatter 엣지, §14). 8 tests. gate 루트 탐색이 의존.
+- **`merge_settings.py` JSONC 가드** — 주석/JSONC면 크래시·클로버 대신 `ValueError`로 거부+수동 병합 안내
+  (§14 결정: comment-preserving 안 지음, settings는 표준 JSON이 정상 — YAGNI). +1 test.
+- **`gate.py --require-markers`** — 스캐폴드 검증에서만 D8 마커 계약 강제(opt-in — Phase0 진단 false-fail 방지).
+  +3 tests. 도달성 본문은 byte-identical 보존.
+- **`templates/`** — 범용 prime + 훅 템플릿(D5: 플러그인은 active 아닌 템플릿만, 도메인 리터럴 0).
+- **SKILL.md 산문** — "성장 루프 설치" 섹션(opt-in·dry-run·diff-preview·D2·R4·R7), AGENTS.md 템플릿에 마커
+  인라인, 기존 병합 규칙에 마커 삽입 규칙, Phase0 loop-presence 1줄. 척추(GREENFIELD/MESSY/멱등/게이트)
+  외과적 보존.
+
+전체 **30 tests GREEN**(18→30), 이식성 가드 GREEN(역누출 0). /code-review(high, 분석적) = 0 findings.
+**설치-현실 테스트(§10.4)는 이연** — VSCode 채팅에서 `/plugin` 불가 → M4 독푸딩에서 실제 설치·스캐폴드 검증.
+
+**다음 = M2 이식성 fixture**(§10.2 4종): 설치자 산문을 end-to-end로 돌려 gate PASS + hollow-없음 + 마커 grep.
