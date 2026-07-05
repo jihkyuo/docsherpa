@@ -1,7 +1,8 @@
-# doc-reconcile 최신화·유연화·자가성장 재설계 (Implementation Plan) — rev8
+# doc-reconcile 최신화·유연화·자가성장 재설계 (Implementation Plan) — rev9
 
 > **For agentic workers:** REQUIRED SUB-SKILL: 승인 후 superpowers:subagent-driven-development / executing-plans. **리뷰용 설계 문서** — 승인 전 구현 금지.
-> **rev8 상태:** 5라운드 교차검증(codex+architect) 수렴. **기존 코드에 대조해 검증된 것은 N8 인라인마커(gate 무변경)·N6 마이그레이션 oracle뿐이다.** sidecar/refresh(§3.1–3.4)·끝요약(N10)은 **설계·교차검증 완료이나 코드 미구현**(TDD T1–T10). rev8은 재설계가 아니라 **정직화 마감** — rev7이 남긴 자기-과장('코드 검증 완료' 오기)·refresh 트리거 부재·N1 편집 3면 중 1면 누락·N7 append 순서버그를 닫는다. **최종 검증은 새 세션에서 진행 예정.**
+> **rev8 상태:** 5라운드 교차검증(codex+architect) 수렴. **기존 코드에 대조해 검증된 것은 N8 인라인마커(gate 무변경)·N6 마이그레이션 oracle뿐이다.** sidecar/refresh(§3.1–3.4)·끝요약(N10)은 **설계·교차검증 완료이나 코드 미구현**(TDD T1–T10). rev8은 재설계가 아니라 **정직화 마감** — rev7이 남긴 자기-과장('코드 검증 완료' 오기)·refresh 트리거 부재·N1 편집 3면 중 1면 누락·N7 append 순서버그를 닫는다.
+> **⚠️ rev9 상태 (자가감사):** "문서 링크=주석" 진행자 오개념이 발단이 되어 전반 재감사. gate.py **실측**(얇은 CLAUDE.md → 일반 마크다운 링크 → 별도 맵 문서, AGENTS.md 없이 orphan=0 PASS)으로 **F9(맵 추출 기각 근거 거짓 — 일반 링크면 gate 통과) 판명 → N8 재오픈.** 추가 F10~F15. **미해결 — §13 rev9 참조. 최종 검증은 새 세션.**
 
 **Goal:** doc-reconcile을 **핵심(문서를 코드에 맞게 유지)만** 하게 쪼개고, 아키텍처 규칙 변경은 **setup-docs**로 라우팅. 임베드 최신화(sidecar)·유연성·안전한 자가성장. **안전 태세를 실제(진짜 기계 vs 에이전트 산문+커밋리뷰)에 정직히 맞춘다.**
 
@@ -25,7 +26,7 @@ doc-reconcile   문서를 코드에 맞게 유지 — 규칙(routing) 읽기만�
 
 **Tech Stack:** Python 3 stdlib only, pytest, Markdown 산문.
 
-**검증 이력:** rev1 consult → rev2 challenge+architect → rev3 자가비판 → rev4 설계대화+재검증 → rev5 3-tool → rev5 재검증(F1 gate BFS 붕괴 등) → rev6 2-tool 단순화 → rev6 재검증 → rev7 "기계" 과장 철회·auto-CREATE first-match 정정 → **rev8 재검증(codex+architect): refresh 트리거 부재·'코드 검증' 자기과장·N1 3면 중 1면만 편집·N7 append 死룰 봉쇄.** §13.
+**검증 이력:** rev1 consult → rev2 challenge+architect → rev3 자가비판 → rev4 설계대화+재검증 → rev5 3-tool → rev5 재검증(F1 gate BFS 붕괴 등) → rev6 2-tool 단순화 → rev6 재검증 → rev7 "기계" 과장 철회·auto-CREATE first-match 정정 → rev8 재검증(refresh 트리거·자기과장·N1·N7 死룰) → **rev9 자가감사: F9 맵기각 근거거짓(gate 실측)·F10 gate루트 범위모순·F11~F15, N8 재오픈.** §13.
 
 ## Global Constraints
 - **North Star (불가침):** 비파괴·내용 소실 0. 도달성 100%(gate)가 마이그레이션 내용소실 0의 **기계** 강제선. 루틴 편집은 커밋 리뷰가 net(기계 아님을 정직히).
@@ -54,7 +55,7 @@ P1(임베드 팀공유)·P2(최신화)·P3(유연성·자가성장).
 | **N5** | 계층 자율: 루틴 무프롬프트 자동(UPDATE·CREATE) / 규칙변경=setup-docs+승인. **루틴 안전선=커밋리뷰(기계 아님).** | 잦은 저위험 자동, 규칙변경만 게이트. | rev6 N5 |
 | **N6** | **안전 정직화.** 진짜 기계=refresh+gate+content_oracle(마이그레이션). doc-reconcile 루틴=에이전트+인용+커밋리뷰. UPDATE 자동=명확 리터럴만(좁음). | doc-reconcile 무스크립트 → "기계" 주장은 self-cert 재발. | rev6 N6("기계" 과장) |
 | **N7** | 규칙 변경=setup-docs. **(a)규칙-텍스트 추가=catch-all(#5) 앞 삽입+gate 재실행**(순수 append 금지 — first-match라 맨뒤면 #5가 선점→새 규칙 死. gate는 순서 미검증→삽입위치=에이전트). **(b)폴더 승격=기존 MESSY 파이프라인**(two-oracle·링크리라이트). | 규칙변경 무게가 케이스별 극단 → 명시 분기. 검증된 파이프라인 재사용, 전용도구 안 만듦. | rev6 N7 + rev8 append 死룰 |
-| **N8** | 맵 추출 폐기 — 마커 AGENTS.md 인라인, 소유권 섹션 단위. gate·자동주입 무변경. | F1(gate BFS)·F8(자동주입) 봉쇄. 코드로 해결 확인. | rev6 N8 |
+| **N8** ⚠️재오픈 | 맵 추출 폐기 — 마커 AGENTS.md 인라인, 소유권 섹션 단위. gate·자동주입 무변경. | ~~F1(gate BFS)~~ **거짓(rev9 F9): 일반 마크다운 링크면 gate 통과(실측).** 인라인 결정은 다른 근거(구현표면·파일수·누출)로 **재도출 필요.** | rev6 N8 |
 | **N9** | 동결=산문 규칙(frontmatter 우선, 오라클 없음 정직), 상태·인덱스·템플릿 예외 | 폴더 denylist가 살아있는 인덱스 삼킴(F3·F4). 단 기계 아님. | rev6 N9 |
 | **N10** | 실행 끝 항상 요약(계층별 강조 + git diff 포인터=리뷰 surface) | 무프롬프트 안전선이 커밋리뷰라 가시성 필수 | — |
 
@@ -154,7 +155,8 @@ routing 규칙 도달 가능?
 - **OQ-d:** 릴리스 서명 강도 — M5.
 
 ## 10. 상태
-- **리뷰 대기(rev8). 최종 검증은 새 세션에서 진행 예정.** 승인 전 구현 금지.
+- **리뷰 대기(rev9) — 미해결 재오픈 있음. 최종 검증은 새 세션에서 진행 예정.** 승인 전 구현 금지.
+- **⚠️ rev9 자가감사로 재오픈된 것(미해결):** N8(인라인 근거 F9 거짓 → 인라인 vs 경량 중추 재도출) · F10(gate 루트 AGENTS/CLAUDE만 → GEMINI 등 지원범위 모순) · F11(규칙 불변 산문뿐·동결/인덱스 충돌) · F12(룰#4 co-change 루틴 미발동) · F14(docsherpa_frozen 누출) · F15(refresh 자동커밋 posture) · F13(UPDATE 심볼 앵커 미명시).
 - **기존 코드에 대조해 검증된 것:** N8 인라인(gate 무변경, `gate.py`/`scaffold.py` 확인) · N6 content_oracle 마이그레이션 복귀(`content_oracle.py`). **§3.1~3.4 sidecar/refresh·N10 끝요약은 설계·교차검증 완료이나 코드 미구현(TDD T1~T10) — '코드 검증' 아님.**
 - **정직화 트림 반영(rev7):** auto-CREATE first-match · "기계" 라벨 철회 · S6/S7 패러프레이즈 정직 · 규칙모드 (a)/(b) 분기.
 - **정직화 마감 반영(rev8):** refresh 트리거=doc-reconcile step0 확정 · '코드 검증 완료' 오기 정정 · N1 3면 편집(setup-docs §7.5·doc-reconcile 주석·AGENTS.md) · N7(a) catch-all 앞 삽입(append 死룰 봉쇄) · content_oracle dedup·S7 도달성·N5 승인흐름·릴리스서명(M5) 캐비엇.
@@ -178,3 +180,13 @@ rev7이 정직화를 표방하고도 남긴 구멍 5개를 닫음:
 - **[버그] N7(a) append 死룰:** first-match+맨뒤 append → catch-all #5가 선점해 새 규칙 미발동, gate는 순서 미검증 → **#5 앞 삽입**으로 정정.
 - **[정직] 캐비엇 추가:** content_oracle dedup(인스턴스 미보존) · S7 도달성(에이전트 링크+gate 사후) · 릴리스 서명(M5 미정) · N5 무프롬프트 vs 현행 승인-우선 출력 충돌.
 - **North Star 실질 안전(architect 판정):** 진짜 내용보존은 gate+content_oracle+scaffold이지 §7.5가 아니므로 N1은 정체성 위협 아님. 단 `AGENTS.md:18`의 §7.5 인용은 원래부터 용어 오귀속 → 수정.
+### rev9 자가감사 — "문서링크=주석" 오개념이 드러낸 추가 구멍 (F9~F15, 미해결)
+계기: 진행자가 문서 링크를 HTML 주석으로 오인해온 게 드러나, gate.py를 **실측**(얇은 CLAUDE.md → 일반 마크다운 링크 → 별도 맵 문서, AGENTS.md 없이 `orphan=0 PASS`)하며 계획 전반 재감사.
+- **[근거 거짓] F9 — 맵 추출 기각:** "맵 externalize → gate BFS 붕괴"는 **주석-포인터 strawman에만 참.** 일반 마크다운 링크면 gate가 재귀적으로 따라가 통과(실측). 이 전제가 계획 10곳에 전파, N8이 부분적으로 이 근거로 rev5를 supersede → **N8 재오픈.** 인라인 결정은 다른 근거(구현표면·파일수·브랜드 누출)로 **재도출 필요.** rev4-5의 맵은 전용도구+커스텀포맷+주석포인터 **묶음**으로 왔고, rev6이 통째로 버리며 경량 마크다운 중추(정상 링크)까지 함께 버림 — 그 형태는 독립 평가된 적 없음.
+- **[범위 모순] F10 — gate 루트:** `gate.py:77`이 AGENTS.md·CLAUDE.md만 루트. 그러나 setup-docs가 GEMINI.md 등 "같은 패턴" 지원 주장(`setup-docs/SKILL.md:143`) → GEMINI-only repo는 진입점 못 찾아 전 문서 orphan. **주장 지원범위 > 기계 실지원.**
+- **[과장] F11 — 규칙 불변·동결 충돌:** "doc-reconcile은 규칙 절대 안 바꾼다"는 **산문 규율뿐**(두 마커 동일 파일, 기계강제 0). + N9 동결 휴리스틱("첫 `##` 이후 본문")이 doc-reconcile이 반드시 append하는 index 섹션과 겹침 — "인덱스 예외"가 `docsherpa:index` 마커 기준(안전)인지 헤딩 기준(취약)인지 **미명시.**
+- **[자가성장 구멍] F12 — 룰#4 死:** 라우팅 룰#4(co-change ≥2 → 폴더 승격)는 first-match+단건 CREATE에선 영영 안 걸림. 규칙drift 신고는 "없는 규칙 추가"용이지 "기존 평면문서 묶기"(룰#4) 트리거가 아님 → **콘텐츠가 평면으로만 자라고 절대 안 뭉침.**
+- **[일관성] F14 — 브랜드 누출:** N9의 `docsherpa_frozen` frontmatter = 사용자 문서에 우리 브랜드 키 주입 → **ADR 0010**(docsherpa-* 스킬명 거부)과 모순.
+- **[posture] F15 — 자동 커밋:** refresh §3.2 step6이 사용자 git 히스토리에 무프롬프트 커밋 → "보조 not 주인"과 긴장(clean tree 조건이 막긴 함).
+- **[명확화] F13 — grep 앵커:** UPDATE는 값이 아니라 **심볼 앵커**로 grep해야 작동("3" grep 무의미, "MAX_RETRY" 유효) — 미명시.
+- **관통 패턴:** ①기계 주장 vs 실제 산문/휴리스틱 ②주장 지원범위 > 실지원 ③브랜드·주인 vs 보조 정체성. **모두 미해결 — 다음 단계는 F9/F10 중심 "인라인 vs 경량 중추" 재설계(cross-verify 권장).**
