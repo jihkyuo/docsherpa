@@ -32,6 +32,43 @@ def test_require_markers_passes_when_present(tmp_path):
     assert gate.main([str(tmp_path), "--require-markers"]) == 0
 
 
+def _write_home(p):
+    p.write_text(
+        "# r\n## 인덱스 <!-- docsherpa:index -->\n- [a](docs/a.md)\n\n"
+        "## 라우팅 <!-- docsherpa:routing -->\n1. 결정 → decisions/\n",
+        encoding="utf-8")
+
+
+def test_require_markers_passes_with_single_home(tmp_path):
+    _write_home(tmp_path / "AGENTS.md")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "a.md").write_text("# a\n", encoding="utf-8")
+    import gate
+    assert gate.main([str(tmp_path), "--require-markers"]) == 0
+
+
+def test_require_markers_ignores_prose_quote_of_markers(tmp_path):
+    # 마커를 본문에서 인용하는 문서는 home으로 세지 않는다(false-home 방지).
+    _write_home(tmp_path / "AGENTS.md")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "a.md").write_text(
+        "# a\n마커 <!-- docsherpa:index --> <!-- docsherpa:routing --> 설명.\n",
+        encoding="utf-8")
+    import gate
+    assert gate.main([str(tmp_path), "--require-markers"]) == 0  # home은 여전히 1개
+
+
+def test_require_markers_fails_on_two_homes(tmp_path):
+    _write_home(tmp_path / "AGENTS.md")
+    (tmp_path / "docs").mkdir()
+    # 두 번째 home(헤딩줄 마커). 깨진 링크 없이 써서 rc=1이 오직 두-home 감지에서 나오게 한다.
+    (tmp_path / "docs" / "a.md").write_text(
+        "# a\n## i <!-- docsherpa:index -->\n## g <!-- docsherpa:routing -->\n",
+        encoding="utf-8")
+    import gate
+    assert gate.main([str(tmp_path), "--require-markers"]) == 1  # 다수 → FAIL
+
+
 def test_gemini_only_repo_seeds_gate(tmp_path):
     # AGENTS/CLAUDE 없이 GEMINI.md만 있어도 gate가 그것을 루트로 삼아
     # 링크된 문서에 도달한다(F10 봉쇄).

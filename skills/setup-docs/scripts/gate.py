@@ -118,11 +118,23 @@ def main(argv=None):
     orphans = [d for d in all_docs if d.resolve() not in visited]
 
     markers_ok = True
+    marker_msg = ""
     if require_markers:
-        agents = root / "AGENTS.md"
-        markers_ok = agents.is_file() and check_markers.has_contract_markers(
-            agents.read_text(encoding="utf-8", errors="ignore")
-        )
+        scanned = []
+        for p in visited:
+            try:
+                scanned.append((p, p.read_text(encoding="utf-8", errors="ignore")))
+            except OSError:
+                pass
+        homes = contract.find_marker_home(scanned)
+        markers_ok = len(homes) == 1
+        if len(homes) == 0:
+            marker_msg = ("마커 home 없음: 도달 가능한 문서 중 "
+                          f"{contract.ROUTING_MARKER}·{contract.INDEX_MARKER}를 "
+                          "헤딩줄에 함께 가진 파일이 필요하다.")
+        elif len(homes) > 1:
+            rels = ", ".join(str(h.relative_to(root)) for h in homes)
+            marker_msg = f"마커 home 중복(정확히 1개여야): {rels}"
 
     ok = not broken and not orphans and markers_ok
     print(f"{'PASS' if ok else 'FAIL'}: broken={len(broken)} orphan={len(orphans)} "
@@ -138,7 +150,7 @@ def main(argv=None):
         for d in orphans:
             print(f"  {d.relative_to(root)}")
     if require_markers and not markers_ok:
-        print("\n마커 누락: AGENTS.md에 <!-- docsherpa:routing -->·<!-- docsherpa:index --> 둘 다 필요.")
+        print("\n" + marker_msg)
 
     return 0 if ok else 1
 
