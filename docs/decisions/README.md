@@ -15,3 +15,4 @@
 | [0007](0007-hook-trust-model.md) | 훅 신뢰 모델(harness 승인 게이트 의존) | 수락 | 2026-07-04 |
 | [0008](0008-language-agnostic-markers.md) | 섹션명 계약 = 언어-불문 마커 | 수락 | 2026-07-04 |
 | [0009](0009-narrow-doc-reconcile-triggers.md) | doc-reconcile 트리거를 SessionStart+수동으로 좁힘 | 수락 | 2026-07-04 |
+| [0010](0010-skill-names-doc-family.md) | 스킬 이름 = `doc-*` 패밀리(`doc-setup`+`doc-reconcile`, 구현 이연) | 수락 | 2026-07-05 |
