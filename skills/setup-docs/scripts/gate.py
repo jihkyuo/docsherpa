@@ -25,6 +25,7 @@ from collections import deque
 from pathlib import Path
 
 import check_markers
+import contract
 
 LINK_RE = re.compile(r"\]\(([^)]+)\)")           # 마크다운 링크 ](target)
 IMPORT_RE = re.compile(r"(?:^|\s)@([^\s)]+\.md)")  # @path.md import
@@ -74,9 +75,11 @@ def main(argv=None):
     argv = [a for a in argv if a != "--require-markers"]
     root = Path(argv[0] if argv else ".").resolve()
 
-    roots = [p for p in (root / "AGENTS.md", root / "CLAUDE.md") if p.is_file()]
+    roots = [root / name for name in contract.ENTRY_FILENAMES
+             if (root / name).is_file()]
     if not roots:
-        print(f"FAIL: 진입 라우터 없음 — {root}/AGENTS.md (또는 CLAUDE.md) 가 필요하다.")
+        names = " / ".join(contract.ENTRY_FILENAMES)
+        print(f"FAIL: 진입 라우터 없음 — {root}에 {names} 중 하나가 필요하다.")
         return 1
 
     broken = []        # (소스파일, raw타겟)

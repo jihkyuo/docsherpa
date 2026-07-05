@@ -32,6 +32,18 @@ def test_require_markers_passes_when_present(tmp_path):
     assert gate.main([str(tmp_path), "--require-markers"]) == 0
 
 
+def test_gemini_only_repo_seeds_gate(tmp_path):
+    # AGENTS/CLAUDE 없이 GEMINI.md만 있어도 gate가 그것을 루트로 삼아
+    # 링크된 문서에 도달한다(F10 봉쇄).
+    (tmp_path / "GEMINI.md").write_text(
+        "# g\n- [스펙](docs/spec.md)\n", encoding="utf-8")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "spec.md").write_text("# spec\n", encoding="utf-8")
+    import gate
+    rc = gate.main([str(tmp_path)])
+    assert rc == 0  # broken=0 orphan=0 — GEMINI.md에서 도달
+
+
 def test_links_inside_code_fences_are_not_broken(tmp_path):
     # 코드 펜스 안 링크는 예시일 뿐 — live 링크 아님(고아/broken으로 세면 안 됨).
     (tmp_path / "AGENTS.md").write_text(
