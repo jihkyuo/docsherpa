@@ -8,7 +8,7 @@ import json
 import shutil
 from pathlib import Path
 
-from check_markers import ROUTING_MARKER, INDEX_MARKER
+from contract import ROUTING_MARKER, INDEX_MARKER, MAP_MARKER
 from inject_claude_md import inject_claude_md_file
 from merge_settings import merge_settings_file
 
@@ -27,6 +27,28 @@ _ROUTING_SECTION = f"""## 문서 라우팅 룰 (새 문서가 어디로) {ROUTIN
 3. 기능 스펙(무엇을) → docs/specs/<feature>/ + plans/
 4. 함께 읽혀야 할 문서 ≥2개(co-change) → docs/<topic>/ 승격, 리드 문서가 인덱스
 5. 그 외 단일 reference/explanation → docs/ 평면 [디폴트]
+※ 증상 alias는 별도 troubleshooting 문서 말고 주인 문서(한계·개념)에 넣는다.
+
+불변식: 새 문서는 반드시 위 인덱스에 등록(고아 방지) → broken=0·orphan=0 확인
+"""
+
+# N11 spine: routing·index 마커의 home. 진입 라우터가 docsherpa:map 링크로 이 파일을 가리킨다.
+# 맵이 docs/ 안에 살므로 인덱스 링크는 docs/ 접두어 없이(gate는 포함 파일 기준 해석).
+_MAP_DOC = f"""# 문서 지도 (라우팅·인덱스)
+
+> 이 저장소의 문서 지도. 진입 라우터가 이 파일을 가리킨다. 상세는 필요할 때만 읽는다.
+
+## 먼저 읽기 (문서 인덱스 — 진입점만, 린) {INDEX_MARKER}
+- 결정 기록(ADR) → [결정 기록](decisions/README.md)
+- 작업 가이드 → [작업 가이드](how-to/)
+
+## 문서 라우팅 룰 (새 문서가 어디로) {ROUTING_MARKER}
+분류 순서대로 판정(위에서 먼저 맞는 것):
+1. 구조적 결정(왜) → decisions/NNNN-*.md (_template 복사) + README 로그 추가
+2. 절차/복구(어떻게) → how-to/*.md (3개↑면 _README 인덱스화)
+3. 기능 스펙(무엇을) → specs/<feature>/ + plans/
+4. 함께 읽혀야 할 문서 ≥2개(co-change) → <topic>/ 승격, 리드 문서가 인덱스
+5. 그 외 단일 reference/explanation → 평면 [디폴트]
 ※ 증상 alias는 별도 troubleshooting 문서 말고 주인 문서(한계·개념)에 넣는다.
 
 불변식: 새 문서는 반드시 위 인덱스에 등록(고아 방지) → broken=0·orphan=0 확인
@@ -62,6 +84,23 @@ def write_router(repo_root, project_name: str = "[프로젝트명]") -> bool:
         parts.append(_ROUTING_SECTION)
     suffix = "" if text.endswith("\n") else "\n"
     path.write_text(text + suffix + "\n" + "\n".join(parts), encoding="utf-8")
+    return True
+
+
+def write_map(repo_root) -> bool:
+    """진입 라우터가 맵을 가리킬 때만(docsherpa:map) docs/_map.md를 없으면 생성. changed? 반환.
+
+    라우터가 맵을 안 가리키면(인라인 healthy or 부재) no-op — 두 번째 home을 만들지 않는다."""
+    root = Path(repo_root)
+    router = root / "AGENTS.md"
+    if not router.is_file() or MAP_MARKER not in router.read_text(
+            encoding="utf-8", errors="ignore"):
+        return False
+    path = root / "docs" / "_map.md"
+    if path.exists():
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_MAP_DOC, encoding="utf-8")
     return True
 
 

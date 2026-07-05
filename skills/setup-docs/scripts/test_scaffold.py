@@ -2,6 +2,7 @@ import json
 import pytest
 import gate
 import scaffold
+import contract
 
 ROUTING = "<!-- docsherpa:routing -->"
 INDEX = "<!-- docsherpa:index -->"
@@ -100,3 +101,28 @@ def test_write_router_appends_only_missing_marker_section(tmp_path):
     out = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
     assert out.count(INDEX) == 1        # 중복 안 됨
     assert out.count(ROUTING) == 1      # 추가됨
+
+
+def test_write_map_creates_map_with_markers_on_headings(tmp_path):
+    # 라우터가 맵을 가리킬 때만 맵을 만든다 — 진입파일에 map 마커 선재.
+    (tmp_path / "AGENTS.md").write_text(
+        f"# R\n## 문서 지도 {contract.MAP_MARKER}\n- → [문서 지도](docs/_map.md)\n",
+        encoding="utf-8")
+    changed = scaffold.write_map(tmp_path)
+    assert changed is True
+    text = (tmp_path / "docs" / "_map.md").read_text(encoding="utf-8")
+    assert contract.is_marker_home(text) is True          # 두 마커가 헤딩줄에
+
+
+def test_write_map_idempotent(tmp_path):
+    (tmp_path / "AGENTS.md").write_text(
+        f"# R\n{contract.MAP_MARKER}\n", encoding="utf-8")
+    assert scaffold.write_map(tmp_path) is True
+    assert scaffold.write_map(tmp_path) is False          # 이미 있으면 no-op
+
+
+def test_write_map_noop_when_router_does_not_point_to_map(tmp_path):
+    # 라우터가 맵을 안 가리키면(인라인 healthy or map 마커 부재) 맵을 만들지 않는다 — 두 home 방지.
+    (tmp_path / "AGENTS.md").write_text("# R\n## 인라인\nno map marker\n", encoding="utf-8")
+    assert scaffold.write_map(tmp_path) is False
+    assert not (tmp_path / "docs" / "_map.md").exists()
