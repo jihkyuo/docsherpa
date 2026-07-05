@@ -9,7 +9,7 @@ PLUG = scaffold.plugin_root()   # 실제 플러그인 루트(prime·doc-reconcil
 def _assert_installed_and_reachable(repo):
     # 마커 계약 + 도달성 동시 통과
     assert gate.main([str(repo), "--require-markers"]) == 0
-    assert has_contract_markers((repo / "AGENTS.md").read_text(encoding="utf-8"))
+    assert has_contract_markers((repo / "docs/_map.md").read_text(encoding="utf-8"))
     # hollow 아님 — 구체 산출물
     dec = (repo / "docs/decisions/README.md").read_text(encoding="utf-8")
     assert "](_template.md)" in dec

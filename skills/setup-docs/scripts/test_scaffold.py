@@ -10,11 +10,14 @@ INDEX = "<!-- docsherpa:index -->"
 
 def test_greenfield_router_and_docs_pass_marker_gate(tmp_path):
     scaffold.write_router(tmp_path, "Demo")
+    scaffold.write_map(tmp_path)
     scaffold.write_docs_skeleton(tmp_path)
     # 마커 계약 + 도달성(broken=0·orphan=0) 동시 통과
     assert gate.main([str(tmp_path), "--require-markers"]) == 0
+    mp = (tmp_path / "docs" / "_map.md").read_text(encoding="utf-8")
+    assert ROUTING in mp and INDEX in mp                  # 마커는 맵에 산다
     router = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
-    assert ROUTING in router and INDEX in router
+    assert contract.MAP_MARKER in router                  # 라우터엔 맵 링크만
 
 
 def test_docs_skeleton_not_hollow(tmp_path):
@@ -32,10 +35,13 @@ def test_existing_router_markers_appended_preserving_content(tmp_path):
         "# Guide\n## Always Rules\n- custom project rule XYZ\n", encoding="utf-8"
     )
     changed = scaffold.write_router(tmp_path, "Demo")
+    scaffold.write_map(tmp_path)
     out = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
     assert changed is True
     assert "custom project rule XYZ" in out               # 기존 보존
-    assert ROUTING in out and INDEX in out                # 마커 주입됨
+    assert contract.MAP_MARKER in out                     # 맵 링크 주입됨
+    mp = (tmp_path / "docs" / "_map.md").read_text(encoding="utf-8")
+    assert ROUTING in mp and INDEX in mp                  # 마커는 맵에
 
 
 def test_write_router_idempotent(tmp_path):
@@ -94,13 +100,14 @@ def test_scaffold_jsonc_settings_is_atomic(tmp_path):
     assert not (tmp_path / "AGENTS.md").exists()                         # 부분 설치 방지
 
 
-def test_write_router_appends_only_missing_marker_section(tmp_path):
-    # INDEX 마커만 있고 ROUTING 없음 — ROUTING만 추가돼야(INDEX 중복 금지)
-    (tmp_path / "AGENTS.md").write_text(f"# G\n## Idx {INDEX}\n- a\n", encoding="utf-8")
-    scaffold.write_router(tmp_path, "Demo")
-    out = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
-    assert out.count(INDEX) == 1        # 중복 안 됨
-    assert out.count(ROUTING) == 1      # 추가됨
+def test_write_router_noop_on_existing_inline_markers(tmp_path):
+    # 구식 인라인 마커 라우터 → 맵 링크를 append하지 않는다(안 그러면 두 home). Slice B 몫.
+    (tmp_path / "AGENTS.md").write_text(
+        f"# G\n## Idx {INDEX}\n- a\n## Rules {ROUTING}\nr\n", encoding="utf-8")
+    changed = scaffold.write_router(tmp_path, "Demo")
+    assert changed is False                               # no-op
+    assert scaffold.write_map(tmp_path) is False          # 맵도 안 만듦
+    assert not (tmp_path / "docs" / "_map.md").exists()
 
 
 def test_write_map_creates_map_with_markers_on_headings(tmp_path):
@@ -126,3 +133,16 @@ def test_write_map_noop_when_router_does_not_point_to_map(tmp_path):
     (tmp_path / "AGENTS.md").write_text("# R\n## 인라인\nno map marker\n", encoding="utf-8")
     assert scaffold.write_map(tmp_path) is False
     assert not (tmp_path / "docs" / "_map.md").exists()
+
+
+def test_greenfield_scaffold_is_spine(tmp_path):
+    # 진입파일엔 map 마커·링크만(인라인 routing/index 0), 맵이 home, gate 두 모드 PASS.
+    scaffold.write_router(tmp_path, "Demo")
+    scaffold.write_map(tmp_path)
+    scaffold.write_docs_skeleton(tmp_path)
+    router = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    assert contract.MAP_MARKER in router                      # 맵 링크 마커
+    assert contract.ROUTING_MARKER not in router              # 인라인 아님
+    assert contract.INDEX_MARKER not in router                # 인라인 아님
+    assert gate.main([str(tmp_path)]) == 0                     # broken=0 orphan=0
+    assert gate.main([str(tmp_path), "--require-markers"]) == 0  # home=맵, 정확히 1

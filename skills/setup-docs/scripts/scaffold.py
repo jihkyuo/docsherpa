@@ -14,24 +14,6 @@ from merge_settings import merge_settings_file
 
 HOOK_CMD = "cat .claude/doc-drift-prime.txt 2>/dev/null || true"
 
-# greenfield에 존재가 보장되는 링크만(ARCHITECTURE.md 등 조건부 링크는 넣지 않음 — broken 방지).
-_INDEX_SECTION = f"""## 먼저 읽기 (문서 인덱스 — 진입점만, 린) {INDEX_MARKER}
-- 결정 기록(ADR) → [docs/decisions/README.md](docs/decisions/README.md)
-- 작업 가이드 → [docs/how-to/](docs/how-to/)
-"""
-
-_ROUTING_SECTION = f"""## 문서 라우팅 룰 (새 문서가 어디로) {ROUTING_MARKER}
-분류 순서대로 판정(위에서 먼저 맞는 것):
-1. 구조적 결정(왜) → docs/decisions/NNNN-*.md (_template 복사) + README 로그 추가
-2. 절차/복구(어떻게) → docs/how-to/*.md (3개↑면 _README 인덱스화)
-3. 기능 스펙(무엇을) → docs/specs/<feature>/ + plans/
-4. 함께 읽혀야 할 문서 ≥2개(co-change) → docs/<topic>/ 승격, 리드 문서가 인덱스
-5. 그 외 단일 reference/explanation → docs/ 평면 [디폴트]
-※ 증상 alias는 별도 troubleshooting 문서 말고 주인 문서(한계·개념)에 넣는다.
-
-불변식: 새 문서는 반드시 위 인덱스에 등록(고아 방지) → broken=0·orphan=0 확인
-"""
-
 # N11 spine: routing·index 마커의 home. 진입 라우터가 docsherpa:map 링크로 이 파일을 가리킨다.
 # 맵이 docs/ 안에 살므로 인덱스 링크는 docs/ 접두어 없이(gate는 포함 파일 기준 해석).
 _MAP_DOC = f"""# 문서 지도 (라우팅·인덱스)
@@ -54,36 +36,36 @@ _MAP_DOC = f"""# 문서 지도 (라우팅·인덱스)
 불변식: 새 문서는 반드시 위 인덱스에 등록(고아 방지) → broken=0·orphan=0 확인
 """
 
+# 진입 라우터가 맵으로 가는 링크 한 줄 + docsherpa:map 마커(도구가 링크 줄을 찾/보호).
+_MAP_LINK_SECTION = f"""## 문서 지도 {MAP_MARKER}
+- 라우팅·인덱스 → [문서 지도](docs/_map.md)
+"""
+
 
 def router_skeleton(project_name: str) -> str:
-    """마커 포함 최소 유효 AGENTS.md 텍스트."""
+    """마커는 docs/_map.md에 산다 — 라우터엔 맵 링크 한 줄만(N11 spine)."""
     return (
         f"# {project_name} 에이전트 가이드\n"
         "> 진입 라우터. 상세는 docs/를 필요할 때만 읽는다.\n\n"
         "## 항시 룰\n- 패키지/언어/배포: [채움]\n\n"
         "## 명령어\n- [채움: build/test/dev/lint]\n\n"
-        + _INDEX_SECTION + "\n" + _ROUTING_SECTION
+        + _MAP_LINK_SECTION
     )
 
 
 def write_router(repo_root, project_name: str = "[프로젝트명]") -> bool:
-    """AGENTS.md 없으면 skeleton 생성. 있고 마커 없으면 마커 섹션 append(기존 보존).
-    있고 마커 있으면 no-op. changed? 반환."""
+    """AGENTS.md 없으면 skeleton(맵 링크) 생성. 있고 계약 미충족이면 맵 링크 섹션 append(기존 보존).
+    이미 계약 충족(맵 링크 or 기존 인라인 마커)이면 no-op. changed? 반환."""
     path = Path(repo_root) / "AGENTS.md"
     if not path.exists():
         path.write_text(router_skeleton(project_name), encoding="utf-8")
         return True
     text = path.read_text(encoding="utf-8")
-    if ROUTING_MARKER in text and INDEX_MARKER in text:
+    # 이미 계약 충족 → 손대지 않음(인라인→맵 전환은 Slice B).
+    if MAP_MARKER in text or (ROUTING_MARKER in text and INDEX_MARKER in text):
         return False
-    # 번역/재작성된 기존 라우터 — 헤딩 매칭 대신, 빠진 마커 섹션만 append(기존 전부 보존, 중복 방지).
-    parts = []
-    if INDEX_MARKER not in text:
-        parts.append(_INDEX_SECTION)
-    if ROUTING_MARKER not in text:
-        parts.append(_ROUTING_SECTION)
     suffix = "" if text.endswith("\n") else "\n"
-    path.write_text(text + suffix + "\n" + "\n".join(parts), encoding="utf-8")
+    path.write_text(text + suffix + "\n" + _MAP_LINK_SECTION, encoding="utf-8")
     return True
 
 
@@ -184,6 +166,7 @@ def scaffold(repo_root, plugin_root_dir=None, project_name="[프로젝트명]") 
     return {
         "settings": settings,
         "router": write_router(repo_root, project_name),
+        "map": write_map(repo_root),
         "docs": write_docs_skeleton(repo_root),
         "claude_md": inject_claude_md_file(repo_root),
         "loop": install_loop_files(repo_root, plug),
