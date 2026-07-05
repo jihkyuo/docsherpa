@@ -1,8 +1,9 @@
-# doc-reconcile 최신화·유연화·자가성장 재설계 (Implementation Plan) — rev9
+# doc-reconcile 최신화·유연화·자가성장 재설계 (Implementation Plan) — rev10
 
 > **For agentic workers:** REQUIRED SUB-SKILL: 승인 후 superpowers:subagent-driven-development / executing-plans. **리뷰용 설계 문서** — 승인 전 구현 금지.
 > **rev8 상태:** 5라운드 교차검증(codex+architect) 수렴. **기존 코드에 대조해 검증된 것은 N8 인라인마커(gate 무변경)·N6 마이그레이션 oracle뿐이다.** sidecar/refresh(§3.1–3.4)·끝요약(N10)은 **설계·교차검증 완료이나 코드 미구현**(TDD T1–T10). rev8은 재설계가 아니라 **정직화 마감** — rev7이 남긴 자기-과장('코드 검증 완료' 오기)·refresh 트리거 부재·N1 편집 3면 중 1면 누락·N7 append 순서버그를 닫는다.
-> **⚠️ rev9 상태 (자가감사):** "문서 링크=주석" 진행자 오개념이 발단이 되어 전반 재감사. gate.py **실측**(얇은 CLAUDE.md → 일반 마크다운 링크 → 별도 맵 문서, AGENTS.md 없이 orphan=0 PASS)으로 **F9(맵 추출 기각 근거 거짓 — 일반 링크면 gate 통과) 판명 → N8 재오픈.** 추가 F10~F15. **미해결 — §13 rev9 참조. 최종 검증은 새 세션.**
+> **⚠️ rev9 상태 (자가감사):** "문서 링크=주석" 진행자 오개념이 발단이 되어 전반 재감사. gate.py **실측**(얇은 CLAUDE.md → 일반 마크다운 링크 → 별도 맵 문서, AGENTS.md 없이 orphan=0 PASS)으로 **F9(맵 추출 기각 근거 거짓 — 일반 링크면 gate 통과) 판명 → N8 재오픈.** 추가 F10~F15.
+> **rev10 상태 (spine 채택):** 사용자 결정 = **맵 중추 문서(N11, §3.8).** N8 뒤집힘. 패널(codex+architect)을 **올바른 프레임**(방향 확정·설계만 공격)으로 재검증 → **buildable 확인, 선결 4 blocker 도출**(커밋강제·locator·오라클·gate루트). BLOCKER-A는 **중간안 확정**(강제훅 안 넣음·sidecar 자가치유·opt-in훅·정직 라벨). **N11 초안 = 4 blocker 선결조건. 구현 승인 전 금지.**
 
 **Goal:** doc-reconcile을 **핵심(문서를 코드에 맞게 유지)만** 하게 쪼개고, 아키텍처 규칙 변경은 **setup-docs**로 라우팅. 임베드 최신화(sidecar)·유연성·안전한 자가성장. **안전 태세를 실제(진짜 기계 vs 에이전트 산문+커밋리뷰)에 정직히 맞춘다.**
 
@@ -26,7 +27,7 @@ doc-reconcile   문서를 코드에 맞게 유지 — 규칙(routing) 읽기만�
 
 **Tech Stack:** Python 3 stdlib only, pytest, Markdown 산문.
 
-**검증 이력:** rev1 consult → rev2 challenge+architect → rev3 자가비판 → rev4 설계대화+재검증 → rev5 3-tool → rev5 재검증(F1 gate BFS 붕괴 등) → rev6 2-tool 단순화 → rev6 재검증 → rev7 "기계" 과장 철회·auto-CREATE first-match 정정 → rev8 재검증(refresh 트리거·자기과장·N1·N7 死룰) → **rev9 자가감사: F9 맵기각 근거거짓(gate 실측)·F10 gate루트 범위모순·F11~F15, N8 재오픈.** §13.
+**검증 이력:** rev1 consult → rev2 challenge+architect → rev3 자가비판 → rev4 설계대화+재검증 → rev5 3-tool → rev5 재검증(F1 gate BFS 붕괴 등) → rev6 2-tool 단순화 → rev6 재검증 → rev7 "기계" 과장 철회·auto-CREATE first-match 정정 → rev8 재검증(refresh 트리거·자기과장·N1·N7 死룰) → rev9 자가감사(F9 맵기각 근거거짓·F10~F15, N8 재오픈) → **rev10: 맵 중추 문서(N11) 채택 — 올바른 프레임 패널로 buildable 확인, 선결 4 blocker.** §13.
 
 ## Global Constraints
 - **North Star (불가침):** 비파괴·내용 소실 0. 도달성 100%(gate)가 마이그레이션 내용소실 0의 **기계** 강제선. 루틴 편집은 커밋 리뷰가 net(기계 아님을 정직히).
@@ -55,9 +56,10 @@ P1(임베드 팀공유)·P2(최신화)·P3(유연성·자가성장).
 | **N5** | 계층 자율: 루틴 무프롬프트 자동(UPDATE·CREATE) / 규칙변경=setup-docs+승인. **루틴 안전선=커밋리뷰(기계 아님).** | 잦은 저위험 자동, 규칙변경만 게이트. | rev6 N5 |
 | **N6** | **안전 정직화.** 진짜 기계=refresh+gate+content_oracle(마이그레이션). doc-reconcile 루틴=에이전트+인용+커밋리뷰. UPDATE 자동=명확 리터럴만(좁음). | doc-reconcile 무스크립트 → "기계" 주장은 self-cert 재발. | rev6 N6("기계" 과장) |
 | **N7** | 규칙 변경=setup-docs. **(a)규칙-텍스트 추가=catch-all(#5) 앞 삽입+gate 재실행**(순수 append 금지 — first-match라 맨뒤면 #5가 선점→새 규칙 死. gate는 순서 미검증→삽입위치=에이전트). **(b)폴더 승격=기존 MESSY 파이프라인**(two-oracle·링크리라이트). | 규칙변경 무게가 케이스별 극단 → 명시 분기. 검증된 파이프라인 재사용, 전용도구 안 만듦. | rev6 N7 + rev8 append 死룰 |
-| **N8** ⚠️재오픈 | 맵 추출 폐기 — 마커 AGENTS.md 인라인, 소유권 섹션 단위. gate·자동주입 무변경. | ~~F1(gate BFS)~~ **거짓(rev9 F9): 일반 마크다운 링크면 gate 통과(실측).** 인라인 결정은 다른 근거(구현표면·파일수·누출)로 **재도출 필요.** | rev6 N8 |
+| **N8** ~~폐기~~ **정정→N11** | ~~맵 추출 폐기 — 인라인 유지~~ **뒤집힘.** 인라인 유지의 근거(F1 gate BFS 붕괴)가 rev9 F9로 거짓 판명(실측: 일반 링크면 gate 통과). 사용자 결정으로 **맵 중추 문서 채택**(§3.8 N11). | inline은 SPOF 없음이 장점이나, AGENTS.md 바쁜파일·없을수있음·얇은라우터 원칙이 우선. | **N11이 supersede** |
 | **N9** | 동결=산문 규칙(frontmatter 우선, 오라클 없음 정직), 상태·인덱스·템플릿 예외 | 폴더 denylist가 살아있는 인덱스 삼킴(F3·F4). 단 기계 아님. | rev6 N9 |
 | **N10** | 실행 끝 항상 요약(계층별 강조 + git diff 포인터=리뷰 surface) | 무프롬프트 안전선이 커밋리뷰라 가시성 필수 | — |
+| **N11** | **맵 중추 문서 채택**(§3.8). routing+index를 진입파일 밖 `docs/_map.md`(중립명)로 이전, 진입파일엔 `docsherpa:map` 마커 링크 한 줄. 4 blocker 선결(§3.8). | 사용자 결정: AGENTS.md는 바쁜파일·부재가능·얇은라우터 원칙. F9로 인라인 강제 근거 소멸. **패널(codex+architect, 올바른 프레임) 재검증: buildable 확인.** | **N8** |
 
 ## 3. 메커니즘
 
@@ -108,6 +110,19 @@ routing 규칙 도달 가능?
 - **확인/외부:** UPDATE 모호·산문(에이전트가 커밋리뷰에 노출) · **규칙 변경(setup-docs, 승인).**
 - **끝 요약(항상):** 📝갱신N·🆕신설M · ⚙️refresh(있으면) · ⚠️규칙drift 신고(강조) · **→ git diff로 검토(안전 surface).** 무변경 시 `Docs-Impact: none`.
 
+### 3.8 맵 중추 문서 (N11 — N8 뒤집음, rev10)
+**결정:** routing+index 마커를 진입파일 밖 **중립명 맵 문서**(`docs/_map.md`)로 이전. 진입파일(AGENTS/CLAUDE/GEMINI 중 primary)엔 **마크다운 링크 한 줄 + `<!-- docsherpa:map -->` 마커**만 남긴다(주석이 링크가 아니라, 링크 줄을 도구가 찾/보호하는 마커). gate는 그 링크를 재귀 BFS로 따라가 맵에 도달(rev9 F9 실측: 일반 링크면 통과). 근거: AGENTS.md는 ①바쁜 파일(중추 휩쓸림) ②부재 가능(CLAUDE-only) ③얇은 라우터 원칙 → 별도 중추가 정합. 루트 footprint "2마커+~30줄"→"1마커+1링크"로 **감소**(브랜드 누출 아님, home만 중립명).
+
+**선결 4 blocker (패널 codex+architect 수렴, 전부 spine 유지하며 해결):**
+- **A · 커밋시점 강제(identity — 확정 중간안):** 인라인은 중추가 gate 시드 안이라 *구조적으로* 도달보장이었으나, 맵은 링크 하나 뒤 → 삭제+무검사 커밋 시 조용히 orphan(파일은 남음, 연결만 끊김). **강제 pre-commit 훅 안 넣음**(보조 not 주인·무의존 원칙 위반). 대신 ①**맵 home 경로를 sidecar에 기록** → 삭제가능 링크와 독립된 설치신호 → doc-reconcile 자가치유가 진짜 작동(codex "치유근거 없음" 봉쇄) ②강한 커밋훅=**opt-in** ③**정직 라벨:** gate·oracle=진짜 기계, 도달성은 그 기계가 검사, 강제 시점=doc-reconcile/gate 실행 시(+opt-in 훅). **조용한 유실 아님 — gate가 잡아 내용소실 0 유지.**
+- **B · locator 구조화:** "본문에 두 마커 문자열" 순진탐색은 마커를 *설명*하는 문서(이 레포 `docs/DESIGN.md`·`0008-*.md`)를 false-home으로 잡음. → **펜스 제거 + `##` 헤딩 줄 끝 마커만** 인정, `--require-markers`에서만, **visited 전체**(진입파일 포함) 스캔, **정확히 1 home** 강제.
+- **C · 오라클 투명(우아):** relpath 리라이트가 세그먼트 key 변경→content_oracle FAIL. → 인덱스 링크의 **표시 텍스트를 "결정 기록(ADR)" 같은 사람-라벨로, 경로는 URL 자리에만** 둔다(경로를 링크 텍스트로 쓰지 않음). normalize가 URL을 제거하므로 relpath가 바뀌어도 key 불변 → 리라이트가 oracle에 투명. (⚠️ 이 계획서 자체도 인라인 백틱 속 링크 문법이 gate에 잡히니 주의.)
+- **D · gate 루트:** ENTRY_FILENAMES의 **.md 부분집합만** 루트로. 비-md 진입(.cursorrules 등)은 **미지원 명시**(도달성 검사 링크 못 앵커).
+
+**나머지(blocker 후 기계적):** 인라인→맵 마이그레이션=**기존 MESSY 두-오라클 파이프라인 재사용**(원자성·STOP-on-loss) · 동결 예외=`docsherpa:index` **마커 기준**(맵의 첫 `##`가 index라 헤딩 휴리스틱은 전체 동결) · 다중진입=우선순위 **primary 1개**만 링크(중복 map-link 금지) · gate에 **줄 단위 파싱**(Target: source_line 필요) · **contract 모듈 먼저**(안 그러면 split-brain home 정의).
+
+**과설계 금지(architect 기각):** ①ordering 데드락 **없음**(BFS는 home-무관, visited 먼저 생성 후 locator 사후스캔; 링크끊긴 맵은 docs/ orphan으로 구분됨) — 부트스트랩 기계 만들지 마라. ②브랜드 누출 **감소지 regression 아님**(ADR 0010은 스킬*이름* 브랜드 거부, HTML 마커는 D8로 수용) — 누출 고치는 코드 만들지 마라.
+
 ## 4. 시나리오
 - **S1 refresh:** clean+서명OK+상위버전 → 무프롬프트 자동+별도커밋. ✓(진짜 기계)
 - **S2~S4:** downgrade 차단 / hash-dirty 보존 / 무-sidecar 보존 = write 스킵. ✓
@@ -144,7 +159,7 @@ routing 규칙 도달 가능?
 3. **N1 특화 폐기**+임베드 범용화·sidecar. **3면 모두 편집:** (i) `test_doc_reconcile_portable.py` 앵커-assert 삭제(T17) (ii) `setup-docs/SKILL.md §7.5 step5`(앵커 특화 절차) 삭제 (iii) `doc-reconcile/SKILL.md`의 `docsherpa:anchors` 경계 주석("setup-docs가 특화한다") 정정 — 블록은 범용 유지, '특화' 문구 제거.
 4. **N4·N6 doc-reconcile 핵심(산문 개정):** UPDATE(명확 리터럴 자동/모호·패러프레이즈 미탐지 정직) + CREATE(first-match 배치+index) + drift 신고. **"기계 보증" 문구 제거, "커밋리뷰 net" 명시.** content_oracle을 UPDATE에서 제외(T11~T13·T18). **+ N9 동결 산문규칙**(frontmatter `docsherpa_frozen` 우선 + 휴리스틱 fallback)을 §손대지말것에 추가(T14).
 5. **N7 setup-docs 규칙변경:** (a)텍스트append+gate / (b)승격=MESSY 명시 분기(T15).
-6. **N8 인라인 유지 확인:** write_router·gate 무변경 회귀(T16).
+6. ~~**N8 인라인 유지 확인**~~ **→ N11 대체(rev10):** 인라인 유지 폐기. 대신 **맵 중추 문서(§3.8)** 구현 — contract 모듈 먼저 → locator(헤딩줄·유일성)·gate 루트(.md ENTRY_FILENAMES)·사람-라벨 인덱스·sidecar home 기록·인라인→맵 마이그레이션(MESSY 파이프라인). **4 blocker 선결 후 착수.** (T16은 spine 회귀 테스트로 재작성.)
 7. **N5·N10 자율계층+끝요약(커밋리뷰 surface).** N2 프라임. **N5 무프롬프트 자동은 현행 doc-reconcile "먼저 요약 제안→갱신할까요?" 승인-우선 출력과 충돌 → 출력/승인 산문을 티어별로 개정**(자동=명확 리터럴 UPDATE·first-match CREATE / 확인=모호 UPDATE·규칙변경). 끝요약(N10)은 신규 산문(미구현, '코드 검증' 아님).
 8. **ADR + 도달성:** D4 supersede·R4 재정의·N4/N5/N6/N7/N9 ADR + `decisions/README.md` + DESIGN §9 parity 재베이스 + 이 계획 인덱스 등록. **+ `AGENTS.md` 따름원칙(18행) 수정: "§7.5 앵커 재특화" 인용 제거**(N1이 삭제한 메커니즘) — 내용·앵커 보존을 gate+content_oracle+scaffold append-only로 재귀속, 사용자 "내용 앵커" vs doc-reconcile "드리프트 휴리스틱 앵커" 용어 분리.
 
@@ -155,8 +170,9 @@ routing 규칙 도달 가능?
 - **OQ-d:** 릴리스 서명 강도 — M5.
 
 ## 10. 상태
-- **리뷰 대기(rev9) — 미해결 재오픈 있음. 최종 검증은 새 세션에서 진행 예정.** 승인 전 구현 금지.
-- **⚠️ rev9 자가감사로 재오픈된 것(미해결):** N8(인라인 근거 F9 거짓 → 인라인 vs 경량 중추 재도출) · F10(gate 루트 AGENTS/CLAUDE만 → GEMINI 등 지원범위 모순) · F11(규칙 불변 산문뿐·동결/인덱스 충돌) · F12(룰#4 co-change 루틴 미발동) · F14(docsherpa_frozen 누출) · F15(refresh 자동커밋 posture) · F13(UPDATE 심볼 앵커 미명시).
+- **리뷰 대기(rev10). 구현 승인 전 금지.**
+- **rev10 결정(spine 채택):** N8 뒤집힘 → **N11 맵 중추 문서(§3.8).** 올바른-프레임 패널로 buildable 확인. **선결 4 blocker**(A 커밋강제=중간안 확정 / B locator 헤딩줄·유일성 / C 사람-라벨 인덱스 / D gate루트 .md ENTRY_FILENAMES). contract 모듈 먼저, 인라인→맵 마이그레이션=MESSY 파이프라인.
+- **여전히 미해결(N11과 독립, 순차):** F11(동결 예외=마커기준, §3.8이 강제) · F12(룰#4 co-change 死) · F13(UPDATE 심볼앵커) · F14(docsherpa_frozen 누출) · F15(refresh 자동커밋 posture).
 - **기존 코드에 대조해 검증된 것:** N8 인라인(gate 무변경, `gate.py`/`scaffold.py` 확인) · N6 content_oracle 마이그레이션 복귀(`content_oracle.py`). **§3.1~3.4 sidecar/refresh·N10 끝요약은 설계·교차검증 완료이나 코드 미구현(TDD T1~T10) — '코드 검증' 아님.**
 - **정직화 트림 반영(rev7):** auto-CREATE first-match · "기계" 라벨 철회 · S6/S7 패러프레이즈 정직 · 규칙모드 (a)/(b) 분기.
 - **정직화 마감 반영(rev8):** refresh 트리거=doc-reconcile step0 확정 · '코드 검증 완료' 오기 정정 · N1 3면 편집(setup-docs §7.5·doc-reconcile 주석·AGENTS.md) · N7(a) catch-all 앞 삽입(append 死룰 봉쇄) · content_oracle dedup·S7 도달성·N5 승인흐름·릴리스서명(M5) 캐비엇.
@@ -189,4 +205,13 @@ rev7이 정직화를 표방하고도 남긴 구멍 5개를 닫음:
 - **[일관성] F14 — 브랜드 누출:** N9의 `docsherpa_frozen` frontmatter = 사용자 문서에 우리 브랜드 키 주입 → **ADR 0010**(docsherpa-* 스킬명 거부)과 모순.
 - **[posture] F15 — 자동 커밋:** refresh §3.2 step6이 사용자 git 히스토리에 무프롬프트 커밋 → "보조 not 주인"과 긴장(clean tree 조건이 막긴 함).
 - **[명확화] F13 — grep 앵커:** UPDATE는 값이 아니라 **심볼 앵커**로 grep해야 작동("3" grep 무의미, "MAX_RETRY" 유효) — 미명시.
-- **관통 패턴:** ①기계 주장 vs 실제 산문/휴리스틱 ②주장 지원범위 > 실지원 ③브랜드·주인 vs 보조 정체성. **모두 미해결 — 다음 단계는 F9/F10 중심 "인라인 vs 경량 중추" 재설계(cross-verify 권장).**
+- **관통 패턴:** ①기계 주장 vs 실제 산문/휴리스틱 ②주장 지원범위 > 실지원 ③브랜드·주인 vs 보조 정체성.
+### rev10 — 맵 중추 문서(N11) 채택 + 올바른-프레임 재검증
+**교훈(먼저):** rev9까지의 검증이 "inline으로 수렴"한 건 부분적으로 **프레이밍 편향**이었다 — "inline→spine 변경안을 적대적으로 검증하라"는 틀이 구조적으로 현상유지(inline)를 방어하게 만들었다(변경 비용만 세고 inline 자체 비용은 안 셈). 사용자가 이를 지적, 방향을 spine으로 확정하고 **프레임을 뒤집어**(방향 확정·설계만 공격) 재검증.
+- **패널 수렴(codex+architect):** spine은 **buildable**, 방향 부정 0. 선결 **4 blocker** 도출 → §3.8 N11에 반영. 전부 spine 유지하며 해결 가능.
+  - **A(identity):** 인라인은 중추가 gate 시드라 구조적 도달보장 / 맵은 링크 하나 뒤 → 도달성이 "구조보증→규율"로 강등 위험. **확정 중간안:** 강제훅 X · sidecar에 home 기록해 자가치유 실작동 · opt-in 훅 · 정직 라벨(조용한 유실 아님, gate가 잡음).
+  - **B:** 순진 마커탐색이 이 레포 `DESIGN.md`·`0008`을 false-home으로 잡음 → 헤딩줄 마커만·펜스제거·유일성.
+  - **C:** relpath가 oracle FAIL → 인덱스 링크를 사람-라벨 텍스트로(normalize가 URL제거→key 불변).
+  - **D:** gate 루트=ENTRY_FILENAMES의 .md만, 비-md 미지원 명시.
+- **architect 기각(과설계 방지):** ordering 데드락 없음(BFS home-무관) · 브랜드 누출은 감소지 regression 아님(footprint↓). → 부트스트랩·누출 기계 만들지 마라.
+- **미해결(이월):** F11(동결 예외 마커기준으로 §3.8이 답 강제)·F12(룰#4 死)·F13·F14·F15는 N11과 독립, 순차 처리. **N11 구현은 4 blocker 선결 후 승인.**
