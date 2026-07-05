@@ -11,4 +11,8 @@ M1 → M3 → M2 → M4 → M5. 각 계획은 writing-plans로 작성하고 RED-
 | M3 | [M3-setup-docs-installer.md](M3-setup-docs-installer.md) | setup-docs 설치자(마커 삽입·CLAUDE.md 주입·settings 병합·gate 마커) |
 | M4 | [M4-dogfooding.md](M4-dogfooding.md) | second-brain 독푸딩(behavioral parity + 커터오버 런북) |
 
+## 재설계 계획
+
+- [2026-07-05-doc-reconcile-freshness-redesign.md](2026-07-05-doc-reconcile-freshness-redesign.md) — doc-reconcile 최신화·유연화·자가성장 재설계(sidecar/refresh·2-tool·정직화). 리뷰 대기(rev8).
+
 상태·다음 할 일은 [FINDINGS.md](../../FINDINGS.md), 설계는 [DESIGN.md](../DESIGN.md).
