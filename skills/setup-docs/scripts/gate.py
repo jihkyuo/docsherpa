@@ -24,7 +24,6 @@ import sys
 from collections import deque
 from pathlib import Path
 
-import check_markers
 import contract
 
 LINK_RE = re.compile(r"\]\(([^)]+)\)")           # 마크다운 링크 ](target)
