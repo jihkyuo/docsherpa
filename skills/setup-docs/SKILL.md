@@ -8,7 +8,7 @@ description: 프로젝트 문서를 일관 아키텍처(AGENTS.md 라우터 + de
 ## Overview
 
 AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문서에 도달**하도록 문서 골격을 세운다:
-*얇은 진입 라우터 + 필요할 때 로드 + 끊김 없는 도달성*. 폴더는 "함께 읽어야 할 문서"가
+*얇은 진입 라우터 + 맵 중추 문서(routing·index home) + 필요할 때 로드 + 끊김 없는 도달성*. 폴더는 "함께 읽어야 할 문서"가
 생길 때만 만든다. 동작은 **외과적·멱등** — 기존 문서가 있으면 덮지 않고 병합·보존한다.
 
 **근거 정직성 (이 스킬의 철칙):** 원칙마다 근거등급 — 🟢권위 / 🟡판단 / 🔴열린질문.
@@ -55,7 +55,8 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
    `docs/how-to/_README.md`(반드시 `PLACEHOLDER` 명시). **그 외 폴더는 만들지 않는다**(MVD).
    `decisions/README.md`는 본문에 **`_template.md`로 가는 markdown 링크**를 반드시 포함한다
    (예: "결정마다 [`_template.md`](_template.md)를 복사") — 안 하면 `_template.md`가 고아가 된다.
-4. **라우팅 룰 + 도달성 불변식 삽입** (아래 라우팅 룰 블록 그대로).
+4. **맵 중추 문서 생성 + 진입파일 맵 링크** (아래 맵 문서 템플릿). routing·index는 `docs/_map.md`에,
+   진입파일엔 `docsherpa:map` 링크 한 줄만(N11·ADR 0011).
 5. **빈칸 채움.** 명령어·스택은 코드 읽어 채운다. 못 채우면 `<!-- TODO: ... -->`로 명시.
 6. **무결성 게이트.** `scripts/gate.py` 실행 → broken=0·orphan=0·도달성=100%. 실패 시 **STOP·보고**.
 
@@ -73,7 +74,7 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
    **아무것도 쓰지 않는다.** 실제 쓰기는 명시 승인(`--yes` 상당의 사용자 확정) 후에만.
 3. **결정론적 설치 실행.** 승인(대화형) 또는 `--yes`(비대화형) 후,
    `<skill>/scripts/scaffold.py`의 `scaffold(repo_root, project_name=...)`를 호출한다. 이 함수가
-   결정론적으로: 라우터 생성/마커 주입(기존 보존·append) + `docs/decisions`·`docs/how-to` 골격 +
+   결정론적으로: 라우터 생성(맵 링크, 기존 보존·append) + **맵 중추 문서 생성**(`write_map` — `docs/_map.md`) + `docs/decisions`·`docs/how-to` 골격 +
    `inject_claude_md_file`로 CLAUDE.md 안전 주입(없음/import/prepend/BOM/frontmatter) +
    `merge_settings_file`로 **`settings.json`(공유)** 훅 멱등 병합(기존 보존·dedup, `.local` 금지 D2) +
    prime/doc-reconcile 복사(+`<!-- docsherpa-scaffold: v<version> -->` 스탬프)를 수행하고, 무엇이
@@ -100,12 +101,14 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
 
 **클로버 금지 — 덮지 말고 병합·보존.**
 
-- **기존 `AGENTS.md` 있으면:** 기존 항시룰·명령어·인덱스를 **보존**한다. `## 문서 라우팅 룰`
-  섹션이 **없을 때만** 추가하고, 있으면 skip. 새 인덱스 줄은 중복 없을 때만 append.
-- **마커 계약(D8):** 라우팅/인덱스 섹션이 있으면(헤딩이 번역/재작성됐더라도 의미로 식별)
-  그 헤딩 줄 끝에 `<!-- docsherpa:routing -->`·`<!-- docsherpa:index -->`를 없을 때만 붙인다.
-  섹션 자체가 없어 새로 추가하는 경우엔 위 템플릿처럼 마커를 포함해 쓴다. 헤딩을 못 찾으면
-  마커를 억지로 넣지 말고 사용자에게 "라우팅/인덱스 섹션 위치 확인 필요"로 보고한다(조용한 오배치 금지).
+- **기존 `AGENTS.md` 있으면:** 기존 항시룰·명령어를 **보존**한다. 맵 링크(`<!-- docsherpa:map -->`)
+  섹션이 **없을 때만** 추가하고, 이미 계약(맵 링크 or 기존 인라인 마커)이 있으면 skip.
+- **마커 계약(D8·ADR 0011):** routing·index 마커는 **맵 중추 문서 `docs/_map.md`** 에 산다(진입파일
+  인라인 아님). 진입파일엔 맵으로 가는 링크 한 줄 + `<!-- docsherpa:map -->` 마커만. **그린필드**는
+  `scaffold`(`write_router`+`write_map`)가 맵을 만들고, **기존 인라인-마커 repo**는
+  `scaffold.migrate_inline_to_map`이 비파괴로(내용 verbatim 이동·링크 URL만 재작성, content_oracle
+  무손실) 맵으로 이관한다. home(두 마커를 헤딩 줄에 함께 가진 문서)은 도달 가능 문서 중 **정확히
+  1개**여야 하며 `gate.py --require-markers`가 강제한다.
 - **`CLAUDE.md`:** 없으면 `@AGENTS.md` 한 줄로 생성. 있고 이미 `@AGENTS.md`를 import하면 그대로 둔다.
 - **`docs/decisions/`:** 디렉터리 있으면 `_template.md`·`README.md` 중 **없는 것만** 생성.
 - **`docs/how-to/`:** `_README.md` 없을 때만 생성.
@@ -113,7 +116,7 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
 
 ### AGENTS.md 템플릿 (`[채움]`만 프로젝트별)
 
-> **정본은 `scripts/scaffold.py`의 `router_skeleton()`** — 아래 블록은 구조 설명용. 실제 생성은 scaffold가 한다.
+> **정본은 `scripts/scaffold.py`의 `router_skeleton()`** — 아래 블록은 구조 설명용. 실제 생성은 scaffold가 한다. routing·index 마커는 진입파일이 아니라 아래 **맵 중추 문서**에 산다(N11·ADR 0011).
 
 ```markdown
 # [프로젝트명] 에이전트 가이드
@@ -126,13 +129,8 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
 ## 명령어
 - [채움: build/test/dev/lint — 못 찾으면 <!-- TODO -->]
 
-## 먼저 읽기 (문서 인덱스 — 진입점만, 린) <!-- docsherpa:index -->
-- 코드 맵 → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)            [있으면만 — 없으면 줄 삭제]
-- 결정 기록(ADR) → [docs/decisions/README.md](docs/decisions/README.md)
-- 작업 가이드 → [docs/how-to/](docs/how-to/)
-- [프로젝트 reference 문서: 채움]
-
-[여기에 아래 "문서 라우팅 룰" 블록 그대로 삽입]
+## 문서 지도 <!-- docsherpa:map -->
+- 라우팅·인덱스 → [문서 지도](docs/_map.md)
 ```
 
 ⚠️ **인덱스 항목은 반드시 markdown 링크 `[라벨](경로)` 형태로 쓴다** — 게이트는 `](경로)`와
@@ -142,16 +140,28 @@ trailing slash(`[docs/how-to/](docs/how-to/)`)로 — 게이트가 그 안 `_REA
 
 `CLAUDE.md` 전체 = `@AGENTS.md` (한 줄). 다른 에이전트 파일(`GEMINI.md` 등)도 같은 패턴.
 
-### 문서 라우팅 룰 블록 (모든 프로젝트 동일 — 바꾸지 않음)
+### 맵 중추 문서 템플릿 (`docs/_map.md`)
+
+> **결정론 코어**(index의 decisions·how-to 링크 + routing 룰 전체)의 정본은 `scripts/scaffold.py`의 `_MAP_DOC` — scaffold가 생성한다. 아래 예시의 `[있으면만]`·`[채움]` 인덱스 줄(코드 맵·reference 문서)은 **에이전트가 프로젝트에 맞게 추가**한다(hollow 방지 — 확신되는 것만). 진입파일이 `docsherpa:map` 링크로 이 파일을 가리킨다. 맵이 `docs/` 안에 사므로 인덱스 링크는 `docs/` 접두어 없이 쓴다(gate는 링크 담은 파일 기준 해석; 루트 파일은 `../`).
 
 ```markdown
+# 문서 지도 (라우팅·인덱스)
+
+> 진입 라우터가 이 파일을 가리킨다. 상세는 필요할 때만 읽는다.
+
+## 먼저 읽기 (문서 인덱스 — 진입점만, 린) <!-- docsherpa:index -->
+- 코드 맵 → [코드 맵](ARCHITECTURE.md)            [있으면만 — 없으면 줄 삭제]
+- 결정 기록(ADR) → [결정 기록](decisions/README.md)
+- 작업 가이드 → [작업 가이드](how-to/)
+- [프로젝트 reference 문서: 채움]
+
 ## 문서 라우팅 룰 (새 문서가 어디로) <!-- docsherpa:routing -->
 분류 순서대로 판정(위에서 먼저 맞는 것):
-1. 구조적 결정(왜) → docs/decisions/NNNN-*.md (_template 복사) + README 로그 추가
-2. 절차/복구(어떻게) → docs/how-to/*.md (3개↑면 _README 인덱스화)
-3. 기능 스펙(무엇을) → docs/specs/<feature>/ + plans/
-4. 함께 읽혀야 할 문서 ≥2개(co-change) → docs/<topic>/ 승격, 리드 문서가 인덱스
-5. 그 외 단일 reference/explanation → docs/ 평면 [디폴트]
+1. 구조적 결정(왜) → decisions/NNNN-*.md (_template 복사) + README 로그 추가
+2. 절차/복구(어떻게) → how-to/*.md (3개↑면 _README 인덱스화)
+3. 기능 스펙(무엇을) → specs/<feature>/ + plans/
+4. 함께 읽혀야 할 문서 ≥2개(co-change) → <topic>/ 승격, 리드 문서가 인덱스
+5. 그 외 단일 reference/explanation → 평면 [디폴트]
 ※ 증상 alias는 별도 troubleshooting 문서 말고 주인 문서(한계·개념)에 넣는다.
 
 불변식: 새 문서는 반드시 위 인덱스에 등록(고아 방지) → broken=0·orphan=0 확인
@@ -216,6 +226,10 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
 ---
 
 ## 마이그레이션 파이프라인 (MESSY)
+
+> **인라인→맵 spine 이관은 별도 경로**: 기존 인라인 마커 repo(gate는 통과하는 HEALTHY)를 맵 구조로
+> 옮기는 건 `scaffold.migrate_inline_to_map`(결정론·비파괴·content_oracle 무손실)이 처리한다 —
+> 아래 임의-MESSY 재편 파이프라인과 구분(N11·ADR 0011).
 
 1. **진단 보고** — gate.py 출력 + 안티패턴 + 현재 트리를 아티팩트로 제시.
 2. **목표 구조 제안 (자체검증 후)** — 제안 트리를 임시로 빌드해 gate.py + content_oracle 둘 다

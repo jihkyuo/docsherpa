@@ -4,6 +4,11 @@
 
 - **상태:** M0·M1·M3·M2 · 자기-독푸딩 · **갭1(재사용 §7.5) 완료.** 다음 = **M5 공개**
   (second-brain 실제 커터오버는 사용자 정지점에 — 런북 `docs/plans/M4-dogfooding.md`).
+- **N11 맵 중추 문서(spine) — Plan 1·2·3 완료(2026-07-06):** 마커·계약 단일 소스(`contract.py`) +
+  gate 루트 일반화·단일-home locator(Plan 1) · 그린필드 맵 생성 `write_map`(Plan 2, Slice A) ·
+  인라인→맵 비파괴 마이그레이션 `migrate_inline_to_map` + **docsherpa 자가적용**(Plan 3, Slice B,
+  content_oracle unaccounted=0). ADR [0011](docs/decisions/0011-map-spine-document.md). **다음 =
+  Slice C**(sidecar home 기록·자가치유 — sidecar 인프라 미구축). 계획서 `docs/plans/2026-07-06-n11-*`.
 - **순서(재-시퀀싱):** M1 → M3 → M2 → M4 → 자기-독푸딩 → **갭1** → M5.
 - **갭1(재사용 §7.5) 완료 — 산문+마커, 코드 없음:** ① 정본 doc-reconcile 앵커 블록을
   `<!-- docsherpa:anchors:start/end -->`로 구분(가드가 강제 — 특화 대상 명확). ② SKILL 5단계에 "§7.5 특화"
@@ -43,7 +48,7 @@
   확인 후 중복 global setup-docs 제거. **먼저 writing-plans로 M4 계획 작성.**
 - **이어가려면 이 순서로 읽어라:** ① 이 파일 → ② `docs/DESIGN.md` §9(독푸딩·behavioral parity)·§10.3 →
   ③ `docs/plans/M2-portability-fixtures.md`(scaffold가 무엇을 하는지).
-- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **45 passed**).
+- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **70 passed**).
 - **핵심 계약:** doc-reconcile은 헤딩이 아니라 **마커**를 소비한다(D8) → M3의 마커 삽입과 맞물림.
   정본 doc-reconcile은 도메인 리터럴 0(가드 `test_doc_reconcile_portable.py`가 강제 — M3 후에도 GREEN).
 

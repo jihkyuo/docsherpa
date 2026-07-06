@@ -97,9 +97,10 @@ docsherpa/                          ← 새 public repo (GitHub)
   closeout · anti-hallucination.
 - **⚠️ phantom 게이트 제거(D9):** 현 description 3행의 *"pre-commit docs-impact 게이트가 막았을 때"*
   트리거를 삭제. 트리거 = **SessionStart prime + 수동 호출**로 재정의. (그 게이트는 미구현·보류.)
-- **섹션명 → 언어-불문 마커(D8):** doc-reconcile은 `## 문서 라우팅 룰`·`## 먼저 읽기` **문자열이
-  아니라** setup-docs가 그 헤딩 옆에 심는 HTML 마커(`<!-- docsherpa:routing -->` 등)를 참조.
-  번역·wording 변경에 불변.
+- **섹션명 → 언어-불문 마커(D8·[0011](decisions/0011-map-spine-document.md)):** doc-reconcile은
+  헤딩 **문자열이 아니라** HTML 마커(`<!-- docsherpa:routing -->` 등)를 참조. 마커는 N11(0011)에서
+  진입파일 인라인 → **맵 중추 문서 `docs/_map.md`** 로 이전됐고, doc-reconcile은 도달 가능한 문서
+  어디에 마커가 있든 섹션을 찾는다. 번역·wording·위치 변경에 불변.
 - **앵커 블록(범용 + graceful degrade):** second-brain 특이 예시(config.py→SPEC.md, edge type,
   ARCHITECTURE.md, CONCEPTS 3vs4, GIT.md/text-embedding-3-large, Claude/Haiku/openai 잔재)를
   일반형으로. **degrade는 조용한 no-op이 아니라 명시적**: 대상 문서 없으면 앵커를 `<!-- TODO:
