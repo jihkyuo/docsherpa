@@ -52,7 +52,7 @@ def _rewrite_urls(block, from_dir, to_dir):
 
     def repl(m):
         text, url = m.group(1), m.group(2)
-        if url.startswith(("http://", "https://", "mailto:", "tel:", "#")):
+        if url.startswith(("http://", "https://", "mailto:", "tel:", "#", "/")):
             return m.group(0)
         trailing = "/" if url.endswith("/") else ""
         target = (Path(from_dir) / url).resolve()

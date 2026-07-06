@@ -171,3 +171,9 @@ def test_rewrite_urls_skips_external_and_anchor(tmp_path):
     out = scaffold._rewrite_urls(
         "[site](https://x.com) and [top](#head)", tmp_path, tmp_path / "docs")
     assert "](https://x.com)" in out and "](#head)" in out
+
+
+def test_rewrite_urls_skips_root_relative(tmp_path):
+    out = scaffold._rewrite_urls(
+        "[abs](/docs/page.md)", tmp_path, tmp_path / "docs")
+    assert "](/docs/page.md)" in out   # 루트-상대 링크는 그대로(가르지 않음)
