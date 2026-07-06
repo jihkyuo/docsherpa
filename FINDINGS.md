@@ -2,7 +2,7 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
-- **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · **N11 spine · Track2/F12 · loop-refresh 완료(2026-07-06).**
+- **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · **N11 spine · Track2/F12 · loop-refresh · PRD 1급 타입 완료(2026-07-06).**
   다음 = **M5 공개 — 단, 출시 산출물 전무(아래 ⚠️가 진짜 시작점).** (second-brain 실제 커터오버는 사용자
   정지점에 — 런북 `docs/plans/M4-dogfooding.md`.)
 - **N11 맵 중추 문서(spine) — Plan 1·2·3 완료(2026-07-06):** 마커·계약 단일 소스(`contract.py`) +
@@ -20,6 +20,14 @@
   provenance·다운그레이드 차단·로컬편집 보존(stuck)·**무프롬프트 커밋 0**). `skills/setup-docs/scripts/refresh.py`,
   계획서 `docs/plans/2026-07-06-loop-refresh.md`. **⚠️ 자기 repo 두-사본 동기는 여전히 수동**(plugin==target →
   provenance no-op; refresh는 배포된 사용자 repo용). **90 tests GREEN.**
+- **PRD 1급 문서 타입 완료(2026-07-06):** PRD(제품의 "왜 만드나·누구·성공기준")를 spec(무엇)·ADR(왜 이 기술)과
+  **다른 도달성 트리**로 라우팅 **#2**(ADR 바로 아래)에 1급화. `docs/product/*.md` 폴더 카테고리, **온디맨드**
+  (specs/처럼 스캐폴드 X·MVD — 첫 PRD 유입 때 생성). 정본 3곳 동기(`_map.md` 라이브 · `scaffold.py` `_MAP_DOC`
+  그린필드 · `setup-docs/SKILL.md` 예시) + doc-reconcile에 PRD 트리거·"PRD 있어도 ADR 병렬 신설" 함정.
+  재번호(#3~#6)로 낡은 룰 참조 2곳 정정. ADR [0013](docs/decisions/0013-prd-first-class-doc-type.md).
+  **첫 PRD dogfood**: `docs/product/`가 온디맨드로 실제 생성됨(`PRD-nondestructive-migration.md` +
+  `_README` 리드 인덱스 + `_map.md` 등록, gate broken=0 orphan=0, docs 29→31).
+  ⚠️ **정본 doc-reconcile 편집 → `refresh.canonical_hash` 변경. 설치본 전파는 `plugin.json` version 범프 필요 = M5 릴리즈 스텝.**
 - **⚠️ M5 출시 준비 = 0% (다음 세션 진짜 시작점):** 엔진은 완성·독푸딩 증명, 그러나 **출시 산출물 전무** —
   `README.md`·`LICENSE`(plugin.json은 `license:MIT` 선언하나 **파일 없음**)·`CHANGELOG.md`·`PROVENANCE.md`
   **모두 없음.** **라이선스·출처·식별자 감사 미실시**('식별자 0 ≠ 발행 가능', codex — DESIGN §8). 실제 마켓플레이스
