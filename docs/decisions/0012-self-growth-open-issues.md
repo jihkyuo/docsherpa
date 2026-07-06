@@ -28,8 +28,9 @@ North Star 위험) — 실제 이동·링크 리라이트는 setup-docs 폴더 �
 - **F14 (브랜드 누출):** N9 freeze 구축 시 사용자 문서에 `docsherpa_frozen` 같은 **브랜드 키 주입 금지** —
   generic 메커니즘(마커 또는 non-brand frontmatter)으로. [0010](0010-skill-names-doc-family.md)(스킬명
   브랜드 거부)과 정합.
-- **F15 (자동 커밋 posture):** refresh(§3.2) 구축 시 무프롬프트 커밋은 **clean-tree 조건 + 별도 툴링
-  커밋**으로 스코프해 "보조 not 주인" 원칙을 지킨다.
+- **F15 (자동 커밋 posture) — 구축됨(loop-refresh):** `refresh_loop`은 **커밋을 하지 않는다**(파일만
+  갱신, 트리거가 에이전트 호출이라 에이전트가 끝 요약으로 알림). 무프롬프트 커밋 0으로 "보조 not 주인"을
+  지킨다 — 애초 기록한 "clean-tree+별도 커밋"보다 강한 posture로 정제.
 
 ## 결과
 

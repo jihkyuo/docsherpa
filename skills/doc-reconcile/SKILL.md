@@ -34,6 +34,14 @@ description: 프로젝트에서 코드·정책·구조 변경을 마무리하고
 
 ## 절차
 
+### 0. 설치본 refresh (플러그인 실행 시만 — 결정론)
+
+`/docsherpa:doc-reconcile`로 실행돼 plugin_root를 확보할 수 있을 때, 시작 전 설치본 갱신을 시도한다:
+`python3 <plugin>/skills/setup-docs/scripts/refresh.py`의 `refresh_loop(repo_root, plugin_root)`를
+호출(또는 동등 조회). 이 기계는 다운그레이드를 차단하고, 사용자가 설치본을 직접 고쳤으면 안 덮으며
+(stuck), provenance 실패(설치본만 있는 repo) 시 조용히 no-op한다. **커밋하지 않는다** — 결과는
+아래 끝 요약으로 사용자에게 알린다. plugin_root가 없으면(설치본에서 실행) 이 단계는 건너뛴다.
+
 ### 1. 변경 수집 (결정론적)
 
 - `git diff --name-status` + `git diff` — **staged·unstaged 둘 다**. 세션 작업이 stage 안 됐을 수 있다.
@@ -101,6 +109,12 @@ spec과 상호링크하라. "spec에 근거 있으니 ADR 불필요"는 정확�
 **그리고 이 변경이 근거로 기대는 기존 문서(spec 등)가 이미 orphan이면 그것도 인덱싱하라** —
 "새 문서 0이니 도달성 N/A"로 넘기지 마라. 변경의 "왜"가 어디선가 도달 가능해야 한다.
 끝에 broken=0 · orphan=0 확인.
+
+### 7. 끝 요약 (refresh 결과 포함)
+
+실행 끝에 사용자에게 요약한다: 📝갱신 N · 🆕신설 M · ⚙️refresh(했으면 "설치본 vX→vY 갱신됨 —
+`git diff .claude/` 확인 후 커밋" / stuck이면 "설치본이 로컬 편집돼 자동갱신 skip — 수동 확인 필요").
+무변경이면 `Docs-Impact: none`.
 
 ## 손대지 말 것 (자주 오버리치하는 곳)
 
