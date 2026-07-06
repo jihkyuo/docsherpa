@@ -25,10 +25,12 @@ def canonical_hash(text):
 
 
 def parse_stamp(text):
-    """스탬프에서 (version, sha|None). 없으면 None. 구-스탬프(sha 없음)도 지원."""
-    m = _PARSE_RE.search(text)
-    if not m:
+    """스탬프에서 (version, sha|None). 없으면 None. 파일 끝(마지막) 스탬프를 읽는다
+    (본문이 스탬프 예시 문자열을 담아도 진짜 trailing 스탬프를 고른다). 구-스탬프(sha 없음)도 지원."""
+    matches = list(_PARSE_RE.finditer(text))
+    if not matches:
         return None
+    m = matches[-1]
     return (m.group(1), m.group(2))
 
 

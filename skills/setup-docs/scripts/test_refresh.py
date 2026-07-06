@@ -18,6 +18,12 @@ def test_parse_stamp_none_when_absent():
     assert refresh.parse_stamp("no stamp here\n") is None
 
 
+def test_parse_stamp_takes_trailing_when_body_has_example():
+    text = ("docs mention <!-- docsherpa-scaffold: v9.9.9 sha=999999999999 --> as an example\n"
+            "body\n" + refresh.make_stamp("0.0.2", "abc123def456"))
+    assert refresh.parse_stamp(text) == ("0.0.2", "abc123def456")
+
+
 def test_strip_stamp_removes_trailing_stamp():
     body = "line1\nline2\n"
     text = body + refresh.make_stamp("0.0.2", "abc123def456")
