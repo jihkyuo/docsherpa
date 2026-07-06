@@ -152,3 +152,25 @@ def test_refresh_stuck_on_old_stamp_without_sha(tmp_path):
     dst.write_text("body\n<!-- docsherpa-scaffold: v0.0.1 -->\n", encoding="utf-8")  # sha 없음
     plugin = _fake_plugin(tmp_path, "0.0.2", "new\n")
     assert refresh.refresh_loop(repo, plugin)["action"] == "stuck"
+
+
+def test_canonical_doc_reconcile_is_stampless():
+    canonical = Path(__file__).resolve().parents[2] / "doc-reconcile" / "SKILL.md"
+    assert refresh.parse_stamp(canonical.read_text(encoding="utf-8")) is None, (
+        "canonical doc-reconcile SKILL must have NO scaffold stamp — a trailing stamp would "
+        "make refresh double-stamp and falsely mark all downstream installs 'stuck'")
+
+
+def test_refresh_twice_across_two_upgrades(tmp_path):
+    repo = tmp_path / "repo"; repo.mkdir()
+    v1 = "body one\n"
+    _install(repo, v1, "0.0.1", refresh.canonical_hash(v1))
+    p2 = _fake_plugin(tmp_path, "0.0.2", "body two\n")
+    assert refresh.refresh_loop(repo, p2)["action"] == "refreshed"
+    # now upgrade the SAME plugin dir to 0.0.3 with new body, refresh again
+    (p2 / ".claude-plugin" / "plugin.json").write_text(
+        json.dumps({"name": "docsherpa", "version": "0.0.3"}), encoding="utf-8")
+    (p2 / "skills" / "doc-reconcile" / "SKILL.md").write_text("body three\n", encoding="utf-8")
+    res = refresh.refresh_loop(repo, p2)
+    assert res["action"] == "refreshed" and res["to"] == "0.0.3"   # not falsely 'stuck'
+    assert "body three" in (repo / ".claude/skills/doc-reconcile/SKILL.md").read_text(encoding="utf-8")
