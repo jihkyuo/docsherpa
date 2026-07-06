@@ -6,6 +6,7 @@
 
 - 설계·전체 근거 → [docs/DESIGN.md](DESIGN.md)
 - 결정 기록(ADR) → [docs/decisions/README.md](decisions/README.md)
+- 제품 요구(PRD) → [docs/product/](product/)
 - 상태·진행·다음 세션 시작점 → [FINDINGS.md](../FINDINGS.md)
 - 마일스톤 실행 계획(M0~M4) → [docs/plans/](plans/)
 - 작업 가이드 → [docs/how-to/](how-to/)
