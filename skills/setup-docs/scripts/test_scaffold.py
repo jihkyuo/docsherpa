@@ -146,3 +146,28 @@ def test_greenfield_scaffold_is_spine(tmp_path):
     assert contract.INDEX_MARKER not in router                # 인라인 아님
     assert gate.main([str(tmp_path)]) == 0                     # broken=0 orphan=0
     assert gate.main([str(tmp_path), "--require-markers"]) == 0  # home=맵, 정확히 1
+
+
+def test_rewrite_urls_strips_docs_prefix_preserving_text(tmp_path):
+    out = scaffold._rewrite_urls(
+        "- 설계 → [docs/DESIGN.md](docs/DESIGN.md)", tmp_path, tmp_path / "docs")
+    assert "](DESIGN.md)" in out          # URL은 docs/ 기준
+    assert "[docs/DESIGN.md]" in out       # 텍스트는 보존
+
+
+def test_rewrite_urls_root_file_gets_dotdot(tmp_path):
+    out = scaffold._rewrite_urls(
+        "- 상태 → [FINDINGS.md](FINDINGS.md)", tmp_path, tmp_path / "docs")
+    assert "](../FINDINGS.md)" in out
+
+
+def test_rewrite_urls_dir_link_keeps_trailing_slash(tmp_path):
+    out = scaffold._rewrite_urls(
+        "- 계획 → [docs/plans/](docs/plans/)", tmp_path, tmp_path / "docs")
+    assert "](plans/)" in out
+
+
+def test_rewrite_urls_skips_external_and_anchor(tmp_path):
+    out = scaffold._rewrite_urls(
+        "[site](https://x.com) and [top](#head)", tmp_path, tmp_path / "docs")
+    assert "](https://x.com)" in out and "](#head)" in out

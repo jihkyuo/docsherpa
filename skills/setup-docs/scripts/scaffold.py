@@ -5,6 +5,8 @@ opt-in/dry-run/프로젝트-특화 빈칸-채움만 담당하고 결정론적 �
 라우터 구조의 정본은 이 파일이다 — SKILL.md의 예시 블록은 설명용.
 """
 import json
+import os
+import re
 import shutil
 from pathlib import Path
 
@@ -40,6 +42,24 @@ _MAP_DOC = f"""# 문서 지도 (라우팅·인덱스)
 _MAP_LINK_SECTION = f"""## 문서 지도 {MAP_MARKER}
 - 라우팅·인덱스 → [문서 지도](docs/_map.md)
 """
+
+_URL_RE = re.compile(r"\[([^\]]*)\]\(([^)]*)\)")   # [text](url)
+
+
+def _rewrite_urls(block, from_dir, to_dir):
+    """block 안의 링크 URL을 from_dir 기준 → to_dir 기준 상대경로로. 텍스트·외부·앵커 보존."""
+    to_dir = Path(to_dir).resolve()
+
+    def repl(m):
+        text, url = m.group(1), m.group(2)
+        if url.startswith(("http://", "https://", "mailto:", "tel:", "#")):
+            return m.group(0)
+        trailing = "/" if url.endswith("/") else ""
+        target = (Path(from_dir) / url).resolve()
+        new = os.path.relpath(target, to_dir)
+        return f"[{text}]({new}{trailing})"
+
+    return _URL_RE.sub(repl, block)
 
 
 def router_skeleton(project_name: str) -> str:
