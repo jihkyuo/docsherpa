@@ -16,5 +16,6 @@ M1 → M3 → M2 → M4 → M5. 각 계획은 writing-plans로 작성하고 RED-
 - [2026-07-05-doc-reconcile-freshness-redesign.md](2026-07-05-doc-reconcile-freshness-redesign.md) — doc-reconcile 최신화·유연화·자가성장 재설계(sidecar/refresh·2-tool·정직화). 리뷰 대기(rev10, N11 맵 중추 문서 채택).
 - [2026-07-06-n11-p1-contract-foundation.md](2026-07-06-n11-p1-contract-foundation.md) — N11 Plan 1: 계약 단일 소스(contract.py) + gate 루트 일반화 + 단일-home locator (구현 토대).
 - [2026-07-06-n11-p2-map-scaffold.md](2026-07-06-n11-p2-map-scaffold.md) — N11 Plan 2(Slice A): 그린필드 맵 생성 + 진입파일 맵 링크(spine 계약, 마이그레이션은 후속).
+- [2026-07-06-n11-p3-inline-map-migration.md](2026-07-06-n11-p3-inline-map-migration.md) — N11 Plan 3(Slice B): 인라인→맵 비파괴 마이그레이션(content_oracle 무손실) + docsherpa 자가적용.
 
 상태·다음 할 일은 [FINDINGS.md](../../FINDINGS.md), 설계는 [DESIGN.md](../DESIGN.md).
