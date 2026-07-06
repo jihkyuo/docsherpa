@@ -172,7 +172,7 @@ routing 규칙 도달 가능?
 ## 10. 상태
 - **리뷰 대기(rev10). 구현 승인 전 금지.**
 - **rev10 결정(spine 채택):** N8 뒤집힘 → **N11 맵 중추 문서(§3.8).** 올바른-프레임 패널로 buildable 확인. **선결 4 blocker**(A 커밋강제=중간안 확정 / B locator 헤딩줄·유일성 / C 사람-라벨 인덱스 / D gate루트 .md ENTRY_FILENAMES). contract 모듈 먼저, 인라인→맵 마이그레이션=MESSY 파이프라인.
-- **여전히 미해결(N11과 독립, 순차):** F11(동결 예외=마커기준, §3.8이 강제) · F12(룰#4 co-change 死) · F13(UPDATE 심볼앵커) · F14(docsherpa_frozen 누출) · F15(refresh 자동커밋 posture).
+- **F11–F15 disposition됨([ADR 0012](../decisions/0012-self-growth-open-issues.md), 2026-07-06):** F12(룰#4 co-change 死)=doc-reconcile 판정에 룰#4 트리거(클러스터→폴더 승격 비블로킹 제안) **구축**. F11(동결 예외=마커)·F13(UPDATE 심볼앵커)·F14(docsherpa_frozen 브랜드 금지)·F15(refresh clean-tree 커밋)=미구축 기능(N4·N9·refresh)의 제약으로 **결정·기록**(실사용 시 그 제약대로 구축).
 - **기존 코드에 대조해 검증된 것:** N8 인라인(gate 무변경, `gate.py`/`scaffold.py` 확인) · N6 content_oracle 마이그레이션 복귀(`content_oracle.py`). **§3.1~3.4 sidecar/refresh·N10 끝요약은 설계·교차검증 완료이나 코드 미구현(TDD T1~T10) — '코드 검증' 아님.**
 - **정직화 트림 반영(rev7):** auto-CREATE first-match · "기계" 라벨 철회 · S6/S7 패러프레이즈 정직 · 규칙모드 (a)/(b) 분기.
 - **정직화 마감 반영(rev8):** refresh 트리거=doc-reconcile step0 확정 · '코드 검증 완료' 오기 정정 · N1 3면 편집(setup-docs §7.5·doc-reconcile 주석·AGENTS.md) · N7(a) catch-all 앞 삽입(append 死룰 봉쇄) · content_oracle dedup·S7 도달성·N5 승인흐름·릴리스서명(M5) 캐비엇.
