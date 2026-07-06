@@ -85,7 +85,7 @@ printf '\n<!-- docsherpa-scaffold: v0.0.1 -->\n' >> \
 ```
 /plugin marketplace add ~/Desktop/private/docsherpa
 /plugin install docsherpa@docsherpa      # user scope
-/docsherpa:hello                          # → DOCSHERPA_NAMESPACE_OK (resolution 확인)
+# resolution 확인: /docsherpa:setup-docs · /docsherpa:doc-reconcile 가 스킬 목록에 노출되면 OK
 ```
 ※ (a)(b)의 커밋된 루프는 **플러그인 없이도** second-brain에서 작동(D2). (c)는 *다른* repo에서
 `/docsherpa:setup-docs`를 쓰기 위한 것.
