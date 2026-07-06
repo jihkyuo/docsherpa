@@ -18,3 +18,4 @@
 | [0010](0010-skill-names-doc-family.md) | 스킬 이름 = `doc-*` 패밀리(`doc-setup`+`doc-reconcile`, 구현 이연) | 수락 | 2026-07-05 |
 | [0011](0011-map-spine-document.md) | 맵 중추 문서 — routing·index를 진입파일 밖 `docs/_map.md`로(N8 supersede) | 수락 | 2026-07-06 |
 | [0012](0012-self-growth-open-issues.md) | 자가성장 열린 이슈 처리 — F12 룰#4 트리거 구축 + F11/13/14/15 제약 기록 | 수락 | 2026-07-06 |
+| [0013](0013-prd-first-class-doc-type.md) | PRD 1급 문서 타입(product/ 온디맨드·라우팅 #2) | 수락 | 2026-07-06 |

@@ -30,10 +30,12 @@ _MAP_DOC = f"""# 문서 지도 (라우팅·인덱스)
 ## 문서 라우팅 룰 (새 문서가 어디로) {ROUTING_MARKER}
 분류 순서대로 판정(위에서 먼저 맞는 것):
 1. 구조적 결정(왜) → decisions/NNNN-*.md (_template 복사) + README 로그 추가
-2. 절차/복구(어떻게) → how-to/*.md (3개↑면 _README 인덱스화)
-3. 기능 스펙(무엇을) → specs/<feature>/ + plans/
-4. 함께 읽혀야 할 문서 ≥2개(co-change) → <topic>/ 승격, 리드 문서가 인덱스
-5. 그 외 단일 reference/explanation → 평면 [디폴트]
+2. 제품 요구(왜 만드나·누구에게·성공/수용 기준) → product/*.md (여러 개면 _README 인덱스화)
+3. 절차/복구(어떻게) → how-to/*.md (3개↑면 _README 인덱스화)
+4. 기능 스펙(무엇을) → specs/<feature>/ + plans/
+5. 함께 읽혀야 할 문서 ≥2개(co-change) → <topic>/ 승격, 리드 문서가 인덱스
+6. 그 외 단일 reference/explanation → 평면 [디폴트]
+※ PRD(제품의 왜)와 ADR(기술선택의 왜)는 다른 도달성 트리 — 구조적 결정은 PRD가 있어도 ADR 병렬 신설.
 ※ 증상 alias는 별도 troubleshooting 문서 말고 주인 문서(한계·개념)에 넣는다.
 
 불변식: 새 문서는 반드시 위 인덱스에 등록(고아 방지) → broken=0·orphan=0 확인
