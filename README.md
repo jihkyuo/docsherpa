@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="docsherpa" width="200">
+  <img src="assets/logo.png" alt="docsherpa" width="400">
 </p>
 
 <h1 align="center">docsherpa</h1>
