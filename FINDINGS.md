@@ -2,9 +2,10 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
-- **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · **N11 spine · Track2/F12 · loop-refresh · PRD 1급 타입 완료(2026-07-06).**
-  다음 = **M5 공개 — 단, 출시 산출물 전무(아래 ⚠️가 진짜 시작점).** (second-brain 실제 커터오버는 사용자
-  정지점에 — 런북 `docs/plans/M4-dogfooding.md`.)
+- **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · N11 spine · Track2/F12 · loop-refresh · PRD 1급 타입 ·
+  **M5 출시 산출물 완비 + v0.1.0 발행 완료(2026-07-06).** 빌드 사실상 종료.
+  다음 = **사용자 정지점만 남음**(터미널 설치 실검증 (c) · 중복 global 제거 (d) · 마켓플레이스 등록 —
+  런북 `docs/plans/M4-dogfooding.md`). 새 기능 계획 없음(F13/14/15는 YAGNI 이연, ADR 0012).
 - **N11 맵 중추 문서(spine) — Plan 1·2·3 완료(2026-07-06):** 마커·계약 단일 소스(`contract.py`) +
   gate 루트 일반화·단일-home locator(Plan 1) · 그린필드 맵 생성 `write_map`(Plan 2, Slice A) ·
   인라인→맵 비파괴 마이그레이션 `migrate_inline_to_map` + **docsherpa 자가적용**(Plan 3, Slice B,
@@ -28,11 +29,16 @@
   **첫 PRD dogfood**: `docs/product/`가 온디맨드로 실제 생성됨(`PRD-nondestructive-migration.md` +
   `_README` 리드 인덱스 + `_map.md` 등록, gate broken=0 orphan=0, docs 29→31).
   ⚠️ **정본 doc-reconcile 편집 → `refresh.canonical_hash` 변경. 설치본 전파는 `plugin.json` version 범프 필요 = M5 릴리즈 스텝.**
-- **⚠️ M5 출시 준비 = 0% (다음 세션 진짜 시작점):** 엔진은 완성·독푸딩 증명, 그러나 **출시 산출물 전무** —
-  `README.md`·`LICENSE`(plugin.json은 `license:MIT` 선언하나 **파일 없음**)·`CHANGELOG.md`·`PROVENANCE.md`
-  **모두 없음.** **라이선스·출처·식별자 감사 미실시**('식별자 0 ≠ 발행 가능', codex — DESIGN §8). 실제 마켓플레이스
-  발행·global 정리는 사용자 정지점(M4 런북). refresh 릴리스 서명(OQ-d)도 M5. → **M5 = 대부분 문서·감사·발행
-  (코드 아님). README·LICENSE부터.**
+- **✅ M5 출시 산출물 완비 + v0.1.0 발행(2026-07-06):** `README.md`(오픈소스 퀄리티 — 훅 투명성 섹션 포함) ·
+  `LICENSE`(MIT, plugin.json 선언과 정합) · `CHANGELOG.md`(0.1.0) · `PROVENANCE.md`(자작 코드·패턴 참조·빌린
+  코드 0·식별자 감사 누출 0) 신설. `hello` 프로브 제거(ADR 0010 실행분). `plugin.json` **0.0.1 → 0.1.0**.
+  **git 태그 `v0.1.0` + GitHub Release 발행**(https://github.com/jihkyuo/docsherpa/releases/tag/v0.1.0).
+  검증: 90 tests GREEN · gate broken=0 orphan=0 · 릴리즈 게이트(JSON·링크·placeholder·버전 정합) 통과.
+  **남은 사용자 정지점(M4 런북, 터미널 Claude Code):** (c) `/plugin install docsherpa@docsherpa` 실검증 ·
+  (d) 중복 global `~/.claude/skills/setup-docs` 제거(c 확인 후) · (선택) 마켓플레이스 공식 등록.
+- **ADR 0010 개명 부분 철회(2026-07-06):** `setup-docs → doc-setup` 개명은 **하지 않기로 확정**(v0.1.0이
+  `setup-docs` 커맨드 표면으로 이미 발행 → 개명은 breaking). `hello` 삭제·브랜드 미표기는 유효. `setup-docs`
+  이름 영구 유지. ADR [0010](docs/decisions/0010-skill-names-doc-family.md) 상태 = 부분 철회.
 - **순서(재-시퀀싱):** M1 → M3 → M2 → M4 → 자기-독푸딩 → **갭1** → M5.
 - **갭1(재사용 §7.5) 완료 — 산문+마커, 코드 없음:** ① 정본 doc-reconcile 앵커 블록을
   `<!-- docsherpa:anchors:start/end -->`로 구분(가드가 강제 — 특화 대상 명확). ② SKILL 5단계에 "§7.5 특화"
