@@ -36,6 +36,13 @@ def test_canonical_hash_ignores_stamp_and_crlf():
     assert refresh.canonical_hash(a) == refresh.canonical_hash(b)   # 스탬프·CRLF 무관
 
 
+def test_canonical_hash_stable_across_trailing_whitespace_and_stamp():
+    body = "hello world   \n"          # trailing spaces before newline
+    stamped = body + refresh.make_stamp("0.0.2", "abc123def456")
+    # canonical_hash of the bare body must equal that of the stamped file
+    assert refresh.canonical_hash(body) == refresh.canonical_hash(stamped)
+
+
 def test_version_gt_int_tuple():
     assert refresh.version_gt("0.0.2", "0.0.1") is True
     assert refresh.version_gt("0.1.0", "0.0.9") is True

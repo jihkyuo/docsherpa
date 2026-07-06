@@ -20,7 +20,7 @@ def strip_stamp(text):
 
 def canonical_hash(text):
     """스탬프 제거 + 정규화(BOM·CRLF·trailing개행) 후 sha256[:12]. 로컬편집·버전비교 기준."""
-    body = strip_stamp(text).lstrip("﻿").replace("\r\n", "\n").replace("\r", "\n").rstrip("\n")
+    body = strip_stamp(text).lstrip("﻿").replace("\r\n", "\n").replace("\r", "\n").rstrip()
     return hashlib.sha256(body.encode("utf-8")).hexdigest()[:12]
 
 
