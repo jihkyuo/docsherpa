@@ -74,3 +74,81 @@ def test_provenance_false_when_name_mismatch(tmp_path):
     target = tmp_path / "repo"
     target.mkdir()
     assert refresh.verify_plugin_provenance(plugin, target) is False
+
+
+def _fake_plugin(tmp_path, version, skill_body):
+    plugin = tmp_path / "plugin"
+    (plugin / ".claude-plugin").mkdir(parents=True)
+    (plugin / ".claude-plugin" / "plugin.json").write_text(
+        json.dumps({"name": "docsherpa", "version": version}), encoding="utf-8")
+    dr = plugin / "skills" / "doc-reconcile"
+    dr.mkdir(parents=True)
+    (dr / "SKILL.md").write_text(skill_body, encoding="utf-8")
+    return plugin
+
+
+def _install(repo, body, version, sha):
+    dst = repo / ".claude" / "skills" / "doc-reconcile" / "SKILL.md"
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_text(body + refresh.make_stamp(version, sha), encoding="utf-8")
+    return dst
+
+
+def test_refresh_upgrades_installed_to_new_version(tmp_path):
+    repo = tmp_path / "repo"; repo.mkdir()
+    old = "old skill v1 body\n"
+    _install(repo, old, "0.0.1", refresh.canonical_hash(old))
+    new = "NEW skill v2 body\n"
+    plugin = _fake_plugin(tmp_path, "0.0.2", new)
+    res = refresh.refresh_loop(repo, plugin)
+    assert res["action"] == "refreshed" and res["to"] == "0.0.2"
+    installed = (repo / ".claude/skills/doc-reconcile/SKILL.md").read_text(encoding="utf-8")
+    assert "NEW skill v2 body" in installed
+    assert refresh.parse_stamp(installed) == ("0.0.2", refresh.canonical_hash(new))
+
+
+def test_refresh_noop_on_downgrade(tmp_path):
+    repo = tmp_path / "repo"; repo.mkdir()
+    body = "current body\n"
+    _install(repo, body, "0.0.5", refresh.canonical_hash(body))
+    plugin = _fake_plugin(tmp_path, "0.0.2", "older body\n")
+    assert refresh.refresh_loop(repo, plugin)["action"] == "noop"
+    assert "current body" in (repo / ".claude/skills/doc-reconcile/SKILL.md").read_text(encoding="utf-8")
+
+
+def test_refresh_noop_on_same_version(tmp_path):
+    repo = tmp_path / "repo"; repo.mkdir()
+    body = "body\n"
+    _install(repo, body, "0.0.2", refresh.canonical_hash(body))
+    plugin = _fake_plugin(tmp_path, "0.0.2", "different body\n")
+    assert refresh.refresh_loop(repo, plugin)["action"] == "noop"
+
+
+def test_refresh_stuck_when_locally_edited(tmp_path):
+    repo = tmp_path / "repo"; repo.mkdir()
+    body = "original body\n"
+    # 설치본을 사용자가 편집: 기록된 sha는 original인데 내용은 바뀜
+    _install(repo, "USER EDITED body\n", "0.0.1", refresh.canonical_hash(body))
+    plugin = _fake_plugin(tmp_path, "0.0.2", "plugin new body\n")
+    res = refresh.refresh_loop(repo, plugin)
+    assert res["action"] == "stuck"
+    assert "USER EDITED body" in (repo / ".claude/skills/doc-reconcile/SKILL.md").read_text(encoding="utf-8")
+
+
+def test_refresh_noop_when_plugin_inside_target(tmp_path):
+    # 설치본만 있는 repo(플러그인 없음) 시뮬 — plugin_root를 repo 자신으로 줌 → provenance no-op
+    repo = tmp_path / "repo"; repo.mkdir()
+    (repo / ".claude-plugin").mkdir()
+    (repo / ".claude-plugin" / "plugin.json").write_text('{"name":"docsherpa","version":"9.9.9"}', encoding="utf-8")
+    body = "body\n"
+    _install(repo, body, "0.0.1", refresh.canonical_hash(body))
+    assert refresh.refresh_loop(repo, repo)["action"] == "noop"
+
+
+def test_refresh_stuck_on_old_stamp_without_sha(tmp_path):
+    repo = tmp_path / "repo"; repo.mkdir()
+    dst = repo / ".claude" / "skills" / "doc-reconcile" / "SKILL.md"
+    dst.parent.mkdir(parents=True)
+    dst.write_text("body\n<!-- docsherpa-scaffold: v0.0.1 -->\n", encoding="utf-8")  # sha 없음
+    plugin = _fake_plugin(tmp_path, "0.0.2", "new\n")
+    assert refresh.refresh_loop(repo, plugin)["action"] == "stuck"

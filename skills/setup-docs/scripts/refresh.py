@@ -64,3 +64,38 @@ def verify_plugin_provenance(plugin_root, target):
         return json.loads(pj.read_text(encoding="utf-8")).get("name") == "docsherpa"
     except (ValueError, OSError):
         return False
+
+
+def refresh_loop(repo_root, plugin_root):
+    """설치본 doc-reconcile을 플러그인 새 버전으로 안전 갱신. 파일만 쓰고 커밋 안 함.
+
+    반환 dict: action=refreshed|stuck|noop, reason, (from/to 버전).
+    - provenance 실패/파일부재/스탬프없음/다운그레이드 → noop
+    - 로컬 편집(해시 불일치·sha 없음) → stuck(안 덮음)
+    - 상위버전 + 미편집 → 원자적 교체 + 새 스탬프
+    """
+    root = Path(repo_root)
+    plug = Path(plugin_root)
+    if not verify_plugin_provenance(plug, root):
+        return {"action": "noop", "reason": "provenance"}
+    installed = root / ".claude" / "skills" / "doc-reconcile" / "SKILL.md"
+    canonical = plug / "skills" / "doc-reconcile" / "SKILL.md"
+    pj = plug / ".claude-plugin" / "plugin.json"
+    if not (installed.is_file() and canonical.is_file() and pj.is_file()):
+        return {"action": "noop", "reason": "missing"}
+    text = installed.read_text(encoding="utf-8")
+    parsed = parse_stamp(text)
+    if parsed is None:
+        return {"action": "noop", "reason": "no-stamp"}
+    ver_e, sha_e = parsed
+    ver_p = json.loads(pj.read_text(encoding="utf-8")).get("version", "0")
+    if not version_gt(ver_p, ver_e):
+        return {"action": "noop", "reason": "not-newer", "from": ver_e, "to": ver_p}
+    if sha_e is None or canonical_hash(text) != sha_e:
+        return {"action": "stuck", "reason": "local-edit", "from": ver_e}
+    new_body = canonical.read_text(encoding="utf-8")
+    new_text = new_body + make_stamp(ver_p, canonical_hash(new_body))
+    tmp = installed.with_name(installed.name + ".tmp")
+    tmp.write_text(new_text, encoding="utf-8")
+    tmp.replace(installed)
+    return {"action": "refreshed", "reason": "up", "from": ver_e, "to": ver_p}
