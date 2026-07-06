@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="docsherpa" width="200">
+</p>
+
 <h1 align="center">docsherpa</h1>
 
 <p align="center">
@@ -143,6 +147,9 @@ uv run --with pytest pytest -q
 
 A key contract: the canonical `doc-reconcile` skill contains **zero project-specific
 literals**, so it ports cleanly into any repo — a guard test enforces this.
+
+Contributing? Start with [CONTRIBUTING.md](CONTRIBUTING.md) — it lays out the
+non-negotiable principles a change must not break.
 
 ## License
 
