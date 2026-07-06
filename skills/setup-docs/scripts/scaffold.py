@@ -92,6 +92,9 @@ def migrate_inline_to_map(repo_root) -> bool:
 
     내용 verbatim 이동 + 링크 URL만 재작성(텍스트 보존) → content_oracle 무손실.
     인라인 home이 정확히 1개가 아니면 no-op. docs/_map.md 이미 있으면 no-op(STOP·안 덮음).
+    전제: 마커 섹션은 빈 줄로 구분돼 있어야 세그먼트 경계가 보존된다. 인접(빈 줄 없음) 입력은
+    content_oracle가 UNACCOUNTED로 시끄럽게 잡는다(조용한 유실 아님) — 호출부가 content_oracle를
+    라이브 게이트로 돌려야 한다.
     changed? 반환."""
     root = Path(repo_root)
     entries = [(root / n, (root / n).read_text(encoding="utf-8", errors="ignore"))

@@ -224,6 +224,30 @@ def test_migrate_no_content_loss_via_oracle(tmp_path):
     assert base_keys <= cur_keys           # 모든 base 세그먼트 생존(빈 매니페스트)
 
 
+def test_migrate_adjacency_input_is_caught_by_oracle(tmp_path):
+    import shutil
+    import content_oracle
+    # 마커 헤딩 앞에 빈 줄이 없음(인접) — 세그먼트 경계가 재구성될 수 있는 입력.
+    (tmp_path / "AGENTS.md").write_text(
+        "# R\n> entry\n## 항시\n- keep me\n"          # '- keep me' 바로 다음 줄에 마커 헤딩(빈 줄 없음)
+        f"## 먼저 읽기 {INDEX}\n\n- 설계 → [docs/DESIGN.md](docs/DESIGN.md)\n\n"
+        f"## 라우팅 {ROUTING}\n\n분류:\n1. 결정 → docs/decisions/\n",
+        encoding="utf-8")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "DESIGN.md").write_text("# design\n", encoding="utf-8")
+    base = tmp_path.parent / "base_adj"
+    base.mkdir()
+    shutil.copy(tmp_path / "AGENTS.md", base / "AGENTS.md")
+    scaffold.migrate_inline_to_map(tmp_path)
+    base_keys = set(content_oracle.collect(base))
+    cur_keys = set(content_oracle.collect(tmp_path))
+    # 인접 입력은 병합 세그먼트 key가 재구성돼 base ⊄ current — content_oracle가 잡는다(loud fail, no silent loss).
+    assert not (base_keys <= cur_keys)
+    # 그러나 사람이 읽는 텍스트 자체는 어딘가에 남아 있다(조용한 유실 아님): 'keep me'는 여전히 존재.
+    entry = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    assert "keep me" in entry
+
+
 def test_migrate_noop_when_already_spine(tmp_path):
     scaffold.write_router(tmp_path, "D")
     scaffold.write_map(tmp_path)
