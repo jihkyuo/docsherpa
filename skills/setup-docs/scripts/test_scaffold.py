@@ -177,3 +177,61 @@ def test_rewrite_urls_skips_root_relative(tmp_path):
     out = scaffold._rewrite_urls(
         "[abs](/docs/page.md)", tmp_path, tmp_path / "docs")
     assert "](/docs/page.md)" in out   # 루트-상대 링크는 그대로(가르지 않음)
+
+
+def _inline_router_repo(root):
+    (root / "AGENTS.md").write_text(
+        "# R\n> entry\n\n## 항시\n- keep me\n\n"
+        f"## 먼저 읽기 {INDEX}\n\n"
+        "- 설계 → [docs/DESIGN.md](docs/DESIGN.md)\n"
+        "- 상태 → [FINDINGS.md](FINDINGS.md)\n"
+        "- 가이드 → [docs/how-to/](docs/how-to/)\n\n"
+        f"## 라우팅 {ROUTING}\n\n분류:\n1. 결정 → docs/decisions/\n",
+        encoding="utf-8")
+    (root / "docs").mkdir()
+    (root / "docs" / "DESIGN.md").write_text("# design\n", encoding="utf-8")
+    (root / "FINDINGS.md").write_text("# findings\n", encoding="utf-8")
+    (root / "docs" / "how-to").mkdir()
+    (root / "docs" / "how-to" / "_README.md").write_text("# how-to\n", encoding="utf-8")
+
+
+def test_migrate_inline_to_map_produces_spine(tmp_path):
+    _inline_router_repo(tmp_path)
+    assert scaffold.migrate_inline_to_map(tmp_path) is True
+    router = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    assert contract.MAP_MARKER in router
+    assert contract.INDEX_MARKER not in router
+    assert contract.ROUTING_MARKER not in router
+    assert "keep me" in router                          # 다른 섹션 보존
+    mp = (tmp_path / "docs" / "_map.md").read_text(encoding="utf-8")
+    assert contract.is_marker_home(mp) is True           # home = map
+    assert "](DESIGN.md)" in mp                            # docs/ 접두어 제거
+    assert "](../FINDINGS.md)" in mp                        # 루트 파일 ../
+    assert gate.main([str(tmp_path)]) == 0                 # broken=0 orphan=0
+    assert gate.main([str(tmp_path), "--require-markers"]) == 0
+
+
+def test_migrate_no_content_loss_via_oracle(tmp_path):
+    import shutil
+    import content_oracle
+    _inline_router_repo(tmp_path)
+    base = tmp_path.parent / "base"
+    base.mkdir()
+    shutil.copy(tmp_path / "AGENTS.md", base / "AGENTS.md")   # 마이그레이션 전 스냅샷
+    assert scaffold.migrate_inline_to_map(tmp_path) is True
+    base_keys = set(content_oracle.collect(base))
+    cur_keys = set(content_oracle.collect(tmp_path))
+    assert base_keys <= cur_keys           # 모든 base 세그먼트 생존(빈 매니페스트)
+
+
+def test_migrate_noop_when_already_spine(tmp_path):
+    scaffold.write_router(tmp_path, "D")
+    scaffold.write_map(tmp_path)
+    assert scaffold.migrate_inline_to_map(tmp_path) is False   # 인라인 home 없음
+
+
+def test_migrate_stops_when_map_exists(tmp_path):
+    _inline_router_repo(tmp_path)
+    (tmp_path / "docs" / "_map.md").write_text("# pre-existing\n", encoding="utf-8")
+    assert scaffold.migrate_inline_to_map(tmp_path) is False    # 안 덮음
+    assert (tmp_path / "docs" / "_map.md").read_text(encoding="utf-8") == "# pre-existing\n"

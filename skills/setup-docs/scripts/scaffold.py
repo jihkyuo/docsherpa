@@ -10,7 +10,7 @@ import re
 import shutil
 from pathlib import Path
 
-from contract import ROUTING_MARKER, INDEX_MARKER, MAP_MARKER
+from contract import ROUTING_MARKER, INDEX_MARKER, MAP_MARKER, ENTRY_FILENAMES, is_marker_home
 from inject_claude_md import inject_claude_md_file
 from merge_settings import merge_settings_file
 
@@ -60,6 +60,69 @@ def _rewrite_urls(block, from_dir, to_dir):
         return f"[{text}]({new}{trailing})"
 
     return _URL_RE.sub(repl, block)
+
+
+_H12_RE = re.compile(r"^#{1,2}\s")
+_H2_RE = re.compile(r"^##\s")
+_MIGRATED_MAP_HEADER = (
+    "# 문서 지도 (라우팅·인덱스)\n\n"
+    "> 진입 라우터가 이 파일을 가리킨다. (인라인 마커에서 이관됨.)\n\n"
+)
+
+
+def _section_span(lines, marker):
+    """marker를 담은 ## 헤딩부터 다음 # 또는 ## 헤딩(또는 EOF)까지의 (start, end). 없으면 None."""
+    start = None
+    for i, line in enumerate(lines):
+        if _H2_RE.match(line) and marker in line:
+            start = i
+            break
+    if start is None:
+        return None
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if _H12_RE.match(lines[j]):
+            end = j
+            break
+    return (start, end)
+
+
+def migrate_inline_to_map(repo_root) -> bool:
+    """인라인 마커(routing·index)를 docs/_map.md로 비파괴 이동, 라우터엔 맵 링크만 남긴다.
+
+    내용 verbatim 이동 + 링크 URL만 재작성(텍스트 보존) → content_oracle 무손실.
+    인라인 home이 정확히 1개가 아니면 no-op. docs/_map.md 이미 있으면 no-op(STOP·안 덮음).
+    changed? 반환."""
+    root = Path(repo_root)
+    entries = [(root / n, (root / n).read_text(encoding="utf-8", errors="ignore"))
+               for n in ENTRY_FILENAMES if (root / n).is_file()]
+    homes = [p for p, t in entries if is_marker_home(t)]
+    if len(homes) != 1:
+        return False
+    home = homes[0]
+    map_path = root / "docs" / "_map.md"
+    if map_path.exists():
+        return False
+    lines = home.read_text(encoding="utf-8").splitlines()
+    idx = _section_span(lines, INDEX_MARKER)
+    rte = _section_span(lines, ROUTING_MARKER)
+    if idx is None or rte is None:
+        return False
+    docs_dir = root / "docs"
+    index_block = _rewrite_urls("\n".join(lines[idx[0]:idx[1]]).rstrip(), root, docs_dir)
+    routing_block = _rewrite_urls("\n".join(lines[rte[0]:rte[1]]).rstrip(), root, docs_dir)
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    map_path.write_text(
+        _MIGRATED_MAP_HEADER + index_block + "\n\n" + routing_block + "\n",
+        encoding="utf-8")
+    # 두 섹션 제거 + 첫 섹션 자리에 맵 링크 삽입(섹션 순서 무관).
+    spans = sorted([idx, rte])
+    kept = (lines[:spans[0][0]]
+            + _MAP_LINK_SECTION.rstrip("\n").splitlines()
+            + lines[spans[0][1]:spans[1][0]]
+            + lines[spans[1][1]:])
+    home.write_text("\n".join(kept).rstrip("\n") + "\n", encoding="utf-8")
+    return True
 
 
 def router_skeleton(project_name: str) -> str:
