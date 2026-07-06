@@ -259,3 +259,14 @@ def test_migrate_stops_when_map_exists(tmp_path):
     (tmp_path / "docs" / "_map.md").write_text("# pre-existing\n", encoding="utf-8")
     assert scaffold.migrate_inline_to_map(tmp_path) is False    # 안 덮음
     assert (tmp_path / "docs" / "_map.md").read_text(encoding="utf-8") == "# pre-existing\n"
+
+
+def test_install_loop_stamp_has_sha(tmp_path):
+    import refresh
+    scaffold.install_loop_files(tmp_path, scaffold.plugin_root())
+    installed = (tmp_path / ".claude/skills/doc-reconcile/SKILL.md").read_text(encoding="utf-8")
+    parsed = refresh.parse_stamp(installed)
+    assert parsed is not None
+    version, sha = parsed
+    assert sha is not None                                  # 해시 기록됨
+    assert refresh.canonical_hash(installed) == sha         # 기록된 sha == 실제 내용 해시

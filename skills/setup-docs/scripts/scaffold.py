@@ -13,6 +13,7 @@ from pathlib import Path
 from contract import ROUTING_MARKER, INDEX_MARKER, MAP_MARKER, ENTRY_FILENAMES, is_marker_home
 from inject_claude_md import inject_claude_md_file
 from merge_settings import merge_settings_file
+import refresh
 
 HOOK_CMD = "cat .claude/doc-drift-prime.txt 2>/dev/null || true"
 
@@ -236,8 +237,9 @@ def install_loop_files(repo_root, plugin_root_dir) -> bool:
         dr_dst.parent.mkdir(parents=True, exist_ok=True)
         version = json.loads(
             (plug / ".claude-plugin" / "plugin.json").read_text()).get("version", "0")
-        stamp = f"\n<!-- docsherpa-scaffold: v{version} -->\n"
-        dr_dst.write_text(dr_src.read_text(encoding="utf-8") + stamp, encoding="utf-8")
+        body = dr_src.read_text(encoding="utf-8")
+        stamp = refresh.make_stamp(version, refresh.canonical_hash(body))
+        dr_dst.write_text(body + stamp, encoding="utf-8")
         changed = True
     return changed
 
