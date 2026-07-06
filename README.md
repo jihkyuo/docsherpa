@@ -9,7 +9,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/Claude%20Code-plugin-8A63D2.svg" alt="Claude Code plugin">
-  <img src="https://img.shields.io/badge/tests-90%20passing-brightgreen.svg" alt="Tests passing">
+  <a href="https://github.com/jihkyuo/docsherpa/actions/workflows/ci.yml"><img src="https://github.com/jihkyuo/docsherpa/actions/workflows/ci.yml/badge.svg" alt="tests"></a>
 </p>
 
 ---
