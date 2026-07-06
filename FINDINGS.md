@@ -2,8 +2,9 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
-- **상태:** M0·M1·M3·M2 · 자기-독푸딩 · **갭1(재사용 §7.5) 완료.** 다음 = **M5 공개**
-  (second-brain 실제 커터오버는 사용자 정지점에 — 런북 `docs/plans/M4-dogfooding.md`).
+- **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · **N11 spine · Track2/F12 · loop-refresh 완료(2026-07-06).**
+  다음 = **M5 공개 — 단, 출시 산출물 전무(아래 ⚠️가 진짜 시작점).** (second-brain 실제 커터오버는 사용자
+  정지점에 — 런북 `docs/plans/M4-dogfooding.md`.)
 - **N11 맵 중추 문서(spine) — Plan 1·2·3 완료(2026-07-06):** 마커·계약 단일 소스(`contract.py`) +
   gate 루트 일반화·단일-home locator(Plan 1) · 그린필드 맵 생성 `write_map`(Plan 2, Slice A) ·
   인라인→맵 비파괴 마이그레이션 `migrate_inline_to_map` + **docsherpa 자가적용**(Plan 3, Slice B,
@@ -12,6 +13,18 @@
 - **Slice C(자가치유) 유보(YAGNI, 2026-07-06):** 맵 링크 삭제는 gate가 orphan으로 시끄럽게 잡아
   **내용 소실 0 유지**(자동 복구는 안전 아닌 편의). 실사용 필요 시 최소 `heal_map_link`(sidecar 없이)로
   착수. 근거·판단은 ADR 0011. → **N11 spine 트랙 사실상 종료.**
+- **Track2/F12 + loop-refresh 완료(2026-07-06):** F12(평면-only 성장 갭)=doc-reconcile 판정에 룰#4 트리거
+  (co-change 클러스터 ≥2 → 폴더 승격 **비블로킹 제안**; 이동은 안 함, content_oracle 경로에 위임).
+  F11/13/14/15=미구축 기능(N4·N9) 제약을 ADR [0012](docs/decisions/0012-self-growth-open-issues.md)에 기록.
+  **loop-refresh**=설치본 doc-reconcile **자동 동기**(파일 끝 스탬프에 `sha=` 심어 버전+해시; `refresh_loop`이
+  provenance·다운그레이드 차단·로컬편집 보존(stuck)·**무프롬프트 커밋 0**). `skills/setup-docs/scripts/refresh.py`,
+  계획서 `docs/plans/2026-07-06-loop-refresh.md`. **⚠️ 자기 repo 두-사본 동기는 여전히 수동**(plugin==target →
+  provenance no-op; refresh는 배포된 사용자 repo용). **90 tests GREEN.**
+- **⚠️ M5 출시 준비 = 0% (다음 세션 진짜 시작점):** 엔진은 완성·독푸딩 증명, 그러나 **출시 산출물 전무** —
+  `README.md`·`LICENSE`(plugin.json은 `license:MIT` 선언하나 **파일 없음**)·`CHANGELOG.md`·`PROVENANCE.md`
+  **모두 없음.** **라이선스·출처·식별자 감사 미실시**('식별자 0 ≠ 발행 가능', codex — DESIGN §8). 실제 마켓플레이스
+  발행·global 정리는 사용자 정지점(M4 런북). refresh 릴리스 서명(OQ-d)도 M5. → **M5 = 대부분 문서·감사·발행
+  (코드 아님). README·LICENSE부터.**
 - **순서(재-시퀀싱):** M1 → M3 → M2 → M4 → 자기-독푸딩 → **갭1** → M5.
 - **갭1(재사용 §7.5) 완료 — 산문+마커, 코드 없음:** ① 정본 doc-reconcile 앵커 블록을
   `<!-- docsherpa:anchors:start/end -->`로 구분(가드가 강제 — 특화 대상 명확). ② SKILL 5단계에 "§7.5 특화"
@@ -51,7 +64,7 @@
   확인 후 중복 global setup-docs 제거. **먼저 writing-plans로 M4 계획 작성.**
 - **이어가려면 이 순서로 읽어라:** ① 이 파일 → ② `docs/DESIGN.md` §9(독푸딩·behavioral parity)·§10.3 →
   ③ `docs/plans/M2-portability-fixtures.md`(scaffold가 무엇을 하는지).
-- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **70 passed**).
+- **테스트 러너:** `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` (현재 **90 passed**).
 - **핵심 계약:** doc-reconcile은 헤딩이 아니라 **마커**를 소비한다(D8) → M3의 마커 삽입과 맞물림.
   정본 doc-reconcile은 도메인 리터럴 0(가드 `test_doc_reconcile_portable.py`가 강제 — M3 후에도 GREEN).
 
