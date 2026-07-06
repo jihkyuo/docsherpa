@@ -15,7 +15,7 @@
 | [0007](0007-hook-trust-model.md) | 훅 신뢰 모델(harness 승인 게이트 의존) | 수락 | 2026-07-04 |
 | [0008](0008-language-agnostic-markers.md) | 섹션명 계약 = 언어-불문 마커 | 수락 | 2026-07-04 |
 | [0009](0009-narrow-doc-reconcile-triggers.md) | doc-reconcile 트리거를 SessionStart+수동으로 좁힘 | 수락 | 2026-07-04 |
-| [0010](0010-skill-names-doc-family.md) | 스킬 이름 = `doc-*` 패밀리(`doc-setup`+`doc-reconcile`, 구현 이연) | 수락 | 2026-07-05 |
+| [0010](0010-skill-names-doc-family.md) | 스킬 이름 개명(`setup-docs`→`doc-setup`) — **개명 철회**(`setup-docs` 유지), `hello` 삭제만 유효 | 부분 철회 | 2026-07-05 |
 | [0011](0011-map-spine-document.md) | 맵 중추 문서 — routing·index를 진입파일 밖 `docs/_map.md`로(N8 supersede) | 수락 | 2026-07-06 |
 | [0012](0012-self-growth-open-issues.md) | 자가성장 열린 이슈 처리 — F12 룰#4 트리거 구축 + F11/13/14/15 제약 기록 | 수락 | 2026-07-06 |
 | [0013](0013-prd-first-class-doc-type.md) | PRD 1급 문서 타입(product/ 온디맨드·라우팅 #2) | 수락 | 2026-07-06 |
