@@ -7,8 +7,11 @@
 - **N11 맵 중추 문서(spine) — Plan 1·2·3 완료(2026-07-06):** 마커·계약 단일 소스(`contract.py`) +
   gate 루트 일반화·단일-home locator(Plan 1) · 그린필드 맵 생성 `write_map`(Plan 2, Slice A) ·
   인라인→맵 비파괴 마이그레이션 `migrate_inline_to_map` + **docsherpa 자가적용**(Plan 3, Slice B,
-  content_oracle unaccounted=0). ADR [0011](docs/decisions/0011-map-spine-document.md). **다음 =
-  Slice C**(sidecar home 기록·자가치유 — sidecar 인프라 미구축). 계획서 `docs/plans/2026-07-06-n11-*`.
+  content_oracle unaccounted=0). ADR [0011](docs/decisions/0011-map-spine-document.md). SKILL·DESIGN·
+  doc-reconcile 문서 정합까지 완료(f58e76f). 계획서 `docs/plans/2026-07-06-n11-*`.
+- **Slice C(자가치유) 유보(YAGNI, 2026-07-06):** 맵 링크 삭제는 gate가 orphan으로 시끄럽게 잡아
+  **내용 소실 0 유지**(자동 복구는 안전 아닌 편의). 실사용 필요 시 최소 `heal_map_link`(sidecar 없이)로
+  착수. 근거·판단은 ADR 0011. → **N11 spine 트랙 사실상 종료.**
 - **순서(재-시퀀싱):** M1 → M3 → M2 → M4 → 자기-독푸딩 → **갭1** → M5.
 - **갭1(재사용 §7.5) 완료 — 산문+마커, 코드 없음:** ① 정본 doc-reconcile 앵커 블록을
   `<!-- docsherpa:anchors:start/end -->`로 구분(가드가 강제 — 특화 대상 명확). ② SKILL 5단계에 "§7.5 특화"

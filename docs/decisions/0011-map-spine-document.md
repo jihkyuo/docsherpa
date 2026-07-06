@@ -28,5 +28,8 @@ routing·index 마커를 진입파일 밖 **중립명 맵 중추 문서 `docs/_m
 - N8(인라인 유지) supersede: 인라인 강제 근거(gate BFS 붕괴)가 실측으로 거짓 판명돼 뒤집음.
 - 거부한 대안: 인라인 유지(SPOF 없음이 장점이나 바쁜파일·부재·얇은라우터 원칙에 밀림) · 전용
   맵 도구+커스텀 포맷+주석 포인터(rev4-5 묶음, 과분할로 폐기).
-- 도달성: content_oracle(내용 소실 0)·gate(도달성 100%)가 이 이전의 안전선. 맵 링크가 지워져
-  조용히 orphan 될 위험은 후속(sidecar home 기록·자가치유)에서 강화 예정.
+- 도달성: content_oracle(내용 소실 0)·gate(도달성 100%)가 이 이전의 안전선. 맵 링크가 지워지면
+  gate가 orphan으로 **시끄럽게 잡는다**(맵 파일·마커는 git에 보존 — 도달성 회귀지 **내용 소실 아님**,
+  North Star 유지). 자동 복구(sidecar home 기록·자가치유, §3.8 blocker A)는 **YAGNI로 유보** —
+  gate가 안전을 이미 제공해 자가치유는 편의일 뿐이고, orphan된 맵 파일 자체가 치유 근거라 sidecar도
+  불필요. 실사용이 필요를 보이면 최소 `heal_map_link`(sidecar 없이 orphan-home 스캔·재링크)로 착수.
