@@ -28,21 +28,5 @@ docsherpa는 **비파괴적 보조 도구**다. 아래 셋이 정체성이고, �
 
 - 테스트: `cd skills/setup-docs/scripts && uv run --with pytest pytest -q`
 
-## 먼저 읽기 (문서 인덱스 — 진입점만, 린) <!-- docsherpa:index -->
-
-- 설계·전체 근거 → [docs/DESIGN.md](docs/DESIGN.md)
-- 결정 기록(ADR) → [docs/decisions/README.md](docs/decisions/README.md)
-- 상태·진행·다음 세션 시작점 → [FINDINGS.md](FINDINGS.md)
-- 마일스톤 실행 계획(M0~M4) → [docs/plans/](docs/plans/)
-- 작업 가이드 → [docs/how-to/](docs/how-to/)
-
-## 문서 라우팅 룰 (새 문서가 어디로) <!-- docsherpa:routing -->
-
-분류 순서대로 판정(위에서 먼저 맞는 것):
-1. 구조적 결정(왜) → docs/decisions/NNNN-*.md (_template 복사) + README 로그 추가
-2. 절차/복구(어떻게) → docs/how-to/*.md (3개↑면 _README 인덱스화)
-3. 기능 스펙(무엇을) → docs/specs/<feature>/ + plans/
-4. 함께 읽혀야 할 문서 ≥2개(co-change) → docs/<topic>/ 승격, 리드 문서가 인덱스
-5. 그 외 단일 reference/explanation → docs/ 평면 [디폴트]
-
-불변식: 새 문서는 반드시 위 인덱스에 등록(고아 방지) → broken=0·orphan=0 확인
+## 문서 지도 <!-- docsherpa:map -->
+- 라우팅·인덱스 → [문서 지도](docs/_map.md)
