@@ -17,5 +17,6 @@ M1 → M3 → M2 → M4 → M5. 각 계획은 writing-plans로 작성하고 RED-
 - [2026-07-06-n11-p1-contract-foundation.md](2026-07-06-n11-p1-contract-foundation.md) — N11 Plan 1: 계약 단일 소스(contract.py) + gate 루트 일반화 + 단일-home locator (구현 토대).
 - [2026-07-06-n11-p2-map-scaffold.md](2026-07-06-n11-p2-map-scaffold.md) — N11 Plan 2(Slice A): 그린필드 맵 생성 + 진입파일 맵 링크(spine 계약, 마이그레이션은 후속).
 - [2026-07-06-n11-p3-inline-map-migration.md](2026-07-06-n11-p3-inline-map-migration.md) — N11 Plan 3(Slice B): 인라인→맵 비파괴 마이그레이션(content_oracle 무손실) + docsherpa 자가적용.
+- [2026-07-06-loop-refresh.md](2026-07-06-loop-refresh.md) — 설치본 doc-reconcile 자동 동기(up-only refresh, 스탬프 해시·provenance·로컬편집 보존·무프롬프트 커밋 0).
 
 상태·다음 할 일은 [FINDINGS.md](../../FINDINGS.md), 설계는 [DESIGN.md](../DESIGN.md).
