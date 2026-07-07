@@ -21,6 +21,8 @@ DOC_SUFFIXES = (".md", ".mdx")
 def list_docs(root):
     """ROOT 하위 전 *.md·*.mdx(제외 디렉터리 밖) → repo-상대 POSIX 경로 정렬 리스트."""
     root = Path(root).resolve()
+    if not root.is_dir():
+        raise FileNotFoundError(f"root가 디렉터리가 아님(오타·이동 의심): {root}")
     out = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]

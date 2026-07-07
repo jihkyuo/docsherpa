@@ -28,6 +28,13 @@ def test_list_finds_scattered_and_excludes_junk(tmp_path):
     assert files == sorted(files)
 
 
+def test_list_docs_raises_on_missing_root(tmp_path):
+    import pytest
+    missing = tmp_path / "does-not-exist"
+    with pytest.raises(FileNotFoundError):
+        inventory.list_docs(missing)
+
+
 def test_unaccounted_flags_missing(tmp_path):
     _mk(tmp_path, "a.md")
     _mk(tmp_path, "b.md")
