@@ -65,7 +65,6 @@ def test_esc_neutralizes_html():
     assert esc('a<b>&"c') == 'a&lt;b&gt;&amp;&quot;c'
     assert esc(None) == ""
 
-@pytest.mark.xfail(reason="closed by Task 7 (migration renderer)")
 def test_hostile_path_does_not_break_output():
     d = dict(MIN)
     d["migration"] = [{"src": '<script>x</script>', "dest": 'docs/a&b.md', "ops": ["move"], "impact": None}]
@@ -101,3 +100,13 @@ def test_trees_render_lines_with_classes():
     assert '<span class="stray">api-help.md</span>' in html
     assert '<span class="new">_map.md</span>' in html
     assert "지금" in html and "목표" in html
+
+
+def test_migration_rows_and_impact():
+    d = {**MIN, "migration": [
+        {"src": "a.md", "dest": "docs/reference/a.md", "ops": ["move", "rename"], "impact": None},
+        {"src": "b/**", "dest": "docs/x/", "ops": ["move"], "impact": "경로 깨짐"}]}
+    html = render_report(d, "plan")
+    assert '<span class="badge move">move</span>' in html
+    assert '<span class="badge rename">rename</span>' in html
+    assert "docs/reference/a.md" in html and "경로 깨짐" in html

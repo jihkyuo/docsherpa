@@ -270,5 +270,31 @@ def _render_trees(data: dict) -> str:
             '<span><span class="sw grp"></span>폴더</span></div></section>')
 
 
+_BADGE = {"move": '<span class="badge move">move</span>',
+          "rename": '<span class="badge rename">rename</span>',
+          "frozen": '<span class="badge frozen">frozen</span>'}
+def _mig_row(r: dict) -> str:
+    ops = " ".join(_BADGE[o] for o in r["ops"])
+    if r.get("impact"):
+        imp = f'<td class="impact"><span class="ic" aria-hidden="true">▲</span><span>{esc(r["impact"])}</span></td>'
+    else:
+        imp = '<td class="muted-cell">—</td>'
+    return (f'<tr><td class="path">{esc(r["src"])}<br>→ '
+            f'<span class="dest">{esc(r["dest"])}</span></td><td>{ops}</td>{imp}</tr>')
+
+def _render_migration(data: dict) -> str:
+    rows = "".join(_mig_row(r) for r in data["migration"])
+    return ('<section aria-labelledby="mg"><h2 class="sec" id="mg">이동 계획 '
+            '<span class="n">per-doc · 유실 0</span></h2><div class="card"><div class="tbl-scroll">'
+            '<table><caption class="vh">문서별 이동 계획</caption>'
+            '<thead><tr><th scope="col">원본 → 목적지</th><th scope="col">연산</th>'
+            f'<th scope="col">주의</th></tr></thead><tbody>{rows}</tbody></table></div>'
+            '<div class="tbl-key"><span><b>move</b> 이동</span><span><b>rename</b> 개명</span>'
+            '<span><b>frozen</b> 동결</span><span><b>▲</b> 이동 시 깨짐</span></div></div></section>')
+
+
 def _render_main(data: dict, mode: str) -> str:
-    return "<main>" + _render_hero(data) + _render_scorecard(data) + _render_trees(data) + "</main>"
+    parts = [_render_hero(data), _render_scorecard(data), _render_trees(data)]
+    if mode == "plan":
+        parts.append(_render_migration(data))
+    return "<main>" + "".join(parts) + "</main>"
