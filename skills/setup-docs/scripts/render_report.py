@@ -229,5 +229,23 @@ def _render_hero(data: dict) -> str:
     )
 
 
+_LABEL = {"fail": "미달", "warn": "부분", "pass": "통과"}
+def _dim(d: dict) -> str:
+    st = d["status"]
+    return (f'<div class="dim d-{st}"><div><div class="name">{esc(d["name"])}'
+            f'<span class="code">{esc(d["code"])}</span></div>'
+            f'<div class="sub">{esc(d["sub"])}</div></div>'
+            f'<span class="chip {st}">{_LABEL[st]}</span></div>')
+
+def _render_scorecard(data: dict) -> str:
+    sc = data["scorecard"]
+    m = "".join(_dim(x) for x in sc["mechanical"])
+    j = "".join(_dim(x) for x in sc["judgment"])
+    return ('<section aria-labelledby="sc"><h2 class="sec" id="sc">진단 점수표 '
+            '<span class="n">현재 상태</span></h2>'
+            f'<p class="grp">기계 채점</p><div class="grid">{m}</div>'
+            f'<p class="grp">판단 채점</p><div class="grid">{j}</div></section>')
+
+
 def _render_main(data: dict, mode: str) -> str:
-    return "<main>" + _render_hero(data) + "</main>"
+    return "<main>" + _render_hero(data) + _render_scorecard(data) + "</main>"

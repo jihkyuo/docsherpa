@@ -81,3 +81,13 @@ def test_hero_shows_current_and_target_grade():
     assert 'class="tick cur">F' in html and '현재' in html
     assert 'class="tick tgt">A' in html and '목표' in html
     assert "미달" in html and "7" in html   # 범례 개수
+
+
+def test_scorecard_rows_and_status():
+    d = {**MIN, "scorecard": {
+        "mechanical": [{"code": "M1", "name": "도달성", "sub": "x", "status": "fail"}],
+        "judgment":   [{"code": "J1", "name": "분류", "sub": "y", "status": "warn"}]}}
+    html = render_report(d, "plan")
+    assert 'class="dim d-fail"' in html and '<span class="chip fail">미달</span>' in html
+    assert 'class="dim d-warn"' in html and '<span class="chip warn">부분</span>' in html
+    assert "M1" in html and "도달성" in html
