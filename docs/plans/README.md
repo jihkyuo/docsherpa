@@ -23,4 +23,8 @@ M1 → M3 → M2 → M4 → M5. 각 계획은 writing-plans로 작성하고 RED-
 
 - [2026-07-07-setup-docs-hardening-loop.md](2026-07-07-setup-docs-hardening-loop.md) — setup-docs를 실제 프로젝트에 독푸딩하며 하드닝하는 반복 루프의 **방법론·현재 상태·라운드 이력**. 다음 세션 진입점.
 
+## 진단-주도 마이그레이션 (재설계 구현 — 스펙 [design.md](../specs/diagnosis-driven-migration/design.md))
+
+- [2026-07-07-render-report-renderer.md](2026-07-07-render-report-renderer.md) — 증분 1: `render_report` 동결 렌더러(데이터 모델 → 자기완결 HTML 아티팩트, 대비/구조/이스케이프/픽스처 테스트). 후속: `doc-health` 스킬 → setup-docs 리팩터 → 마이그레이션 실행.
+
 상태·다음 할 일은 [FINDINGS.md](../../FINDINGS.md), 설계는 [DESIGN.md](../DESIGN.md).
