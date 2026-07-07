@@ -318,8 +318,24 @@ def _render_decisions(data: dict) -> str:
             f'<div class="card">{decs}</div></section>')
 
 
+def _render_summary(data: dict) -> str:
+    s = data.get("summary") or {}
+    residual = s.get("residual") or []
+    res_html = ("<b>완료 — 전 차원 충족.</b>" if not residual
+                else "<b>완료(잔여 있음):</b> " + esc(", ".join(residual)))
+    return ('<section aria-labelledby="sm"><h2 class="sec" id="sm">마이그레이션 완료 '
+            '<span class="n">실제 결과</span></h2><div class="card"><div class="flag"><div>'
+            f'<div class="t">{res_html}</div>'
+            f'<div class="d">이동 {esc(s.get("moved",0))}개 · 고아 {esc(s.get("orphans_before",0))}→{esc(s.get("orphans_after",0))} · '
+            f'docs/ 밖 {esc(s.get("outside_before",0))}→{esc(s.get("outside_after",0))} · '
+            f'성장 루프 {"설치" if s.get("loop_installed") else "미설치"}</div>'
+            '</div></div></div></section>')
+
 def _render_main(data: dict, mode: str) -> str:
     parts = [_render_hero(data), _render_scorecard(data), _render_trees(data)]
     if mode == "plan":
         parts += [_render_migration(data), _render_decisions(data)]
+    else:
+        parts.append(_render_summary(data))
+    parts.append('<p class="foot">docsherpa · setup-docs</p>')
     return "<main>" + "".join(parts) + "</main>"

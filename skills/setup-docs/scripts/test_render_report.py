@@ -121,3 +121,27 @@ def test_decisions_numbered_with_choices_and_rec():
     assert "결정 2" in html and "구조" in html
     assert 'class="choice rec"' in html and "추천" in html
     assert "CLAUDE.md 유지" in html and "AGENTS.md 승격" in html and '<div class="vs"' in html
+
+
+def test_plan_mode_has_migration_and_decisions_but_result_does_not():
+    d = {**MIN,
+         "migration": [{"src": "a.md", "dest": "docs/a.md", "ops": ["move"], "impact": None}],
+         "decisions": [{"no": 1, "tag": "구조", "tag_kind": "struct", "question": "?",
+                        "choices": [{"label": "A", "value": "x", "detail": "", "src": None, "recommended": True},
+                                    {"label": "B", "value": "y", "detail": "", "src": None, "recommended": False}]}],
+         "summary": {"moved": 3, "orphans_before": 12, "orphans_after": 0,
+                     "outside_before": 45, "outside_after": 0, "loop_installed": True, "residual": []}}
+    plan = render_report(d, "plan")
+    assert "이동 계획" in plan and "당신의 결정" in plan
+    result = render_report(d, "result")
+    assert "이동 계획" not in result and "당신의 결정" not in result
+    assert "완료" in result and "12" in result and "0" in result   # 요약 수치
+
+def test_edges_do_not_crash_or_unbalance():
+    for d in (MIN,  # 0 docs
+              {**MIN, "scorecard": {"mechanical": [{"code": f"M{i}", "name": "n"*40,
+                 "sub": "s", "status": "fail"} for i in range(200)], "judgment": []}}):  # 대량
+        for mode in ("plan", "result"):
+            html = render_report(d, mode)
+            assert html.count("<div") == html.count("</div>")
+            assert 'style="' not in html
