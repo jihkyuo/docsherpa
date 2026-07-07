@@ -6,6 +6,14 @@
   **M5 출시 산출물 완비 + v0.1.0 발행 완료(2026-07-06).** 빌드 사실상 종료.
   다음 = **사용자 정지점만 남음**(터미널 설치 실검증 (c) · 중복 global 제거 (d) · 마켓플레이스 등록 —
   런북 `docs/plans/M4-dogfooding.md`). 새 기능 계획 없음(F13/14/15는 YAGNI 이연, ADR 0012).
+- **setup-docs 진단-주도 제안 — ADR [0014](docs/decisions/0014-setup-docs-diagnosis-driven-proposal.md) 완료(2026-07-07):**
+  e2e 독푸딩(jio.dev)에서 setup-docs가 정본 결정 위임·무거운 경로 강요·루프 스킵유도를 재현 →
+  SKILL·knowledge 수정(**4자세 진단-주도 제안 · 성장 루프 필수화 · MESSY 경량/무거움 2차선**).
+  fresh 베이스라인 대비 행동 4항목 FAIL→PASS(독립 판정자 확인) + jio.dev 실행 M1~M4
+  (gate broken=0·orphan=0 · 마커 · content_oracle 무손실 unaccounted=0 · 멱등/HEALTHY 재진단) 전부 PASS.
+  **⚠️ 미해결 2건:** (1) **gate.py `@import` 오탐** — 산문 속 `@AGENTS.md` 언급을 실제 import로 읽어
+  broken 처리(실행 중 백틱 우회 필요했음) → 픽스 대상. (2) 나머지 3자세(GREENFIELD·중구난방·HEALTHY)
+  fixture 미검증. (jio.dev 마이그레이션 결과는 **미적용**으로 리셋 — 위 2건 해결 전까지 보류.)
 - **N11 맵 중추 문서(spine) — Plan 1·2·3 완료(2026-07-06):** 마커·계약 단일 소스(`contract.py`) +
   gate 루트 일반화·단일-home locator(Plan 1) · 그린필드 맵 생성 `write_map`(Plan 2, Slice A) ·
   인라인→맵 비파괴 마이그레이션 `migrate_inline_to_map` + **docsherpa 자가적용**(Plan 3, Slice B,
