@@ -21,3 +21,40 @@ def test_output_is_self_contained_fragment():
 def test_div_balance():
     html = render_report(MIN, "plan")
     assert html.count("<div") == html.count("</div>")
+
+
+def _lin(c): c/=255; return c/12.92 if c<=0.03928 else ((c+0.055)/1.055)**2.4
+def _L(hexs):
+    h=hexs.lstrip('#'); r,g,b=(int(h[i:i+2],16) for i in (0,2,4))
+    return 0.2126*_lin(r)+0.7152*_lin(g)+0.0722*_lin(b)
+def _cr(fg,bg):
+    a,b=_L(fg),_L(bg); hi,lo=max(a,b),min(a,b); return (hi+0.05)/(lo+0.05)
+
+# (fg_token, bg_token, min_ratio) — 소형 텍스트 4.5, 대형(등급 글자 등) 3.0
+AA_PAIRS = [
+    ("--faint", "--panel", 4.5), ("--faint", "--bg", 4.5),
+    ("--muted", "--panel", 4.5),
+    ("--accent-ink", "--accent-soft", 4.5), ("--accent-ink", "--bg", 4.5),
+    ("--warn-ink", "--warn-soft", 4.5),
+    ("--fail-ink", "--fail-soft", 4.5), ("--fail-ink", "--panel", 4.5),
+    ("--pass-ink", "--pass-soft", 4.5),
+]
+
+def _tokens_for(theme: str) -> dict:
+    # theme: 'light' | 'dark'. :root(라이트 기본) 또는 @media dark 블록의 --x:#hex 파싱.
+    import re
+    from render_report import TEMPLATE_CSS
+    if theme == "light":
+        block = TEMPLATE_CSS.split("@media")[0]
+    else:
+        m = re.search(r'@media \(prefers-color-scheme: dark\)\s*\{\s*:root\s*\{(.*?)\}\s*\}', TEMPLATE_CSS, re.S)
+        block = m.group(1) if m else ""
+    return dict(re.findall(r'(--[\w-]+):\s*(#[0-9a-fA-F]{6})', block))
+
+def test_contrast_aa_both_themes():
+    for theme in ("light", "dark"):
+        tok = _tokens_for(theme)
+        for fg, bg, mn in AA_PAIRS:
+            assert fg in tok and bg in tok, f"{theme}: missing {fg}/{bg}"
+            r = _cr(tok[fg], tok[bg])
+            assert r >= mn, f"{theme} {fg} on {bg} = {r:.2f} < {mn}"
