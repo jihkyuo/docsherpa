@@ -100,3 +100,50 @@ def machine_dims(res, files):
          "sub": (f"docs/ 밖 content {len(outside)}건" if outside
                  else "docs/ 밖 content 0")},
     ]
+
+
+# --- 등급 rollup (결정론, 임계값 🔴 튜닝) --------------------------------------
+def rollup(mech, judg, orphan_ratio, outside_count, router_present):
+    """9차원 상태 + 신호 → 등급 'A'..'F' (spec §3c 산식)."""
+    m = {d["code"]: d["status"] for d in mech}
+    if not router_present:
+        return "F"
+    if m["M1"] == "fail" and orphan_ratio >= ORPHAN_MOST:
+        return "F"
+    if m["M1"] == "fail":
+        return "D"
+    if m["M5"] == "fail":
+        return "D"
+    # 여기서 M1 == pass
+    m_nonpass = sum(1 for c in ("M2", "M3", "M4", "M5") if m[c] != "pass")
+    if m_nonpass >= 3:
+        return "D"
+    if m_nonpass >= 1:
+        return "C"
+    # M1~M5 전부 pass
+    js = [d["status"] for d in judg]
+    j_fail = sum(1 for s in js if s == "fail")
+    j_warn = sum(1 for s in js if s == "warn")
+    if j_fail or j_warn > J_WARN_MAX:
+        return "C"
+    if 1 <= j_warn <= J_WARN_MAX:
+        return "B"
+    return "A"
+
+
+def counts(mech, judg):
+    """전 9차원 상태 tally → {fail,warn,pass}."""
+    alld = list(mech) + list(judg)
+    return {k: sum(1 for d in alld if d["status"] == k)
+            for k in ("fail", "warn", "pass")}
+
+
+def posture_hint(res, files, mech):
+    """결정론 자세 힌트. MESSY 하위 구분은 에이전트 판단(SKILL)."""
+    m = {d["code"]: d["status"] for d in mech}
+    content = [f for f in files if disposition(f) == "content"]
+    if not res.router_present and len(content) <= GREENFIELD_MAX:
+        return "GREENFIELD"
+    if res.router_present and m["M1"] == "pass" and m["M5"] == "pass":
+        return "HEALTHY"
+    return "MESSY"

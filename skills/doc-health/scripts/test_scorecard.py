@@ -93,3 +93,74 @@ def test_m5_warn_then_fail(tmp_path):
     # 4건 밖 → fail (M5_WARN_MAX=3 초과)
     dims2 = scorecard.machine_dims(res, ["s1.md", "s2.md", "s3.md", "s4.md"])
     assert _status(dims2, "M5") == "fail"
+
+
+def _dims(codes_status):
+    # codes_status = {"M1":"pass", ...} → [{code,name,sub,status}]
+    return [{"code": c, "name": c, "sub": "", "status": s}
+            for c, s in codes_status.items()]
+
+
+def _mech(m1, m2, m3, m4, m5):
+    return _dims({"M1": m1, "M2": m2, "M3": m3, "M4": m4, "M5": m5})
+
+
+def _judg(j1, j2, j3, j4):
+    return _dims({"J1": j1, "J2": j2, "J3": j3, "J4": j4})
+
+
+def test_rollup_grade_A_all_pass():
+    m = _mech("pass", "pass", "pass", "pass", "pass")
+    j = _judg("pass", "pass", "pass", "pass")
+    assert scorecard.rollup(m, j, 0.0, 0, True) == "A"
+
+
+def test_rollup_grade_B_one_j_warn():
+    m = _mech("pass", "pass", "pass", "pass", "pass")
+    j = _judg("warn", "pass", "pass", "pass")
+    assert scorecard.rollup(m, j, 0.0, 0, True) == "B"
+
+
+def test_rollup_grade_C_j_fail_or_one_m_nonpass():
+    m = _mech("pass", "pass", "pass", "pass", "pass")
+    assert scorecard.rollup(m, _judg("fail", "pass", "pass", "pass"), 0.0, 0, True) == "C"
+    m2 = _mech("pass", "warn", "pass", "pass", "pass")   # M2~M5 중 1개 비-pass
+    assert scorecard.rollup(m2, _judg("pass", "pass", "pass", "pass"), 0.0, 0, True) == "C"
+
+
+def test_rollup_grade_D_many_m_nonpass_or_m5_fail():
+    m = _mech("pass", "fail", "fail", "fail", "pass")    # M2~M5 중 3개 비-pass
+    assert scorecard.rollup(m, _judg("pass", "pass", "pass", "pass"), 0.0, 0, True) == "D"
+    m5f = _mech("pass", "pass", "pass", "pass", "fail")  # 대량 밖
+    assert scorecard.rollup(m5f, _judg("pass", "pass", "pass", "pass"), 0.0, 8, True) == "D"
+
+
+def test_rollup_grade_D_and_F_on_reachability():
+    m = _mech("fail", "fail", "fail", "fail", "fail")
+    # 라우터 있으나 소수 고아 → D
+    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.2, 5, True) == "D"
+    # 대부분 미도달 → F
+    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.7, 5, True) == "F"
+    # 라우터 없음 → F
+    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.0, 0, False) == "F"
+
+
+def test_counts_tally():
+    m = _mech("pass", "fail", "warn", "pass", "pass")
+    j = _judg("warn", "pass", "pass", "fail")
+    assert scorecard.counts(m, j) == {"fail": 2, "warn": 2, "pass": 5}
+
+
+def test_posture_hint(tmp_path):
+    import gate
+    # GREENFIELD: 라우터 없음 + content 최소
+    _mk(tmp_path, "docs/a.md", "# A\n")
+    res = gate.analyze(tmp_path)
+    m = scorecard.machine_dims(res, ["docs/a.md"])
+    assert scorecard.posture_hint(res, ["docs/a.md"], m) == "GREENFIELD"
+    # HEALTHY
+    _healthy_repo(tmp_path)
+    res2 = gate.analyze(tmp_path)
+    files = ["AGENTS.md", "docs/_map.md", "docs/a.md"]
+    m2 = scorecard.machine_dims(res2, files)
+    assert scorecard.posture_hint(res2, files, m2) == "HEALTHY"
