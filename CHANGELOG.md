@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   MESSY is split into a light lane (link/index fixes, no file moves) and the heavy
   relayout lane, so well-organized trees with only broken links stay light.
 
+### Fixed
+
+- **`gate.py` `@import` false positive** — a prose mention of `@AGENTS.md`
+  mid-line was parsed as a live import and reported as a broken link. Now only a
+  line-leading `@path.md` is treated as an import.
+
 ## [0.1.0] - 2026-07-06
 
 First public release.

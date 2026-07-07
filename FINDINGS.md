@@ -11,9 +11,10 @@
   SKILL·knowledge 수정(**4자세 진단-주도 제안 · 성장 루프 필수화 · MESSY 경량/무거움 2차선**).
   fresh 베이스라인 대비 행동 4항목 FAIL→PASS(독립 판정자 확인) + jio.dev 실행 M1~M4
   (gate broken=0·orphan=0 · 마커 · content_oracle 무손실 unaccounted=0 · 멱등/HEALTHY 재진단) 전부 PASS.
-  **⚠️ 미해결 2건:** (1) **gate.py `@import` 오탐** — 산문 속 `@AGENTS.md` 언급을 실제 import로 읽어
-  broken 처리(실행 중 백틱 우회 필요했음) → 픽스 대상. (2) 나머지 3자세(GREENFIELD·중구난방·HEALTHY)
-  fixture 미검증. (jio.dev 마이그레이션 결과는 **미적용**으로 리셋 — 위 2건 해결 전까지 보류.)
+  **gate.py `@import` 오탐 = 해결(2026-07-07):** 산문 속 `@AGENTS.md`를 import로 오인하던 `IMPORT_RE`를
+  **줄-선두 매칭**(`(?m)^[ \t]*@…`)으로 좁힘. RED-first 재현 테스트 2건 추가(92 GREEN).
+  **⚠️ 남은 미검증 1건:** 나머지 3자세(GREENFIELD·중구난방·HEALTHY) fixture. (jio.dev 마이그레이션
+  결과는 **미적용**으로 리셋 — 사용자 방침: 완전 해결 전 보류.)
 - **N11 맵 중추 문서(spine) — Plan 1·2·3 완료(2026-07-06):** 마커·계약 단일 소스(`contract.py`) +
   gate 루트 일반화·단일-home locator(Plan 1) · 그린필드 맵 생성 `write_map`(Plan 2, Slice A) ·
   인라인→맵 비파괴 마이그레이션 `migrate_inline_to_map` + **docsherpa 자가적용**(Plan 3, Slice B,

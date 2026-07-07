@@ -27,7 +27,7 @@ from pathlib import Path
 import contract
 
 LINK_RE = re.compile(r"\]\(([^)]+)\)")           # 마크다운 링크 ](target)
-IMPORT_RE = re.compile(r"(?:^|\s)@([^\s)]+\.md)")  # @path.md import
+IMPORT_RE = re.compile(r"(?m)^[ \t]*@([^\s)]+\.md)")  # 줄-선두 @path.md import(산문 속 @언급 제외)
 FENCE_RE = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)  # 펜스 코드블록(예시, live 링크 아님)
 
 

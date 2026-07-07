@@ -91,3 +91,21 @@ def test_links_inside_code_fences_are_not_broken(tmp_path):
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs/real.md").write_text("# real\n", encoding="utf-8")
     assert gate.main([str(tmp_path)]) == 0   # 펜스 안 does-not-exist.md 무시 → broken=0
+
+
+def test_prose_at_mention_midline_is_not_an_import(tmp_path):
+    # 산문 속(줄 중간) @AGENTS.md 언급은 import가 아니다 — broken으로 세면 안 됨.
+    (tmp_path / "AGENTS.md").write_text(
+        "# r\n## 인덱스 <!-- docsherpa:index -->\n- [a](docs/a.md)\n", encoding="utf-8")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs/a.md").write_text(
+        "# a\n\n- [ ] Step 5: CLAUDE.md가 @AGENTS.md 그대로인지 확인\n", encoding="utf-8")
+    assert gate.main([str(tmp_path)]) == 0   # 산문 @언급 → import 아님 → broken=0
+
+
+def test_line_leading_at_import_is_followed(tmp_path):
+    # 줄-선두 @import는 여전히 따라간다(도달성) — 과잉 픽스 방지 가드.
+    (tmp_path / "AGENTS.md").write_text("@docs/rules.md\n", encoding="utf-8")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs/rules.md").write_text("# rules\n", encoding="utf-8")
+    assert gate.main([str(tmp_path)]) == 0   # rules.md가 import로 도달 → orphan=0
