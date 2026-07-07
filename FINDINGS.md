@@ -13,8 +13,11 @@
   (gate broken=0·orphan=0 · 마커 · content_oracle 무손실 unaccounted=0 · 멱등/HEALTHY 재진단) 전부 PASS.
   **gate.py `@import` 오탐 = 해결(2026-07-07):** 산문 속 `@AGENTS.md`를 import로 오인하던 `IMPORT_RE`를
   **줄-선두 매칭**(`(?m)^[ \t]*@…`)으로 좁힘. RED-first 재현 테스트 2건 추가(92 GREEN).
-  **⚠️ 남은 미검증 1건:** 나머지 3자세(GREENFIELD·중구난방·HEALTHY) fixture. (jio.dev 마이그레이션
-  결과는 **미적용**으로 리셋 — 사용자 방침: 완전 해결 전 보류.)
+  **4자세 전부 검증 완료(2026-07-07):** 자세3(jio.dev, 8/8 루브릭) + GREENFIELD(조용히 설치)·
+  중구난방(선택지 없이 migrate 강권)·HEALTHY(무변경) 합성 fixture로 확인 — **라우터 없는 GREENFIELD
+  vs 중구난방 구분**(docs 최소 vs chaotic)까지 통과. **→ setup-docs 진단-주도 개선 = 완결.**
+  관찰: 무거운 차선의 content_oracle/worktree는 git 전제(non-git repo면 `git init` 선행). (jio.dev
+  마이그레이션은 여전히 **미적용** — 적용은 사용자 판단; gate 버그 해결로 이제 백틱 우회 없이 깨끗함.)
 - **N11 맵 중추 문서(spine) — Plan 1·2·3 완료(2026-07-06):** 마커·계약 단일 소스(`contract.py`) +
   gate 루트 일반화·단일-home locator(Plan 1) · 그린필드 맵 생성 `write_map`(Plan 2, Slice A) ·
   인라인→맵 비파괴 마이그레이션 `migrate_inline_to_map` + **docsherpa 자가적용**(Plan 3, Slice B,
