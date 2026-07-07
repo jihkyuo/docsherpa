@@ -9,6 +9,7 @@
 - 제품 요구(PRD) → [docs/product/](product/)
 - 상태·진행·다음 세션 시작점 → [FINDINGS.md](../FINDINGS.md)
 - 마일스톤 실행 계획(M0~M4) → [docs/plans/](plans/)
+- 기능 스펙(무엇을) → [docs/specs/](specs/)
 - 작업 가이드 → [docs/how-to/](how-to/)
 
 ## 문서 라우팅 룰 (새 문서가 어디로) <!-- docsherpa:routing -->

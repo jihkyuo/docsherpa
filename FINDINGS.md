@@ -2,6 +2,18 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
+- **🆕 setup-docs 재설계 — 진단-주도 전체-repo 마이그레이션 (2026-07-08, 브레인스토밍→스펙→증분1 완료):**
+  하드닝 루프 발견(G1~G4: docs/ 중심·밖 방치·전-계정팅 부재·설치≠완료)을 재설계로 확장. **미션 = 전 프로젝트
+  문서를 `docs/`로 중앙집중 + 유실 0.** 6-Phase(전체-repo 병렬 탐색 → 9차원 등급 채점 → 시각 승인
+  아티팩트 → worktree 배치 실행(두 오라클) → 결과 재진단). 진단을 **`doc-health` 스킬**로 분리(before/after
+  동일 채점기 = 정합성), `render_report.py` 공유 렌더러(동결 CSS + WCAG-AA 테스트로 품질 영구 고정 — 매
+  실행 동일 품질). 스펙 [design.md](docs/specs/diagnosis-driven-migration/design.md), 계획
+  [render-report](docs/plans/2026-07-07-render-report-renderer.md).
+  **✅ 증분 1 `render_report` 완료:** 350줄 stdlib 렌더러 + 13 테스트(105 green), opus 리뷰 APPROVED(Crit/Imp 0),
+  AA 가드 라이브(worst 4.78)·자기완결·동결 CSS byte-identical·전 주입점 이스케이프. **다음 = 증분 2
+  `doc-health`**(전체-repo 병렬 탐색 + 채점 → render_report가 먹을 데이터 모델 생산; 자체 spec→plan→build).
+  이연: Phase 4 result-모드 CSS·repo-키 스키마 하드닝(ledger `.superpowers/sdd/progress.md`).
+  참고: ADR 0010 `doc-*` 패밀리 폐기 → 새 스킬은 merit로 명명(그래서 `doc-health`).
 - **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · N11 spine · Track2/F12 · loop-refresh · PRD 1급 타입 ·
   **M5 출시 산출물 완비 + v0.1.0 발행 완료(2026-07-06).** 빌드 사실상 종료.
   다음 = **사용자 정지점만 남음**(터미널 설치 실검증 (c) · 중복 global 제거 (d) · 마켓플레이스 등록 —
@@ -48,9 +60,11 @@
   검증: 90 tests GREEN · gate broken=0 orphan=0 · 릴리즈 게이트(JSON·링크·placeholder·버전 정합) 통과.
   **남은 사용자 정지점(M4 런북, 터미널 Claude Code):** (c) `/plugin install docsherpa@docsherpa` 실검증 ·
   (d) 중복 global `~/.claude/skills/setup-docs` 제거(c 확인 후) · (선택) 마켓플레이스 공식 등록.
-- **ADR 0010 개명 부분 철회(2026-07-06):** `setup-docs → doc-setup` 개명은 **하지 않기로 확정**(v0.1.0이
-  `setup-docs` 커맨드 표면으로 이미 발행 → 개명은 breaking). `hello` 삭제·브랜드 미표기는 유효. `setup-docs`
-  이름 영구 유지. ADR [0010](docs/decisions/0010-skill-names-doc-family.md) 상태 = 부분 철회.
+- **ADR 0010 폐기 — `doc-*` 패밀리 미채택(2026-07-07):** `setup-docs → doc-setup` 개명은 **하지 않음**(v0.1.0이
+  `setup-docs` 커맨드 표면으로 이미 발행 → 개명은 breaking). flagship이 안 따라 `doc-*` "패밀리"는 실현된 적
+  없음 → **폐기.** 실제 규칙 = **혼합**(`setup-docs`+`doc-reconcile`), 새 스킬은 `doc-*` 강제 없이 **merit(명료함
+  + 네임스페이스 없이 홀로 불릴 때 자명)**로 명명. `hello` 삭제·브랜드 미표기(`docsherpa-*` 거부)는 유효.
+  ADR [0010](docs/decisions/0010-skill-names-doc-family.md) 상태 = 폐기.
 - **순서(재-시퀀싱):** M1 → M3 → M2 → M4 → 자기-독푸딩 → **갭1** → M5.
 - **갭1(재사용 §7.5) 완료 — 산문+마커, 코드 없음:** ① 정본 doc-reconcile 앵커 블록을
   `<!-- docsherpa:anchors:start/end -->`로 구분(가드가 강제 — 특화 대상 명확). ② SKILL 5단계에 "§7.5 특화"
