@@ -247,5 +247,28 @@ def _render_scorecard(data: dict) -> str:
             f'<p class="grp">판단 채점</p><div class="grid">{j}</div></section>')
 
 
+def _tree_pre(lines) -> str:
+    out = []
+    for text, cls in lines:
+        out.append(f'<span class="{cls}">{esc(text)}</span>' if cls else esc(text))
+    return "\n".join(out)
+
+def _tree(side: dict, which: str) -> str:
+    tagcls = "now" if which == "before" else "tgt"
+    return (f'<div class="tree {"a" if which=="before" else "b"}">'
+            f'<h3>{esc(side["title"])} <span class="htag {tagcls}">{esc(side["tag"])}</span></h3>'
+            f'<div class="st">{esc(side["sub"])}</div>'
+            f'<pre>{_tree_pre(side["lines"])}</pre></div>')
+
+def _render_trees(data: dict) -> str:
+    t = data["trees"]
+    return ('<section aria-labelledby="tr"><h2 class="sec" id="tr">문서 구조 '
+            '<span class="n">Before → After</span></h2>'
+            f'<div class="card trees">{_tree(t["before"],"before")}{_tree(t["after"],"after")}</div>'
+            '<div class="key"><span><span class="sw stray"></span>산재·문제</span>'
+            '<span><span class="sw new"></span>신설</span>'
+            '<span><span class="sw grp"></span>폴더</span></div></section>')
+
+
 def _render_main(data: dict, mode: str) -> str:
-    return "<main>" + _render_hero(data) + _render_scorecard(data) + "</main>"
+    return "<main>" + _render_hero(data) + _render_scorecard(data) + _render_trees(data) + "</main>"

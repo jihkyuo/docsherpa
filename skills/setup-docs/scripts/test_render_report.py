@@ -91,3 +91,13 @@ def test_scorecard_rows_and_status():
     assert 'class="dim d-fail"' in html and '<span class="chip fail">미달</span>' in html
     assert 'class="dim d-warn"' in html and '<span class="chip warn">부분</span>' in html
     assert "M1" in html and "도달성" in html
+
+
+def test_trees_render_lines_with_classes():
+    d = {**MIN, "trees": {
+        "before": {"title": "산재", "tag": "지금", "sub": "고아 12", "lines": [["api-help.md", "stray"]]},
+        "after":  {"title": "docs/", "tag": "목표", "sub": "고아 0", "lines": [["_map.md", "new"]]}}}
+    html = render_report(d, "plan")
+    assert '<span class="stray">api-help.md</span>' in html
+    assert '<span class="new">_map.md</span>' in html
+    assert "지금" in html and "목표" in html
