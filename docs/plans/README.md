@@ -19,4 +19,8 @@ M1 → M3 → M2 → M4 → M5. 각 계획은 writing-plans로 작성하고 RED-
 - [2026-07-06-n11-p3-inline-map-migration.md](2026-07-06-n11-p3-inline-map-migration.md) — N11 Plan 3(Slice B): 인라인→맵 비파괴 마이그레이션(content_oracle 무손실) + docsherpa 자가적용.
 - [2026-07-06-loop-refresh.md](2026-07-06-loop-refresh.md) — 설치본 doc-reconcile 자동 동기(up-only refresh, 스탬프 해시·provenance·로컬편집 보존·무프롬프트 커밋 0).
 
+## 하드닝 루프 (진행 중)
+
+- [2026-07-07-setup-docs-hardening-loop.md](2026-07-07-setup-docs-hardening-loop.md) — setup-docs를 실제 프로젝트에 독푸딩하며 하드닝하는 반복 루프의 **방법론·현재 상태·라운드 이력**. 다음 세션 진입점.
+
 상태·다음 할 일은 [FINDINGS.md](../../FINDINGS.md), 설계는 [DESIGN.md](../DESIGN.md).
