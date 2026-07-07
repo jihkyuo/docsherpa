@@ -60,3 +60,5 @@
   - GREENFIELD: 라우터 없음 + docs 최소
   - HEALTHY: 라우터 있음 + gate PASS + 안티패턴 없음
   - MESSY: docs 있음 + (gate FAIL 또는 안티패턴 ≥1). **경량/무거움 2차선**은 SKILL.md — 옮길 문서가 없으면(링크 포맷·인덱스만) 경량, 실제 이동 필요면 무거움(ADR 0014)
+    - **드리프트된 docsherpa**(우리 loop·라우터는 있는데 gate FAIL·spine 없음) = "자체구조(우리와 다름)"가 아니라 **우리 것 복구/완성** — inline→map 이관 + 도달성 교정 + loop 유지(ADR 0014)
+    - **broken link 유형 구분**: 포맷-깨짐(타겟 존재)은 교정, **동결 역사 문서(날짜박힌 spec/plan)의 타겟-소실은 de-link**(백틱화로 기록 보존·gate 통과; repoint 금지 — 역사 falsify)

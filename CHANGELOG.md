@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-07-07
+
+### Changed
+
+- **`setup-docs` — two diagnosis refinements from dogfooding a drifted repo.**
+  (1) New posture **"drifted docsherpa"** (our loop/router present but gate FAILs and the
+  map spine is absent) — repaired/completed in place, not framed as migrate-vs-reinforce.
+  (2) **Broken-link handling** now distinguishes format-broken (target exists → reformat/
+  repoint) from a target legitimately removed inside a **frozen historical doc** (dated
+  spec/plan) — the latter is **de-linked** to preserve the record, not repointed (which
+  would falsify history). (ADR 0014)
+
 ## [0.2.1] - 2026-07-07
 
 ### Changed
