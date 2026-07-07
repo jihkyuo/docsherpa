@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""문서 건강 점수표 — doc-health 채점(기계 차원 M1~M5 + 등급 rollup).
+
+도달성은 gate.analyze 재사용(단일 엔진 = 정합성). disposition(H1)으로 M5 분모 결정.
+J1~J4 판단·분류·자세 하위는 SKILL.md 절차(코드 아님).
+"""
+import json
+import sys
+from pathlib import Path
+
+# --- 공유 스크립트 경로 부트스트랩(CLI 실행 시; 테스트는 conftest.py도) ---------
+_SHARED = Path(__file__).resolve().parents[2] / "setup-docs" / "scripts"
+if str(_SHARED) not in sys.path:
+    sys.path.insert(0, str(_SHARED))
+
+import contract  # noqa: E402
+import gate       # noqa: E402
+
+# --- 임계값 (🔴 열린질문 — 하드닝 루프 튜닝, spec §3c) -------------------------
+M5_WARN_MAX = 3       # docs/ 밖 content 1~3 = warn, 초과 = fail
+ORPHAN_MOST = 0.5     # orphan_ratio >= 이 값이면 "대부분 미도달"(F)
+J_WARN_MAX = 2        # J warn 1~2 = B 유지, 초과 = C
+GREENFIELD_MAX = 2    # content 문서 이하 + 라우터 없음 = GREENFIELD
+
+# --- disposition (H1) --------------------------------------------------------
+_TOOLING_DIRS = (".claude", ".github", ".cursor", ".gitlab")
+_ROOT_CONVENTION = {"README.md", "CONTRIBUTING.md", "CHANGELOG.md",
+                    "SECURITY.md", "CODE_OF_CONDUCT.md"}
+
+
+def disposition(rel_path):
+    """repo-상대 경로 → 'router'|'tooling'|'content' (경로 규칙, 판단 아님)."""
+    parts = Path(rel_path).parts
+    name = parts[-1]
+    if len(parts) == 1 and name in contract.ENTRY_FILENAMES:
+        return "router"
+    if parts and parts[0] in _TOOLING_DIRS:
+        return "tooling"
+    if len(parts) == 1 and name in _ROOT_CONVENTION:
+        return "tooling"
+    return "content"
+
+
+def outside_content(files):
+    """docs/ 밖 content 문서 목록(M5 위반 후보) — 정렬."""
+    out = [f for f in files
+           if disposition(f) == "content" and Path(f).parts[0] != "docs"]
+    return sorted(out)
+
+
+# --- 기계 차원 M1~M5 ---------------------------------------------------------
+def _has_sessionstart_hook(settings_path):
+    if not settings_path.is_file():
+        return False
+    try:
+        return "SessionStart" in settings_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+
+def _m4_loop_ok(root):
+    root = Path(root)
+    return ((root / ".claude" / "doc-drift-prime.txt").is_file()
+            and (root / ".claude" / "skills" / "doc-reconcile" / "SKILL.md").is_file()
+            and _has_sessionstart_hook(root / ".claude" / "settings.json"))
+
+
+def _m5_status(files):
+    n = len(outside_content(files))
+    if n == 0:
+        return "pass"
+    return "warn" if n <= M5_WARN_MAX else "fail"
+
+
+def machine_dims(res, files):
+    """GateResult + inventory files → [M1..M5] 차원 dict 리스트."""
+    root = res.root
+    n_home = len(res.homes)
+    m1 = "pass" if (not res.broken and not res.orphans) else "fail"
+    m2 = "pass" if (res.router_present and n_home == 1) else "fail"
+    map_home = (root / "docs" / "_map.md").resolve()
+    m3 = "pass" if (n_home == 1 and res.homes[0].resolve() == map_home) else "fail"
+    m4 = "pass" if _m4_loop_ok(root) else "fail"
+    m5 = _m5_status(files)
+    outside = outside_content(files)
+    return [
+        {"code": "M1", "name": "도달성", "status": m1,
+         "sub": f"broken={len(res.broken)} · orphan={len(res.orphans)}"},
+        {"code": "M2", "name": "라우터+마커", "status": m2,
+         "sub": ("라우터 없음" if not res.router_present
+                 else f"마커 home {n_home}개"
+                 + ("" if n_home == 1 else " (정확히 1 필요)"))},
+        {"code": "M3", "name": "맵 척추", "status": m3,
+         "sub": ("home=docs/_map.md" if m3 == "pass"
+                 else "척추 미분리(인라인 마커 또는 home≠1)")},
+        {"code": "M4", "name": "성장 루프", "status": m4,
+         "sub": ("prime·hook·doc-reconcile 설치" if m4 == "pass"
+                 else "성장 루프 3종 중 누락")},
+        {"code": "M5", "name": "커버리지", "status": m5,
+         "sub": (f"docs/ 밖 content {len(outside)}건" if outside
+                 else "docs/ 밖 content 0")},
+    ]
