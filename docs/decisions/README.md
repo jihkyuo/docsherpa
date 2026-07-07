@@ -19,3 +19,4 @@
 | [0011](0011-map-spine-document.md) | 맵 중추 문서 — routing·index를 진입파일 밖 `docs/_map.md`로(N8 supersede) | 수락 | 2026-07-06 |
 | [0012](0012-self-growth-open-issues.md) | 자가성장 열린 이슈 처리 — F12 룰#4 트리거 구축 + F11/13/14/15 제약 기록 | 수락 | 2026-07-06 |
 | [0013](0013-prd-first-class-doc-type.md) | PRD 1급 문서 타입(product/ 온디맨드·라우팅 #2) | 수락 | 2026-07-06 |
+| [0014](0014-setup-docs-diagnosis-driven-proposal.md) | setup-docs 진단-주도 제안 모델 — 4자세·루프 필수화·MESSY 경량 차선(§7 opt-in 정정) | 수락 | 2026-07-07 |

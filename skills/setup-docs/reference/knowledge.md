@@ -42,7 +42,7 @@
 
 ## 안티패턴 (피한다)
 
-타입 폴더로 결합 서브시스템 흩기 · 투기적 빈 폴더(dead-doc) · 인덱스 누락(고아) · 링크 타겟만 고치고 라벨은 옛 파일명 · 진입 파일 비대화(룰 무시됨) · 재배선 회피용 레거시 통파일 잔존 · 링크-전용 troubleshooting(Status 복제).
+타입 폴더로 결합 서브시스템 흩기 · 투기적 빈 폴더(dead-doc) · 인덱스 누락(고아) · 링크 타겟만 고치고 라벨은 옛 파일명 · 진입 파일 비대화(룰 무시됨) · 재배선 회피용 레거시 통파일 잔존 · 링크-전용 troubleshooting(Status 복제) · **비-markdown 링크 라우터**(인덱스가 평문 화살표·백틱 경로라 gate 미인식 → 트리 멀쩡해도 orphan).
 
 ---
 
@@ -55,7 +55,8 @@
   - 진입파일 비대화: 진입 파일이 항시룰을 넘어 상세까지 담음
   - 링크-전용 troubleshooting: 절차 없이 symptom→link만 (Status 복제)
   - ADR/how-to 오분류: "왜"문서가 decisions/ 밖, "복구절차"가 how-to/ 밖
+  - 비-markdown 링크 라우터: 인덱스가 평문 화살표(`→ docs/x.md`)·백틱 경로라 gate가 링크로 미인식 → 트리 멀쩡해도 orphan
 - **상태 결론:**
   - GREENFIELD: 라우터 없음 + docs 최소
   - HEALTHY: 라우터 있음 + gate PASS + 안티패턴 없음
-  - MESSY: docs 있음 + (gate FAIL 또는 안티패턴 ≥1)
+  - MESSY: docs 있음 + (gate FAIL 또는 안티패턴 ≥1). **경량/무거움 2차선**은 SKILL.md — 옮길 문서가 없으면(링크 포맷·인덱스만) 경량, 실제 이동 필요면 무거움(ADR 0014)

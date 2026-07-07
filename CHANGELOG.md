@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-07-07
+
+### Changed
+
+- **`setup-docs` — diagnosis-driven proposal model** (ADR 0014). Diagnosis now selects
+  a posture (silent install / migrate-only for chaotic trees / migrate-vs-reinforce
+  choice for reasonable-but-different trees / review for healthy) and *proposes* rather
+  than delegating canonical decisions. The growth loop and map spine are now mandatory
+  (not an opt-in-skip choice; the trust ceremony of announce-before-write is preserved).
+  MESSY is split into a light lane (link/index fixes, no file moves) and the heavy
+  relayout lane, so well-organized trees with only broken links stay light.
+
+### Fixed
+
+- **`gate.py` `@import` false positive** — a prose mention of `@AGENTS.md`
+  mid-line was parsed as a live import and reported as a broken link. Now only a
+  line-leading `@path.md` is treated as an import.
+
 ## [0.1.0] - 2026-07-06
 
 First public release.

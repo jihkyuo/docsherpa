@@ -56,6 +56,7 @@ second-brain repo는 강력한 문서 아키텍처를 갖고 있다: **얇은 �
 | [**D7**](decisions/0007-hook-trust-model.md) | **훅 신뢰 모델**: (설치자) opt-in + inspect-before-write + easy-disable. (**collaborator**) 클론한 repo의 커밋된 훅은 **Claude Code 자체 훅-승인 게이트**(첫 실행 전 승인 요청)가 safe-by-default를 제공 — 우리는 신뢰층 재발명 안 함, M0에서 실검증. prime은 커밋된 신뢰 경계임을 명시 | opt-in은 설치자만 보호. collaborator 보호는 harness가 담당(codex #4) | 조용히 훅 설치 / 자체 신뢰층 재발명 |
 | [**D8**](decisions/0008-language-agnostic-markers.md) | **섹션명 계약 = 언어-불문 마커** `<!-- docsherpa:routing -->`·`<!-- docsherpa:index -->`. 한국어 리터럴 폐기 | 소비자가 AGENTS.md를 번역하면 한국어 헤딩이 무효화 → 앵커 전멸(둘 다 지적) | 헤딩 문자열 매칭(번역·wording에 취약) |
 | [**D9**](decisions/0009-narrow-doc-reconcile-triggers.md) | doc-reconcile 트리거를 **SessionStart + 수동 호출로 좁힘**. "pre-commit docs-impact 게이트" 언급 제거 | 그 게이트는 이 repo에도 없음(의도적 보류) — 광고하면 phantom이 소비자로 복제(architect) | 게이트 구현(YAGNI, 보류 결정 뒤집기) |
+| [**D14**](decisions/0014-setup-docs-diagnosis-driven-proposal.md) | **setup-docs 진단-주도 제안**: 4자세(GREENFIELD 무설명 설치 / 중구난방 migrate 강권 / 자체구조 migrate-vs-보강 선택 / HEALTHY 개선리뷰) · **성장 루프 필수화**(§7 opt-in "스킵 선택" 정정, 고지·승인은 유지) · **MESSY 경량 차선**(이동 없으면 링크·인덱스만) · 경직 게이트 아닌 산문 지시문 | e2e(jio.dev) + fresh 베이스라인이 결정회피·무거운경로 강요·루프 스킵유도 재현 | 결정론 게이트 강제 · 루프 opt-in 유지 · MESSY 단일 무거운 파이프라인 |
 
 **감사(2026-07-04):** 개인·회사 식별자 유출 **0**. 도메인 특이성은 이식성 문제(프라이버시 아님).
 **단, license/provenance 감사는 별개**(§8) — "식별자 0"이 "발행 가능"을 증명하진 않음(codex).
@@ -84,8 +85,9 @@ docsherpa/                          ← 새 public repo (GitHub)
 ```
 
 **흐름(2계층):** ① 설치(1회, user): `/plugin marketplace add <you>/docsherpa` → install.
-② 적용(프로젝트마다): `/docsherpa:setup-docs` → 문서 골격 + 성장 루프 커밋. **opt-in**(D7):
-스캐폴드 전 무엇을 쓸지 보여주고 승인받음.
+② 적용(프로젝트마다): `/docsherpa:setup-docs` → 문서 골격 + 성장 루프 커밋. **성장 루프는 필수
+([D14](decisions/0014-setup-docs-diagnosis-driven-proposal.md))** — 아래 **opt-in**(D7)은 *고지·승인*이지
+스킵 선택이 아니다: 스캐폴드 전 무엇을 쓸지 보여주고 승인받음.
 
 ## 5. 플러그인 내부물 (B) — §4 트리 상태표대로.
 
@@ -113,7 +115,12 @@ docsherpa/                          ← 새 public repo (GitHub)
 
 ## 7. setup-docs 설치자 확장 (D)
 
-GREENFIELD에 **"성장 루프 설치"(opt-in — D7)** 단계 추가:
+GREENFIELD에 **"성장 루프 설치"** 단계 추가:
+
+> ⚠️ **[D14](decisions/0014-setup-docs-diagnosis-driven-proposal.md) 정정:** 성장 루프는 **필수**다 —
+> "설치할까요/스킵" 선택지가 아니다. 아래 "opt-in"은 *설치 여부 선택*이 아니라 **무엇을 쓸지
+> 고지·승인**(diff-preview + 훅-승인 게이트, D7)을 뜻한다. dry-run fallback은 유지되나 "스킵" 경로는 없다.
+
 
 1. **루프 스캐폴드(opt-in):** 무엇을 쓸지 diff-preview로 보여주고 승인 후, doc-reconcile(앵커 채워)
    + prime + 훅을 target **`.claude/settings.json`**(공유·커밋. `.local` 아님 — 정확한 경로 고정) +
