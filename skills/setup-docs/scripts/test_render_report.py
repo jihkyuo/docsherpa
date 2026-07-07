@@ -1,5 +1,6 @@
 import re
-from render_report import render_report
+import pytest
+from render_report import render_report, esc
 
 MIN = {"repo": {"name": "r", "docs_count": 0, "branch": "b"},
        "grade": {"current": "F", "target": "A"}, "counts": {"fail": 0, "warn": 0, "pass": 0},
@@ -58,3 +59,17 @@ def test_contrast_aa_both_themes():
             assert fg in tok and bg in tok, f"{theme}: missing {fg}/{bg}"
             r = _cr(tok[fg], tok[bg])
             assert r >= mn, f"{theme} {fg} on {bg} = {r:.2f} < {mn}"
+
+
+def test_esc_neutralizes_html():
+    assert esc('a<b>&"c') == 'a&lt;b&gt;&amp;&quot;c'
+    assert esc(None) == ""
+
+@pytest.mark.xfail(reason="closed by Task 7 (migration renderer)")
+def test_hostile_path_does_not_break_output():
+    d = dict(MIN)
+    d["migration"] = [{"src": '<script>x</script>', "dest": 'docs/a&b.md', "ops": ["move"], "impact": None}]
+    html = render_report(d, "plan")
+    assert "<script>x" not in html          # 원문 태그가 살아있으면 안 됨
+    assert "&lt;script&gt;" in html
+    assert html.count("<div") == html.count("</div>")
