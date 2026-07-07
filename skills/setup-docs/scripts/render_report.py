@@ -208,6 +208,15 @@ def render_report(data: dict, mode: str = "plan") -> str:
     return f'<title>{esc(data["repo"]["name"])} · 문서 아키텍처 진단</title>\n<style>{TEMPLATE_CSS}</style>\n{body}'
 
 
+def _render_masthead(data: dict) -> str:
+    r = data["repo"]
+    return ('<div class="mast"><div>'
+            '<div class="kicker">docsherpa · setup-docs</div>'
+            '<h1>문서 아키텍처 진단 &amp; 마이그레이션 계획</h1></div>'
+            f'<div class="repo">repo <b>{esc(r["name"])}</b> · {esc(r["docs_count"])} docs · '
+            f'branch <b>{esc(r["branch"])}</b></div></div>')
+
+
 def _render_hero(data: dict) -> str:
     g = data["grade"]; c = data["counts"]
     return (
@@ -332,7 +341,7 @@ def _render_summary(data: dict) -> str:
             '</div></div></div></section>')
 
 def _render_main(data: dict, mode: str) -> str:
-    parts = [_render_hero(data), _render_scorecard(data), _render_trees(data)]
+    parts = [_render_masthead(data), _render_hero(data), _render_scorecard(data), _render_trees(data)]
     if mode == "plan":
         parts += [_render_migration(data), _render_decisions(data)]
     else:

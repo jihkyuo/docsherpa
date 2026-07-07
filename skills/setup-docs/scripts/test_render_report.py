@@ -1,5 +1,4 @@
 import re
-import pytest
 from render_report import render_report, esc
 
 MIN = {"repo": {"name": "r", "docs_count": 0, "branch": "b"},
@@ -72,6 +71,14 @@ def test_hostile_path_does_not_break_output():
     assert "<script>x" not in html          # 원문 태그가 살아있으면 안 됨
     assert "&lt;script&gt;" in html
     assert html.count("<div") == html.count("</div>")
+
+
+def test_masthead_shows_repo_fields_escaped():
+    d = {**MIN, "repo": {"name": "r&<x>", "docs_count": 69, "branch": "develop"}}
+    html = render_report(d, "plan")
+    assert 'class="mast"' in html
+    assert "69 docs" in html and "develop" in html
+    assert "r&amp;&lt;x&gt;" in html and "<x>" not in html
 
 
 def test_hero_shows_current_and_target_grade():
