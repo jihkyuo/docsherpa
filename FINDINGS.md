@@ -48,9 +48,11 @@
   검증: 90 tests GREEN · gate broken=0 orphan=0 · 릴리즈 게이트(JSON·링크·placeholder·버전 정합) 통과.
   **남은 사용자 정지점(M4 런북, 터미널 Claude Code):** (c) `/plugin install docsherpa@docsherpa` 실검증 ·
   (d) 중복 global `~/.claude/skills/setup-docs` 제거(c 확인 후) · (선택) 마켓플레이스 공식 등록.
-- **ADR 0010 개명 부분 철회(2026-07-06):** `setup-docs → doc-setup` 개명은 **하지 않기로 확정**(v0.1.0이
-  `setup-docs` 커맨드 표면으로 이미 발행 → 개명은 breaking). `hello` 삭제·브랜드 미표기는 유효. `setup-docs`
-  이름 영구 유지. ADR [0010](docs/decisions/0010-skill-names-doc-family.md) 상태 = 부분 철회.
+- **ADR 0010 폐기 — `doc-*` 패밀리 미채택(2026-07-07):** `setup-docs → doc-setup` 개명은 **하지 않음**(v0.1.0이
+  `setup-docs` 커맨드 표면으로 이미 발행 → 개명은 breaking). flagship이 안 따라 `doc-*` "패밀리"는 실현된 적
+  없음 → **폐기.** 실제 규칙 = **혼합**(`setup-docs`+`doc-reconcile`), 새 스킬은 `doc-*` 강제 없이 **merit(명료함
+  + 네임스페이스 없이 홀로 불릴 때 자명)**로 명명. `hello` 삭제·브랜드 미표기(`docsherpa-*` 거부)는 유효.
+  ADR [0010](docs/decisions/0010-skill-names-doc-family.md) 상태 = 폐기.
 - **순서(재-시퀀싱):** M1 → M3 → M2 → M4 → 자기-독푸딩 → **갭1** → M5.
 - **갭1(재사용 §7.5) 완료 — 산문+마커, 코드 없음:** ① 정본 doc-reconcile 앵커 블록을
   `<!-- docsherpa:anchors:start/end -->`로 구분(가드가 강제 — 특화 대상 명확). ② SKILL 5단계에 "§7.5 특화"
