@@ -110,3 +110,14 @@ def test_migration_rows_and_impact():
     assert '<span class="badge move">move</span>' in html
     assert '<span class="badge rename">rename</span>' in html
     assert "docs/reference/a.md" in html and "경로 깨짐" in html
+
+
+def test_decisions_numbered_with_choices_and_rec():
+    d = {**MIN, "decisions": [{"no": 2, "tag": "구조", "tag_kind": "struct",
+        "question": "라우터를 어떻게?", "choices": [
+            {"label": "안 A", "value": "CLAUDE.md 유지", "detail": "맵 링크 직접", "src": None, "recommended": True},
+            {"label": "안 B", "value": "AGENTS.md 승격", "detail": "라우팅만", "src": None, "recommended": False}]}]}
+    html = render_report(d, "plan")
+    assert "결정 2" in html and "구조" in html
+    assert 'class="choice rec"' in html and "추천" in html
+    assert "CLAUDE.md 유지" in html and "AGENTS.md 승격" in html and '<div class="vs"' in html

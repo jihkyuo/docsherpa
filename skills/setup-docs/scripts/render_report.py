@@ -293,8 +293,33 @@ def _render_migration(data: dict) -> str:
             '<span><b>frozen</b> 동결</span><span><b>▲</b> 이동 시 깨짐</span></div></div></section>')
 
 
+def _choice(c: dict) -> str:
+    rec = ' rec' if c.get("recommended") else ''
+    tag = '<span class="rtag">추천</span>' if c.get("recommended") else ''
+    src = f'<div class="src">출처 · {esc(c["src"])}</div>' if c.get("src") else ''
+    return (f'<div class="choice{rec}"><div class="cl">{esc(c["label"])} {tag}</div>'
+            f'<div class="cv">{esc(c["value"])}</div><div class="cd">{esc(c["detail"])}</div>{src}</div>')
+
+def _decision(d: dict) -> str:
+    a, b = d["choices"][0], d["choices"][1]
+    return (f'<div class="dec"><div class="dec-head"><span class="dec-no">결정 {esc(d["no"])}</span>'
+            f'<span class="dec-tag {esc(d["tag_kind"])}">{esc(d["tag"])}</span></div>'
+            f'<p class="dec-q">{esc(d["question"])}</p>'
+            f'<div class="choices">{_choice(a)}<div class="vs" aria-hidden="true">vs</div>{_choice(b)}</div></div>')
+
+def _render_decisions(data: dict) -> str:
+    if not data["decisions"]:
+        return ""
+    decs = "".join(_decision(d) for d in data["decisions"])
+    n = len(data["decisions"])
+    return (f'<section aria-labelledby="fl"><h2 class="sec" id="fl">당신의 결정 '
+            f'<span class="n">{n}건 · 채팅에서 선택</span></h2>'
+            '<p class="sec-intro">자동으로 고치지 않습니다 — 채팅으로 선택을 알려주세요.</p>'
+            f'<div class="card">{decs}</div></section>')
+
+
 def _render_main(data: dict, mode: str) -> str:
     parts = [_render_hero(data), _render_scorecard(data), _render_trees(data)]
     if mode == "plan":
-        parts.append(_render_migration(data))
+        parts += [_render_migration(data), _render_decisions(data)]
     return "<main>" + "".join(parts) + "</main>"
