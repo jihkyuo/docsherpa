@@ -73,3 +73,11 @@ def test_hostile_path_does_not_break_output():
     assert "<script>x" not in html          # 원문 태그가 살아있으면 안 됨
     assert "&lt;script&gt;" in html
     assert html.count("<div") == html.count("</div>")
+
+
+def test_hero_shows_current_and_target_grade():
+    html = render_report({**MIN, "grade": {"current": "F", "target": "A"},
+                          "counts": {"fail": 7, "warn": 2, "pass": 0}}, "plan")
+    assert 'class="tick cur">F' in html and '현재' in html
+    assert 'class="tick tgt">A' in html and '목표' in html
+    assert "미달" in html and "7" in html   # 범례 개수

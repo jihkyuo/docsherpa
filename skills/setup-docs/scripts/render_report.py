@@ -208,5 +208,26 @@ def render_report(data: dict, mode: str = "plan") -> str:
     return f'<title>{esc(data["repo"]["name"])} · 문서 아키텍처 진단</title>\n<style>{TEMPLATE_CSS}</style>\n{body}'
 
 
+def _render_hero(data: dict) -> str:
+    g = data["grade"]; c = data["counts"]
+    return (
+      '<div class="card hero">'
+      '<p class="hero-title">문서 아키텍처 건강 등급</p>'
+      '<div class="scale" role="img" aria-label="등급 스케일 F부터 A까지. 현재/목표 표시.">'
+      f'<span class="tick cur">{esc(g["current"])}<span class="cap">현재</span></span>'
+      '<span class="seg"></span><span class="tick mid">D</span>'
+      '<span class="seg"></span><span class="tick mid">C</span>'
+      '<span class="seg"></span><span class="tick mid">B</span>'
+      f'<span class="seg"></span><span class="tick tgt">{esc(g["target"])}<span class="cap">목표</span></span>'
+      '</div>'
+      f'<p class="explain">9개 진단 차원 중 <b>{c["pass"]}개</b>만 충족 → 목표 <b class="a">{esc(g["target"])}등급</b>.</p>'
+      '<div class="legend">'
+      f'<div class="lg on-fail"><span class="chip fail">미달</span><span class="cnt">{c["fail"]}</span><span class="gl">기준 미충족</span></div>'
+      f'<div class="lg on-warn"><span class="chip warn">부분</span><span class="cnt">{c["warn"]}</span><span class="gl">일부만 충족</span></div>'
+      f'<div class="lg on-pass"><span class="chip pass">통과</span><span class="cnt">{c["pass"]}</span><span class="gl">기준 충족</span></div>'
+      '</div></div>'
+    )
+
+
 def _render_main(data: dict, mode: str) -> str:
-    return "<main></main>"  # 이후 태스크에서 섹션 채움
+    return "<main>" + _render_hero(data) + "</main>"
