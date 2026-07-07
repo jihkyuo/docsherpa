@@ -32,6 +32,7 @@ setup-docs를 실제 target(jio.dev — 자체 문서구조·라우터를 갖췄
 | **GREENFIELD** | 조용히 설치, 질문 없음 |
 | **MESSY·중구난방**(보강조차 어려운 혼돈) | 선택지 **안 줌** — "마이그레이션 불가피" 이유 고지 + 승인만, migrate 적극 권장 |
 | **MESSY·자체구조**(합리적이나 우리와 다름) | **이동 필요** → migrate vs 보강 선택지 + 트레이드오프 + **migrate 권장** / **이동 0**(migrate·보강 붕괴) → 억지 선택지 말고 **경량 정비 한 계획**, migrate 안 밈 |
+| **MESSY·드리프트된 docsherpa**(우리 loop·라우터 있는데 gate FAIL·spine 없음) | migrate 프레이밍 아님 — **우리 것 복구/완성**(inline→map 이관·도달성 교정·loop 유지), 경량 |
 | **HEALTHY**(이미 docsherpa) | 우리 아키텍처 기준 개선점 리뷰, 무변경 |
 
 - **map 중추(spine)·성장 루프 = 무조건**(질문·스킵 대상 아님). 루프는 "설치 vs 스킵" 선택지가
@@ -45,6 +46,11 @@ setup-docs를 실제 target(jio.dev — 자체 문서구조·라우터를 갖췄
   판정 룰: *"옮겨야 할 문서가 있나? 없으면 경량."*
 - **경량 차선용 진단 신호(knowledge.md 안티패턴 추가):** 라우터/인덱스가 평문 화살표·백틱 경로
   (비-markdown 링크)라 `gate` 미인식 → 트리는 멀쩡해도 orphan.
+- **broken link 유형 구분(second-brain 발견, v0.2.2):** 포맷-깨짐(타겟 존재)=교정 / **동결 역사 문서
+  (날짜박힌 spec·plan)의 타겟-소실 = de-link**(백틱화로 기록 보존·gate 통과). repoint·삭제 금지 — 역사
+  falsify(doc-reconcile "역사 동결"과 정합).
+- **드리프트된 docsherpa 자세(second-brain 발견, v0.2.2):** 우리 loop·라우터는 있는데 gate FAIL·spine
+  없음 = "자체구조(우리와 다름)"가 아니라 **우리 것 복구/완성** — migrate-vs-보강 프레이밍 아님.
 
 ## 결과
 
