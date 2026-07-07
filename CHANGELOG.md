@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-07-07
+
+### Changed
+
+- **`setup-docs` — migrate-vs-reinforce recommendation is now conditional** on
+  whether files actually need to move. For a "자체구조 있음" repo where migrate and
+  reinforce collapse to the same no-move work, the skill no longer pushes migrate —
+  it recommends the minimal light reinforce and proposes one plan instead of forcing
+  a choice. (Variance testing showed fresh agents split three ways when migrate was
+  recommended unconditionally; the conditional makes the recommendation converge.) (ADR 0014)
+
 ## [0.2.0] - 2026-07-07
 
 ### Changed
