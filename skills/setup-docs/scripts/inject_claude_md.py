@@ -35,9 +35,9 @@ def inject_claude_md(text):
     prefix = "﻿" if had_bom else ""
     fm_end = _frontmatter_end(body)
     if fm_end is not None:
-        new = body[:fm_end] + IMPORT_LINE + "\n" + body[fm_end:]
+        new = body[:fm_end] + IMPORT_LINE + "\n\n" + body[fm_end:]
     else:
-        new = IMPORT_LINE + "\n" + body
+        new = IMPORT_LINE + "\n\n" + body
     return prefix + new, True
 
 

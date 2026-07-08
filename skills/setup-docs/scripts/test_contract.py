@@ -57,3 +57,13 @@ def test_find_marker_home_reports_multiple():
     b = "# b\n## i <!-- docsherpa:index -->\n## g <!-- docsherpa:routing -->\n"
     files = [(Path("AGENTS.md"), a), (Path("docs/_map.md"), b)]
     assert contract.find_marker_home(files) == [Path("AGENTS.md"), Path("docs/_map.md")]
+
+
+def test_disposition_router_tooling_content():
+    assert contract.disposition("AGENTS.md") == "router"
+    assert contract.disposition("CLAUDE.md") == "router"
+    assert contract.disposition(".github/x.md") == "tooling"
+    assert contract.disposition("README.md") == "tooling"          # 루트 관례(대소문자 무시)
+    assert contract.disposition("readme.md") == "tooling"
+    assert contract.disposition("docs/how-to/help.md") == "content"
+    assert contract.disposition("notes.md") == "content"
