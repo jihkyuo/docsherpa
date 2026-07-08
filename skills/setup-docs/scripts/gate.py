@@ -23,6 +23,7 @@ import re
 import sys
 from collections import deque
 from pathlib import Path
+from typing import NamedTuple
 
 import contract
 
@@ -68,23 +69,26 @@ def resolve(base: Path, raw: str):
     return ("file", p)
 
 
-def main(argv=None):
-    argv = list(sys.argv[1:] if argv is None else argv)
-    require_markers = "--require-markers" in argv
-    argv = [a for a in argv if a != "--require-markers"]
-    root = Path(argv[0] if argv else ".").resolve()
+class GateResult(NamedTuple):
+    root: object          # Path
+    router_present: bool
+    broken: list          # [(src Path, raw str)]
+    orphans: list         # [Path]
+    all_docs: list        # [Path]
+    visited: set          # {Path(resolved)}
+    homes: list           # [Path] — 마커 home(방문 문서 중)
 
+
+def analyze(root):
+    """루트에서 BFS 도달성 분석 → GateResult(출력 없음, 순수 계산)."""
+    root = Path(root).resolve()
     roots = [root / name for name in contract.ENTRY_FILENAMES
              if (root / name).is_file()]
-    if not roots:
-        names = " / ".join(contract.ENTRY_FILENAMES)
-        print(f"FAIL: 진입 라우터 없음 — {root}에 {names} 중 하나가 필요하다.")
-        return 1
+    router_present = bool(roots)
 
-    broken = []        # (소스파일, raw타겟)
-    visited = set()    # 방문한 .md 파일(절대경로)
+    broken = []
+    visited = set()
     queue = deque(p.resolve() for p in roots)
-
     while queue:
         cur = queue.popleft()
         if cur in visited:
@@ -102,51 +106,64 @@ def main(argv=None):
                 if idx:
                     queue.append(idx)
                 continue
-            # kind == "file"
             if not target.name.endswith(".md"):
-                # 비-md 링크(이미지 등)는 broken 판정에서 제외 — 스코프 밖.
                 continue
             if not target.is_file():
                 broken.append((cur, raw))
                 continue
             queue.append(target)
 
-    # 도달성: 모든 docs/**/*.md 가 방문되었는가?
     docs_dir = root / "docs"
     all_docs = sorted(docs_dir.rglob("*.md")) if docs_dir.is_dir() else []
     orphans = [d for d in all_docs if d.resolve() not in visited]
 
+    scanned = []
+    for p in visited:
+        try:
+            scanned.append((p, p.read_text(encoding="utf-8", errors="ignore")))
+        except OSError:
+            pass
+    homes = contract.find_marker_home(scanned)
+
+    return GateResult(root, router_present, broken, orphans, all_docs, visited, homes)
+
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    require_markers = "--require-markers" in argv
+    argv = [a for a in argv if a != "--require-markers"]
+    root = Path(argv[0] if argv else ".").resolve()
+
+    res = analyze(root)
+    if not res.router_present:
+        names = " / ".join(contract.ENTRY_FILENAMES)
+        print(f"FAIL: 진입 라우터 없음 — {root}에 {names} 중 하나가 필요하다.")
+        return 1
+
     markers_ok = True
     marker_msg = ""
     if require_markers:
-        scanned = []
-        for p in visited:
-            try:
-                scanned.append((p, p.read_text(encoding="utf-8", errors="ignore")))
-            except OSError:
-                pass
-        homes = contract.find_marker_home(scanned)
-        markers_ok = len(homes) == 1
-        if len(homes) == 0:
+        markers_ok = len(res.homes) == 1
+        if len(res.homes) == 0:
             marker_msg = ("마커 home 없음: 도달 가능한 문서 중 "
                           f"{contract.ROUTING_MARKER}·{contract.INDEX_MARKER}를 "
                           "헤딩줄에 함께 가진 파일이 필요하다.")
-        elif len(homes) > 1:
-            rels = ", ".join(str(h.relative_to(root)) for h in homes)
+        elif len(res.homes) > 1:
+            rels = ", ".join(str(h.relative_to(root)) for h in res.homes)
             marker_msg = f"마커 home 중복(정확히 1개여야): {rels}"
 
-    ok = not broken and not orphans and markers_ok
-    print(f"{'PASS' if ok else 'FAIL'}: broken={len(broken)} orphan={len(orphans)} "
-          f"(docs={len(all_docs)}, reachable={len(visited)})"
+    ok = not res.broken and not res.orphans and markers_ok
+    print(f"{'PASS' if ok else 'FAIL'}: broken={len(res.broken)} orphan={len(res.orphans)} "
+          f"(docs={len(res.all_docs)}, reachable={len(res.visited)})"
           + ("" if not require_markers else f" markers_ok={markers_ok}"))
 
-    if broken:
+    if res.broken:
         print("\n깨진 링크:")
-        for src, raw in broken:
+        for src, raw in res.broken:
             print(f"  {src.relative_to(root)} -> {raw}")
-    if orphans:
+    if res.orphans:
         print("\n고아 문서(인덱스에서 도달 불가):")
-        for d in orphans:
+        for d in res.orphans:
             print(f"  {d.relative_to(root)}")
     if require_markers and not markers_ok:
         print("\n" + marker_msg)

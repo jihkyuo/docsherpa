@@ -10,8 +10,11 @@
   실행 동일 품질). 스펙 [design.md](docs/specs/diagnosis-driven-migration/design.md), 계획
   [render-report](docs/plans/2026-07-07-render-report-renderer.md).
   **✅ 증분 1 `render_report` 완료:** 350줄 stdlib 렌더러 + 13 테스트(105 green), opus 리뷰 APPROVED(Crit/Imp 0),
-  AA 가드 라이브(worst 4.78)·자기완결·동결 CSS byte-identical·전 주입점 이스케이프. **다음 = 증분 2
-  `doc-health`**(전체-repo 병렬 탐색 + 채점 → render_report가 먹을 데이터 모델 생산; 자체 spec→plan→build).
+  AA 가드 라이브(worst 4.78)·자기완결·동결 CSS byte-identical·전 주입점 이스케이프.
+  **✅ 증분 2 `doc-health` 완료(2026-07-08):** 독립 읽기전용 스킬(`skills/doc-health/`) — `gate.analyze()`
+  외과적 추출 + 전용 `inventory.py`·`scorecard.py`(disposition·M1~M5·rollup·자세·assemble) + SKILL.md·
+  reference/scoring.md, 23 테스트 green(전용 러너). ADR [0015](docs/decisions/0015-doc-health-module-extraction.md)
+  (H1~H3 근거 기록). **다음 = setup-docs Phase 0·4 배선**(doc-health 호출부 리팩터).
   이연: Phase 4 result-모드 CSS·repo-키 스키마 하드닝(ledger `.superpowers/sdd/progress.md`).
   참고: ADR 0010 `doc-*` 패밀리 폐기 → 새 스킬은 merit로 명명(그래서 `doc-health`).
 - **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · N11 spine · Track2/F12 · loop-refresh · PRD 1급 타입 ·

@@ -26,5 +26,6 @@ M1 → M3 → M2 → M4 → M5. 각 계획은 writing-plans로 작성하고 RED-
 ## 진단-주도 마이그레이션 (재설계 구현 — 스펙 [design.md](../specs/diagnosis-driven-migration/design.md))
 
 - [2026-07-07-render-report-renderer.md](2026-07-07-render-report-renderer.md) — 증분 1: `render_report` 동결 렌더러(데이터 모델 → 자기완결 HTML 아티팩트, 대비/구조/이스케이프/픽스처 테스트). 후속: `doc-health` 스킬 → setup-docs 리팩터 → 마이그레이션 실행.
+- [2026-07-08-doc-health.md](2026-07-08-doc-health.md) — 증분 2: `doc-health` 진단 생산자 스킬(전체-repo 탐색 + 9차원 채점 → render_report 부분 데이터 모델). 스펙 [doc-health.md](../specs/diagnosis-driven-migration/doc-health.md). 후속: setup-docs Phase 0·4 배선.
 
 상태·다음 할 일은 [FINDINGS.md](../../FINDINGS.md), 설계는 [DESIGN.md](../DESIGN.md).
