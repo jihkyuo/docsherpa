@@ -13,33 +13,14 @@ _SHARED = Path(__file__).resolve().parents[2] / "setup-docs" / "scripts"
 if str(_SHARED) not in sys.path:
     sys.path.insert(0, str(_SHARED))
 
-import contract  # noqa: E402
-import gate       # noqa: E402
+import gate                        # noqa: E402
+from contract import disposition   # noqa: E402
 
 # --- 임계값 (🔴 열린질문 — 하드닝 루프 튜닝, spec §3c) -------------------------
 M5_WARN_MAX = 3       # docs/ 밖 content 1~3 = warn, 초과 = fail
 ORPHAN_MOST = 0.5     # orphan_ratio >= 이 값이면 "대부분 미도달"(F)
 J_WARN_MAX = 2        # J warn 1~2 = B 유지, 초과 = C
 GREENFIELD_MAX = 2    # content 문서 이하 + 라우터 없음 = GREENFIELD
-
-# --- disposition (H1) --------------------------------------------------------
-_TOOLING_DIRS = (".claude", ".github", ".cursor", ".gitlab")
-# 루트 관례 파일 — 소문자로 비교(README.md·readme.md 둘 다 매칭)
-_ROOT_CONVENTION = {"readme.md", "contributing.md", "changelog.md",
-                    "security.md", "code_of_conduct.md"}
-
-
-def disposition(rel_path):
-    """repo-상대 경로 → 'router'|'tooling'|'content' (경로 규칙, 판단 아님)."""
-    parts = Path(rel_path).parts
-    name = parts[-1]
-    if len(parts) == 1 and name in contract.ENTRY_FILENAMES:
-        return "router"
-    if parts and parts[0] in _TOOLING_DIRS:
-        return "tooling"
-    if len(parts) == 1 and name.lower() in _ROOT_CONVENTION:
-        return "tooling"
-    return "content"
 
 
 def outside_content(files):

@@ -2,7 +2,7 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
-- **🆕 setup-docs 재설계 — 진단-주도 전체-repo 마이그레이션 (2026-07-08, 브레인스토밍→스펙→증분1 완료):**
+- **🆕 setup-docs 재설계 — 진단-주도 전체-repo 마이그레이션 (2026-07-08, 브레인스토밍→스펙→증분3 완료):**
   하드닝 루프 발견(G1~G4: docs/ 중심·밖 방치·전-계정팅 부재·설치≠완료)을 재설계로 확장. **미션 = 전 프로젝트
   문서를 `docs/`로 중앙집중 + 유실 0.** 6-Phase(전체-repo 병렬 탐색 → 9차원 등급 채점 → 시각 승인
   아티팩트 → worktree 배치 실행(두 오라클) → 결과 재진단). 진단을 **`doc-health` 스킬**로 분리(before/after
@@ -14,7 +14,7 @@
   **✅ 증분 2 `doc-health` 완료(2026-07-08):** 독립 읽기전용 스킬(`skills/doc-health/`) — `gate.analyze()`
   외과적 추출 + 전용 `inventory.py`·`scorecard.py`(disposition·M1~M5·rollup·자세·assemble) + SKILL.md·
   reference/scoring.md, 23 테스트 green(전용 러너). ADR [0015](docs/decisions/0015-doc-health-module-extraction.md)
-  (H1~H3 근거 기록). **다음 = setup-docs Phase 0·4 배선**(doc-health 호출부 리팩터).
+  (H1~H3 근거 기록). 다음 = setup-docs Phase 0·1·2 배선(증분3에서 완료).
   이연: Phase 4 result-모드 CSS·repo-키 스키마 하드닝(ledger `.superpowers/sdd/progress.md`).
   **✅ 첫 실전 독푸딩(vd-front, 2026-07-08):** doc-health를 실제 레포에 적용 → **탐색이 코드 속
   `src/features/custom/shared/docs/**` ~35개 파묻힌 문서를 전부 포착(G1 갭 실증)**, 등급 **F**(정직).
@@ -28,6 +28,21 @@
   판단-소프트(reference/explanation 트리거 없음·메타 스탬핑·게이트 부재). **심장은 템플릿 아니라 트리거.**
   합의 결정(B 스캐폴드·created/adopted 정직·타입-메타 게이트·관계메타·산업표준) 기록됨. **착수는 setup 완료 후**
   (doc-reconcile 개선 루프). ⚠️ B 착수 시 ADR 0013 supersede 필요.
+- **✅ 증분 3 `migrate.py` 엔진 + Phase 0·1·2 배선 완료(2026-07-08):** 계획검증 F1~F6(F1=register_in_indexes
+  substring 오탐·F2/F3=엔진 기반골격·F4=legacy skip·F5=orphan==0 단정·F6=슬래시 보존) 전부 반영해
+  `skills/setup-docs/scripts/migrate.py` 신설 — `plan_moves`(결정론 type→folder·disposition/legacy/.mdx
+  자동skip) · `apply_moves`+`rewrite_links`(물리이동+링크재작성, chained-move 2단계 안전) ·
+  `register_in_indexes`(scaffold 위 도달성 배선, home 인덱스링크 정확매칭) · `build_and_verify`(스크래치
+  복사→적용→scaffold→등록→gate+content_oracle, 실제 repo 불변) · `assemble_plan_data`(render_report plan
+  계약). `skills/setup-docs/SKILL.md`의 MESSY 무거운 차선을 이 엔진 호출 Phase 0(진단 재사용)→1a(배정
+  판단+plan_moves)→1b(build_and_verify 자체검증+STOP)→2(assemble_plan_data+승인 아티팩트) 절차로 재배선.
+  **다음 = 증분 4**(Phase 3·4: 승인된 계획의 실제 이동 실행 — 배치·worktree·subagent-driven-development —
+  및 실행결과 재진단). 128 + 30 테스트 green, gate broken=0 orphan=0 markers_ok=True.
+  최종 whole-branch 리뷰(opus) READY TO MERGE — 5 정체성 불변식 전부 HOLD(scratch-only 범위), Crit/Imp 0.
+  **⚠️ 증분 4 실행-게이트(실제-repo 쓰기 전 필수 차단, 둘 다 fail-safe라 증분 3은 무영향):**
+  (G1) `inject_claude_md` frontmatter 분기가 `@AGENTS.md`를 frontmatter 세그먼트에 붙여(빈 줄 없음)
+  build_and_verify가 false-STOP(F3 확장 — 빈 줄 앞에도 삽입 필요). (G2) `apply_moves`·`content_oracle` 둘 다
+  `errors="ignore"`라 invalid UTF-8 바이트 소실이 오라클에 안 잡힘 → 실제 쓰기 전 바이트 비교/surrogateescape.
 - **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · N11 spine · Track2/F12 · loop-refresh · PRD 1급 타입 ·
   **M5 출시 산출물 완비 + v0.1.0 발행 완료(2026-07-06).** 빌드 사실상 종료.
   다음 = **사용자 정지점만 남음**(터미널 설치 실검증 (c) · 중복 global 제거 (d) · 마켓플레이스 등록 —

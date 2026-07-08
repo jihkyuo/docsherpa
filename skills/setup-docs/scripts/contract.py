@@ -16,6 +16,29 @@ MAP_MARKER = "<!-- docsherpa:map -->"
 # README 제외: README에서만 도달 가능한 문서가 orphan을 가려버린다.
 ENTRY_FILENAMES = ("AGENTS.md", "CLAUDE.md", "GEMINI.md")
 
+_TOOLING_DIRS = (".claude", ".github", ".cursor", ".gitlab")
+# 루트 관례 파일 — 소문자로 비교(README.md·readme.md 둘 다 매칭)
+_ROOT_CONVENTION = {"readme.md", "contributing.md", "changelog.md",
+                    "security.md", "code_of_conduct.md"}
+
+
+def disposition(rel_path):
+    """repo-상대 경로 → 'router'|'tooling'|'content' (경로 규칙, 판단 아님).
+
+    N11 spine·배정 엔진의 공유 단일소스(gate·scorecard·migrate). 파일 IO 없음."""
+    parts = Path(rel_path).parts
+    if not parts:
+        return "content"
+    name = parts[-1]
+    if len(parts) == 1 and name in ENTRY_FILENAMES:
+        return "router"
+    if parts[0] in _TOOLING_DIRS:
+        return "tooling"
+    if len(parts) == 1 and name.lower() in _ROOT_CONVENTION:
+        return "tooling"
+    return "content"
+
+
 _FENCE_RE = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
 _HEADING_RE = re.compile(r"^#{1,6}\s")
 

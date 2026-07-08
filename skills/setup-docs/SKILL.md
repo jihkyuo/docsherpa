@@ -277,31 +277,37 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
   보존, gate는 통과). **repoint·삭제 금지** — 그 문서는 *당시 상태*를 기록한 것이라 고치면 역사를
   falsify한다(doc-reconcile "역사 동결 문서 손대지 마라"와 정합).
 
-### 무거운 차선 — 재배치 파이프라인 (이동 있을 때만)
+### 무거운 차선 — Phase 0·1·2 파이프라인 (이동 있을 때만)
 
-1. **진단 보고** — gate.py 출력 + 안티패턴 + 현재 트리를 아티팩트로 제시.
-2. **목표 구조 제안 (자체검증 후)** — 제안 트리를 임시로 빌드해 gate.py + content_oracle 둘 다
-   PASS함을 먼저 증명한 뒤 before/after + 이동 delta + 스코프(전면 재배치로 기울임) 제시.
-3. **사용자 승인 게이트** — 스코프 조정 가능.
-4. **계획 정식화** — superpowers:writing-plans 위임. 배치=독립 doc-group, 링크 리라이트 1급,
-   worktree 여부(이동 있음 또는 ~10파일↑ → worktree) + 머지 타이밍 합의.
-5. **사용자 계획 승인.**
-6. **자율 실행** — superpowers:using-git-worktrees(필요 시) + superpowers:subagent-driven-development.
-   배치마다: 이동+링크리라이트 → 두 oracle PASS → 다음. 실패=fix 루프. 유실위험=STOP.
+> **판단 vs 코드 경계:** 배정 결정론·skip(disposition/legacy/.mdx)·도달성 배선은
+> `skills/setup-docs/scripts/migrate.py` 엔진이 담당한다. feature명·토픽폴더 승격·동결역사 태깅은
+> **에이전트 판단**이다(§7.5 교훈 — 대상을 지어내지 말고 실제 트리를 보고 정한다).
 
-### 두 oracle (배치 전진 = 둘 다 PASS)
-
-- **도달성:** `python3 <skill>/scripts/gate.py <repo>` → broken=0·orphan=0.
-- **내용보존:** base 스냅샷을 만들고(`git worktree add` 또는 마이그레이션 base 커밋을 별 디렉터리로
-  `git --work-tree`로 체크아웃) `python3 <skill>/scripts/content_oracle.py check --base <base> --current <repo> --manifest <manifest.json>`.
-  미분류 세그먼트 → FAIL. 매니페스트는 dropped(+사유)/transformed로 의도적 변경을 명시.
-
-### STOP 조건 (자율 루프 멈추고 보고)
-
-- content_oracle 미분류 세그먼트(유실 위험)
-- gate.py가 2회 fix 후에도 0 못 만듦
-- 이동이 기존 목적지 파일 덮어씀 / 매핑 모호(다중 후보)
-- 승인된 계획 밖 범위 발견
+1. **Phase 0(위 "진단" 재사용)** — `doc-health`가 이미 낸 데이터 dict(grade·scorecard·`trees.before`·
+   `inventory`·J4)를 그대로 쓴다. 이 무거운 차선은 자세=MESSY(중구난방 또는 이동이 필요한 자체구조)일
+   때만 진행 — GREENFIELD는 조용히 설치, HEALTHY는 등급 카드만 낸다(위 자세 분기 참고).
+2. **Phase 1a(배정)** — `inventory`를 **판단으로 enrich**한다: spec 문서는 `feature`명을 채우고,
+   co-change≥2인 문서군은 `topic`(토픽폴더)을 매기고, 동결역사(날짜박힌 `specs/`·`plans/`)는
+   `type: "legacy"`로 태깅한다. 그다음 `migrate.plan_moves(inventory)` → `move_plan`. **disposition
+   (router/tooling)·`legacy`·`.mdx` skip은 엔진이 자동으로 한다** — 판단이 아니다. 코드참조·외부싱크가
+   깨질 위험은 각 항목의 `impact`로 낸다.
+3. **Phase 1b(자체검증)** — `migrate.build_and_verify(repo, move_plan)` → `{broken, orphan,
+   unaccounted}`. 내부에서 repo를 스크래치에 복사해 이동+relink 적용 → `scaffold` → 등록
+   (`register_in_indexes`) → **두 오라클**(도달성=gate·내용보존=content_oracle)을 돌린다 — 실제 repo는
+   건드리지 않는다. **STOP 판정:** 셋 중 하나라도 >0이면 아티팩트를 내지 않는다 — 사유를 보고하고
+   자동수정 재시도(목적지 개명·배정 조정) 또는 사용자 에스컬레이션. 통과하면 스크래치 결과에 doc-health를
+   재실행해 기계등급을 확인한다.
+4. **Phase 2(계획 아티팩트)** — `migrate.assemble_plan_data(health, move_plan, decisions)` →
+   `render_report(data, "plan")`. `decisions`는 라우터 결정(예: 리치 CLAUDE.md인데 AGENTS.md 없음)·
+   내용모순(doc-health J4)에서 조립한다. 이 아티팩트를 **사용자 승인** 게이트로 낸다.
+5. **정직성** — 아티팩트는 "기계 차원(A-트랙) + 내용보존 증명(`unaccounted=0`)"만 표시한다. J(판단
+   평가)는 별도로 낸다. 증명 못 하면(Phase 1b STOP) 계획을 제시하지 않는다.
+6. **증분 3 경계 — 여기(승인)까지.** 실제 이동 실행(배치화·필요 시 worktree·
+   superpowers:subagent-driven-development)과 실행결과 재진단(Phase 3·4)은 **증분 4**로 이연한다 —
+   잃은 게 아니라 미룬 것이다. 증분4가 이어받을 STOP 후보: content_oracle 미분류 세그먼트(유실
+   위험)·gate가 2회 fix 후에도 broken/orphan 0을 못 만듦·이동이 기존 목적지 파일과 충돌/매핑
+   모호(다중 후보)·승인된 계획 밖 범위 발견. 배치마다 `build_and_verify`를 재사용할지 `gate.py`/
+   `content_oracle.py`를 직접 부를지는 증분4 설계 사항.
 
 ---
 
