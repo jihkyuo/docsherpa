@@ -306,12 +306,14 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
    내용모순(doc-health J4)에서 조립한다. 이 아티팩트를 **사용자 승인** 게이트로 낸다.
 5. **정직성** — 아티팩트는 "기계 차원(A-트랙) + 내용보존 증명(`unaccounted=0`)"만 표시한다. J(판단
    평가)는 별도로 낸다. 증명 못 하면(Phase 1b STOP) 계획을 제시하지 않는다.
-6. **증분 3 경계 — 여기(승인)까지.** 실제 이동 실행(배치화·필요 시 worktree·
-   superpowers:subagent-driven-development)과 실행결과 재진단(Phase 3·4)은 **증분 4**로 이연한다 —
-   잃은 게 아니라 미룬 것이다. 증분4가 이어받을 STOP 후보: content_oracle 미분류 세그먼트(유실
-   위험)·gate가 2회 fix 후에도 broken/orphan 0을 못 만듦·이동이 기존 목적지 파일과 충돌/매핑
-   모호(다중 후보)·승인된 계획 밖 범위 발견. 배치마다 `build_and_verify`를 재사용할지 `gate.py`/
-   `content_oracle.py`를 직접 부를지는 증분4 설계 사항.
+6. **증분 3 경계 — 여기(승인)까지였다.** 실제 이동 실행(배치화·필요 시 worktree·
+   superpowers:subagent-driven-development)과 실행결과 재진단(Phase 3·4)은 당시 **증분 4**로
+   이연했다 — 잃은 게 아니라 미룬 것이었고, 아래 항목 7·8이 그 약속을 이행한다. 이연 당시 증분4가
+   이어받을 STOP 후보로 남겼던 것: content_oracle 미분류 세그먼트(유실 위험)·gate가 2회 fix 후에도
+   broken/orphan 0을 못 만듦·이동이 기존 목적지 파일과 충돌/매핑 모호(다중 후보)·승인된 계획 밖 범위
+   발견. 배치마다 `build_and_verify`를 재사용할지 `gate.py`/`content_oracle.py`를 직접 부를지는
+   증분4 설계 사항이었다(→ 항목 7의 `land_migration`이 `build_and_verify`와 동일한 `verify_migration`
+   코어를 재사용하는 것으로 확정).
 7. **Phase 3(랜딩)** — 사용자가 Phase 2 계획을 승인하면, Phase 0에서 기록한 **HEAD sha**와 승인된
    `move_plan`으로 `migrate.land_migration(repo, move_plan, head_sha)`를 호출한다. **git 전제** —
    `.git`이 없는 repo는 STOP(수동 git init 안내, 실행하지 않는다). 내부는 이중 worktree로 격리해
