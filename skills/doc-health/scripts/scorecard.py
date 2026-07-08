@@ -199,7 +199,9 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("root", nargs="?", default=".")
     ap.add_argument("--manifest", help="분류 매니페스트 JSON([{path,type,...}])")
-    ap.add_argument("--judgment", help="J1~J4 판단 차원 JSON([{code,name,sub,status}])")
+    ap.add_argument("--judgment", required=True,
+                     help="J1~J4 판단 차원 JSON([{code,name,sub,status}]) — "
+                          "9차원(M1~M5+J1~J4) 전부 평가해야 정직한 등급이므로 필수")
     args = ap.parse_args(argv)
 
     import inventory as _inv
@@ -207,9 +209,7 @@ def main(argv=None):
     manifest = None
     if args.manifest:
         manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
-    judgment = []
-    if args.judgment:
-        judgment = json.loads(Path(args.judgment).read_text(encoding="utf-8"))
+    judgment = json.loads(Path(args.judgment).read_text(encoding="utf-8"))
     data = assemble(args.root, files, judgment, inventory=manifest)
     print(json.dumps(data, ensure_ascii=False, indent=2))
     return 0

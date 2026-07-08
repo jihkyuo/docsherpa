@@ -1,3 +1,7 @@
+import json
+
+import pytest
+
 import scorecard
 
 
@@ -203,3 +207,30 @@ def test_assemble_feeds_render_report_without_keyerror(tmp_path):
     assert html.count("<div") == html.count("</div>")
     assert 'style="' not in html
     assert d["repo"]["name"] in html
+
+
+def test_main_with_judgment_and_manifest_returns_grade_json(tmp_path, capsys):
+    _healthy_repo(tmp_path)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps([]), encoding="utf-8")
+    judgment_path = tmp_path / "judgment.json"
+    judgment_path.write_text(json.dumps(_judg("pass", "pass", "pass", "pass")),
+                              encoding="utf-8")
+
+    rc = scorecard.main([str(tmp_path),
+                          "--manifest", str(manifest_path),
+                          "--judgment", str(judgment_path)])
+
+    assert rc == 0
+    data = json.loads(capsys.readouterr().out)
+    assert set(data) >= {"repo", "grade", "scorecard"}
+    assert data["grade"]["target"] == "A"
+    j_codes = {d["code"] for d in data["scorecard"]["judgment"]}
+    assert j_codes == {"J1", "J2", "J3", "J4"}
+
+
+def test_main_without_judgment_exits_nonzero(tmp_path):
+    _healthy_repo(tmp_path)
+    with pytest.raises(SystemExit) as exc:
+        scorecard.main([str(tmp_path)])
+    assert exc.value.code != 0
