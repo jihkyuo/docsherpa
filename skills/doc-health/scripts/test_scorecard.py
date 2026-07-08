@@ -164,3 +164,42 @@ def test_posture_hint(tmp_path):
     files = ["AGENTS.md", "docs/_map.md", "docs/a.md"]
     m2 = scorecard.machine_dims(res2, files)
     assert scorecard.posture_hint(res2, files, m2) == "HEALTHY"
+
+
+def test_assemble_shape_and_keys(tmp_path):
+    _healthy_repo(tmp_path)
+    files = ["AGENTS.md", "docs/_map.md", "docs/a.md"]
+    j = _judg("pass", "pass", "pass", "pass")
+    d = scorecard.assemble(tmp_path, files, j)
+    assert set(d) >= {"repo", "grade", "counts", "scorecard", "trees", "posture"}
+    assert set(d["repo"]) == {"name", "docs_count", "branch"}
+    assert d["repo"]["docs_count"] == 3
+    assert d["grade"] == {"current": "A", "target": "A"}
+    assert d["scorecard"]["mechanical"] and d["scorecard"]["judgment"]
+    assert "before" in d["trees"]
+    assert d["posture"] == "HEALTHY"
+
+
+def test_assemble_before_tree_marks_stray(tmp_path):
+    _healthy_repo(tmp_path)
+    files = ["AGENTS.md", "docs/a.md", "api-help.md"]
+    d = scorecard.assemble(tmp_path, files, _judg("warn", "pass", "pass", "pass"))
+    lines = d["trees"]["before"]["lines"]
+    assert ["api-help.md", "stray"] in lines
+
+
+def test_assemble_feeds_render_report_without_keyerror(tmp_path):
+    import render_report
+    _healthy_repo(tmp_path)
+    files = ["AGENTS.md", "docs/_map.md", "docs/a.md"]
+    d = scorecard.assemble(tmp_path, files, _judg("pass", "pass", "pass", "pass"))
+    # 독립 건강검진 렌더: migration·decisions 빈 리스트로 plan 모드
+    d.setdefault("trees", {}).setdefault("after",
+        {"title": "", "tag": "목표", "sub": "", "lines": []})
+    d["migration"] = []
+    d["decisions"] = []
+    d["summary"] = {}
+    html = render_report.render_report(d, "plan")
+    assert html.count("<div") == html.count("</div>")
+    assert 'style="' not in html
+    assert d["repo"]["name"] in html

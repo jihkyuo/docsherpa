@@ -147,3 +147,73 @@ def posture_hint(res, files, mech):
     if res.router_present and m["M1"] == "pass" and m["M5"] == "pass":
         return "HEALTHY"
     return "MESSY"
+
+
+# --- 조립 + CLI --------------------------------------------------------------
+def _git_branch(root):
+    head = Path(root) / ".git" / "HEAD"
+    try:
+        txt = head.read_text(encoding="utf-8").strip()
+    except OSError:
+        return "?"
+    prefix = "ref: refs/heads/"
+    return txt[len(prefix):] if txt.startswith(prefix) else txt[:8]
+
+
+def _before_tree(files):
+    outside = outside_content(files)
+    lines = []
+    if any(Path(f).parts[0] == "docs" for f in files):
+        lines.append(["docs/", None])
+    for f in outside[:12]:
+        lines.append([f, "stray"])
+    sub = (f"docs/ 밖 흩어짐 · content {len(outside)}건" if outside
+           else "docs/ 중심")
+    return {"title": "현재 구조", "tag": "지금", "sub": sub, "lines": lines}
+
+
+def assemble(root, files, judgment, inventory=None):
+    """root + inventory files + 에이전트 판단 J차원 → render_report 부분 데이터 모델."""
+    res = gate.analyze(root)
+    mech = machine_dims(res, files)
+    orphan_ratio = (len(res.orphans) / len(res.all_docs)) if res.all_docs else 0.0
+    grade = rollup(mech, judgment, orphan_ratio, res.router_present)
+    out = {
+        "repo": {"name": Path(root).resolve().name,
+                 "docs_count": len(files),
+                 "branch": _git_branch(root)},
+        "grade": {"current": grade, "target": "A"},
+        "counts": counts(mech, judgment),
+        "scorecard": {"mechanical": mech, "judgment": judgment},
+        "trees": {"before": _before_tree(files)},
+        "posture": posture_hint(res, files, mech),
+    }
+    if inventory is not None:
+        out["inventory"] = inventory
+    return out
+
+
+def main(argv=None):
+    import argparse
+    argv = sys.argv[1:] if argv is None else argv
+    ap = argparse.ArgumentParser()
+    ap.add_argument("root", nargs="?", default=".")
+    ap.add_argument("--manifest", help="분류 매니페스트 JSON([{path,type,...}])")
+    ap.add_argument("--judgment", help="J1~J4 판단 차원 JSON([{code,name,sub,status}])")
+    args = ap.parse_args(argv)
+
+    import inventory as _inv
+    files = _inv.list_docs(args.root)
+    manifest = None
+    if args.manifest:
+        manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+    judgment = []
+    if args.judgment:
+        judgment = json.loads(Path(args.judgment).read_text(encoding="utf-8"))
+    data = assemble(args.root, files, judgment, inventory=manifest)
+    print(json.dumps(data, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
