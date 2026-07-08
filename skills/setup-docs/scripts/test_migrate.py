@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 import migrate
 
@@ -73,7 +75,6 @@ def test_rewrite_links_preserves_anchor_slash_and_skips_external_and_absolute():
 
 
 def _mk(root, rel, text=""):
-    from pathlib import Path
     p = Path(root) / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(text or "# doc\n", encoding="utf-8")
@@ -101,3 +102,17 @@ def test_apply_moves_existing_dest_collision_raises(tmp_path):
     plan = [{"src": "a.md", "dest": "docs/x.md", "ops": ["move"], "impact": None}]
     with pytest.raises(ValueError):
         migrate.apply_moves(tmp_path, plan)
+
+
+def test_apply_moves_chained_dest_equals_other_src_preserves_both(tmp_path):
+    # A가 B의 자리로, B는 다른 곳으로(chained). 둘 다 보존돼야(내용 소실 0).
+    _mk(tmp_path, "notes/s.md", "# A\nUNIQUE_A 세그먼트.\n")
+    _mk(tmp_path, "docs/how-to/s.md", "# B\nUNIQUE_B 세그먼트.\n")
+    plan = [
+        {"src": "notes/s.md", "dest": "docs/how-to/s.md", "ops": ["move"], "impact": None},
+        {"src": "docs/how-to/s.md", "dest": "docs/reference/s.md", "ops": ["move"], "impact": None},
+    ]
+    migrate.apply_moves(tmp_path, plan)
+    assert (tmp_path / "docs/how-to/s.md").read_text(encoding="utf-8").count("UNIQUE_A") == 1
+    assert (tmp_path / "docs/reference/s.md").read_text(encoding="utf-8").count("UNIQUE_B") == 1
+    assert not (tmp_path / "notes/s.md").exists()
