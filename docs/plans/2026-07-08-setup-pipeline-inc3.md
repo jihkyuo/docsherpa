@@ -513,12 +513,24 @@ def _home_links_index(home_text, rel):
 
 
 def _append_links(path, entries):
-    """entries=[(label, target)] → '- [label](target)' 를 path에 append(멱등: 이미 있으면 skip)."""
+    """entries=[(label, target)] → '- [label](target)' 를 path에 append(멱등: 이미 있으면 skip).
+    기존 내용과 빈 줄로 분리해 기존 마지막 세그먼트에 붙지 않게 한다(content_oracle false STOP 방지 —
+    이미 내용 있는 인덱스에 append 시 세그먼트 key가 바뀌어 무손실인데 unaccounted로 오탐하던 버그)."""
     text = path.read_text(encoding="utf-8")
     add = [f"- [{lab}]({t})" for lab, t in entries if f"]({t})" not in text]
-    if add:
-        sep = "" if text.endswith("\n") else "\n"
-        path.write_text(text + sep + "\n".join(add) + "\n", encoding="utf-8")
+    if not add:
+        return
+    block = "\n".join(add) + "\n"
+    if not text:
+        path.write_text(block, encoding="utf-8")
+        return
+    if text.endswith("\n\n"):
+        sep = ""
+    elif text.endswith("\n"):
+        sep = "\n"
+    else:
+        sep = "\n\n"
+    path.write_text(text + sep + block, encoding="utf-8")
 
 
 def _index_home(root):
