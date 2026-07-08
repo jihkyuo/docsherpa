@@ -38,6 +38,11 @@
   판단+plan_moves)→1b(build_and_verify 자체검증+STOP)→2(assemble_plan_data+승인 아티팩트) 절차로 재배선.
   **다음 = 증분 4**(Phase 3·4: 승인된 계획의 실제 이동 실행 — 배치·worktree·subagent-driven-development —
   및 실행결과 재진단). 128 + 30 테스트 green, gate broken=0 orphan=0 markers_ok=True.
+  최종 whole-branch 리뷰(opus) READY TO MERGE — 5 정체성 불변식 전부 HOLD(scratch-only 범위), Crit/Imp 0.
+  **⚠️ 증분 4 실행-게이트(실제-repo 쓰기 전 필수 차단, 둘 다 fail-safe라 증분 3은 무영향):**
+  (G1) `inject_claude_md` frontmatter 분기가 `@AGENTS.md`를 frontmatter 세그먼트에 붙여(빈 줄 없음)
+  build_and_verify가 false-STOP(F3 확장 — 빈 줄 앞에도 삽입 필요). (G2) `apply_moves`·`content_oracle` 둘 다
+  `errors="ignore"`라 invalid UTF-8 바이트 소실이 오라클에 안 잡힘 → 실제 쓰기 전 바이트 비교/surrogateescape.
 - **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · N11 spine · Track2/F12 · loop-refresh · PRD 1급 타입 ·
   **M5 출시 산출물 완비 + v0.1.0 발행 완료(2026-07-06).** 빌드 사실상 종료.
   다음 = **사용자 정지점만 남음**(터미널 설치 실검증 (c) · 중복 global 제거 (d) · 마켓플레이스 등록 —
