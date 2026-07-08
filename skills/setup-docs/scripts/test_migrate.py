@@ -137,3 +137,21 @@ def test_register_makes_moved_docs_reachable(tmp_path):
     # 등록 후: orphan=0
     res = gate.analyze(tmp_path)
     assert res.orphans == [] and res.broken == []
+
+
+def test_register_nested_folder_reachable_despite_preexisting_subpath_link(tmp_path):
+    # 홈(맵)에 이미 폴더 하위 '파일' 링크가 있어도 새 폴더 인덱스가 도달돼야(substring 오탐 방지, F1).
+    import gate
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n")
+    _mk(tmp_path, "src.md", "# S\n내용.\n")
+    plan = [{"src": "src.md", "dest": "docs/specs/billing/newdoc.md", "ops": ["move"], "impact": None}]
+    migrate.apply_moves(tmp_path, plan)
+    scaffold.scaffold(tmp_path, plugin_root_dir=scaffold.plugin_root())
+    # 맵에 이 폴더 하위 파일 링크를 심고(+타겟 실재) 그 상태로 register.
+    _mk(tmp_path, "docs/specs/billing/overview.md", "# O\n개요.\n")
+    m = tmp_path / "docs/_map.md"
+    m.write_text(m.read_text(encoding="utf-8") + "\n- [overview](specs/billing/overview.md)\n", encoding="utf-8")
+    migrate.register_in_indexes(tmp_path, plan)
+    res = gate.analyze(tmp_path)
+    assert res.orphans == [] and res.broken == []

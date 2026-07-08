@@ -123,15 +123,24 @@ def apply_moves(root, move_plan):
 
 
 def _ensure_folder_index(folder):
-    """폴더의 인덱스(_README.md > README.md). 없으면 _README.md 생성."""
+    """폴더의 인덱스(gate.index_of 규칙: _README.md > README.md). 없으면 _README.md 생성."""
     folder = Path(folder)
-    for n in ("_README.md", "README.md"):
-        if (folder / n).is_file():
-            return folder / n
+    idx = gate.index_of(folder)
+    if idx:
+        return idx
     folder.mkdir(parents=True, exist_ok=True)
     idx = folder / "_README.md"
     idx.write_text(f"# {folder.name}\n", encoding="utf-8")
     return idx
+
+
+def _home_links_index(home_text, rel):
+    """home이 rel 폴더의 인덱스에 도달하는 링크(dir 링크 또는 _README/README 파일 링크)를
+    이미 가졌는지. 하위 임의 파일 링크(예: rel/other.md)는 인덱스 도달을 보장 못 하므로 제외 —
+    느슨한 substring 매칭이 새 중첩 폴더를 '이미 링크됨'으로 오탐해 orphan을 남기던 버그(F1) 방지."""
+    return (f"]({rel}/)" in home_text
+            or f"]({rel}/_README.md)" in home_text
+            or f"]({rel}/README.md)" in home_text)
 
 
 def _append_links(path, entries):
@@ -176,7 +185,7 @@ def register_in_indexes(root, move_plan):
         idx = _ensure_folder_index(root / folder)
         _append_links(idx, [(posixpath.splitext(n)[0], n) for n in sorted(names)])
         rel = posixpath.relpath(folder, home_dir or ".")   # home 기준 폴더 경로
-        if f"]({rel}/" not in home_text:                   # 그 폴더로의 링크가 아직 없을 때만
+        if not _home_links_index(home_text, rel):          # 폴더 인덱스에 도달하는 링크가 아직 없을 때만
             map_entries.append((posixpath.basename(folder), rel + "/"))
     for dest in sorted(flats):
         rel = posixpath.relpath(dest, home_dir or ".")
