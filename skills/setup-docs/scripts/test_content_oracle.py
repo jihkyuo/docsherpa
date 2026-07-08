@@ -33,6 +33,16 @@ class SegmentTests(unittest.TestCase):
         self.assertEqual(a, b)
 
 
+class CollectTests(unittest.TestCase):
+    def test_collect_ignores_dir_named_dot_md(self):
+        # rglob("*.md")는 .md로 끝나는 디렉터리도 매칭 → read_text에서 IsADirectoryError 크래시.
+        with tempfile.TemporaryDirectory() as root:
+            (Path(root) / "weird.md").mkdir()
+            _write(root, "a.md", "hello world")
+            out = co.collect(root)
+            self.assertEqual(len(out), 1)
+
+
 class CheckTests(unittest.TestCase):
     def _check(self, base_files, cur_files, manifest=None):
         with tempfile.TemporaryDirectory() as base, tempfile.TemporaryDirectory() as cur, tempfile.TemporaryDirectory() as md:

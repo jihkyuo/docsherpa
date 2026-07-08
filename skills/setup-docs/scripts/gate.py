@@ -114,7 +114,7 @@ def analyze(root):
             queue.append(target)
 
     docs_dir = root / "docs"
-    all_docs = sorted(docs_dir.rglob("*.md")) if docs_dir.is_dir() else []
+    all_docs = sorted(p for p in docs_dir.rglob("*.md") if p.is_file()) if docs_dir.is_dir() else []
     orphans = [d for d in all_docs if d.resolve() not in visited]
 
     scanned = []

@@ -69,6 +69,8 @@ def collect(root):
     """dir 내 모든 *.md 의 {key: {"preview", "locs": [...]}}."""
     out = {}
     for md in sorted(Path(root).rglob("*.md")):
+        if not md.is_file():
+            continue
         for seg in segment(md.read_text(encoding="utf-8", errors="surrogateescape")):
             k = seg_key(seg)
             # preview는 표시용(print) — surrogate를 표시-안전하게(strict stdout 크래시 방지).

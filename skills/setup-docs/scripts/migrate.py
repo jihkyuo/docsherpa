@@ -110,6 +110,8 @@ def apply_moves(root, move_plan):
     # 1) 모든 .md의 이동전 경로 → 재작성 내용 계산(이동 전 전량 메모리 확보).
     rewritten = {}
     for md in root.rglob("*.md"):
+        if not md.is_file():
+            continue
         old_rel = md.relative_to(root).as_posix()
         rewritten[old_rel] = rewrite_links(
             md.read_text(encoding="utf-8", errors="surrogateescape"), old_rel, move_map)
@@ -452,6 +454,8 @@ def classify_links(base_root, cur_root, move_plan):
     move_map = {p["src"]: p["dest"] for p in move_plan}
     res = {"new_broken": [], "preexisting_broken": [], "anchor_lost": []}
     for bmd in sorted(base_root.rglob("*.md")):
+        if not bmd.is_file():
+            continue
         old_rel = bmd.relative_to(base_root).as_posix()
         new_rel = move_map.get(old_rel, old_rel)
         if not (cur_root / new_rel).is_file():
@@ -484,6 +488,8 @@ def per_file_accounting(base_root, cur_root, move_plan):
     move_map = {p["src"]: p["dest"] for p in move_plan}
     viol = []
     for bmd in sorted(base_root.rglob("*.md")):
+        if not bmd.is_file():
+            continue
         old_rel = bmd.relative_to(base_root).as_posix()
         new_rel = move_map.get(old_rel, old_rel)
         dest = cur_root / new_rel

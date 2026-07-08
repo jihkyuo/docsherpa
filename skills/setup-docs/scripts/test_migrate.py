@@ -136,6 +136,17 @@ def test_apply_moves_asserts_src_exists(tmp_path):
         migrate.apply_moves(tmp_path, plan)
 
 
+def test_apply_moves_ignores_dir_named_dot_md(tmp_path):
+    # rglob("*.md")는 이름이 .md로 끝나는 디렉터리도 매칭한다(vd-front dogfood 노출).
+    # 그런 디렉터리를 read_text 하면 IsADirectoryError로 크래시 — is_file() 가드로 무시해야.
+    (tmp_path / "weird.md").mkdir()
+    _mk(tmp_path, "a.md", "# A\n")
+    plan = [{"src": "a.md", "dest": "docs/a.md", "ops": ["move"], "impact": None}]
+    migrate.apply_moves(tmp_path, plan)
+    assert (tmp_path / "docs/a.md").is_file()
+    assert (tmp_path / "weird.md").is_dir()
+
+
 def test_prune_empty_dirs_removes_emptied_folder(tmp_path):
     _mk(tmp_path, "docs/keep.md", "# keep\n")          # docs는 비지 않음 → 보존돼야
     _mk(tmp_path, "docs/old/x.md", "# X\n")
