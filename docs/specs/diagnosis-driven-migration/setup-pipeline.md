@@ -1,6 +1,6 @@
 # setup-docs 파이프라인 — 증분 3 (진단 → 검증된 계획 → 승인) spec
 
-- 상태: 제안 (브레인스토밍 완료, 사용자 4-섹션 승인)
+- 상태: 제안 (브레인스토밍 완료, 사용자 4-섹션 승인) · **2026-07-08 계획검증 개정**(아래 §0a)
 - 날짜: 2026-07-08
 - 선행: [design.md](design.md) §5·§7·§8·§10 · [doc-health.md](doc-health.md)(진단 생산자) · [render_report 계획](../../plans/2026-07-07-render-report-renderer.md)(아티팩트)
 
@@ -15,13 +15,31 @@
 | P1 | **검증된 계획** — Phase 1b 자체검증(스크래치에 목표트리 빌드 → 두 오라클 통과 → 등급 증명)을 증분 3에 포함. 사용자에 보여주는 계획은 "이대로 하면 진짜 A" 증명된 것. | design §7 "증명 후 제시". 거짓 계획 금지 |
 | P2 | **최소 코어** — 순수 이동/개명(verbatim) + 링크리라이트 + 두 오라클. **git 전제.** 정규화 transformed·비-git clone·동결역사 깊은 처리는 이연. | 유실 0 불변식 집중, 스코프 부풀림 방지(D8 opt-in) |
 
+## 0a. 계획검증 개정 (2026-07-08 — /codex + 실측 재현)
+
+증분 3 구현 계획을 착수 전 검증(정적추적 + 합성repo 실측 + /codex 교차)했더니 **"이대로 구현 불가"** 판정.
+6개 결함 발견, 사용자 승인으로 아래를 반영해 스펙·계획 소급 개정:
+
+| # | 결함 | 개정 |
+|---|---|---|
+| F1 | **orphan=0 불가.** 이동+scaffold만으론 이동한 문서가 어느 인덱스에도 안 붙어 전부 orphan → 1b가 항상 STOP → 아티팩트 영영 안 나옴(실측 orphan=1). scaffold는 스켈레톤 인덱스만 만들고 이동 문서를 등록 안 함. | **Phase 1b에 `register_in_indexes` 단계 추가**(§2). 이동한 각 문서를 폴더 인덱스(`_README`)에 링크 등록 + 폴더를 map spine에 배선 → 진짜 orphan=0 도달. design §7("폴더 계층화")·§8("orphan=0")이 이미 전제한 것을 스펙이 빠뜨렸던 것. |
+| F2 | **`disposition` 필드 부재.** doc-health 매니페스트는 `role` 필드를 내고 `disposition`은 `scorecard.py`의 경로함수(인벤토리에 미주입). `plan_moves`가 `disposition`으로 skip하면 항상 None → **라우터(AGENTS.md 등)까지 이동.** | **`disposition`을 `contract.py`(gate·scorecard 공유 단일소스)로 이동**, `plan_moves`가 경로에서 직접 계산. 크로스-dir 임포트 없이 재사용. |
+| F3 | **content_oracle 오탐.** scaffold의 inject가 `@AGENTS.md\n`를 CLAUDE.md 첫 세그먼트에 빈 줄 없이 붙여 세그먼트 key 변경 → 무손실인데 unaccounted>0(헛STOP, 실측 확인). | **`inject_claude_md`를 빈 줄 삽입으로 수정**(실제 setup 흐름의 잠복버그도 해결). |
+| F4 | **legacy 이동 = 스펙위반.** `_TYPE_DEST` 기본값으로 동결역사가 `docs/` 평면 이동 → §3 "인덱스만·verbatim·repoint 금지" 위반. | `plan_moves`가 **legacy를 skip**(제자리·미이동). 깊은 de-link는 증분 4. |
+| F5 | **부정직 RED.** `build_and_verify` 테스트가 `isinstance(orphan, int)`만 검사 → orphan>0도 green. "reaches_clean"인데 clean 미검증. | 테스트를 **`broken==0` AND `orphan==0`** 단정으로. |
+| F6 | **디렉터리 링크 파손.** `rewrite_links`의 `normpath`가 후행 `/` 제거 → dir 링크가 파일 링크화 → gate traverse 안 함 → 하위 orphan. | `rewrite_links`가 **후행 슬래시 보존 + 루트상대 `/` skip**(scaffold `_rewrite_urls` 계승). |
+
+추가(엣지): `apply_moves`는 **기존 dest 덮어쓰기**를 사전 감지(계획된 dest 중복만 잡던 것 → repo 기존 파일 충돌도) · **`.mdx`는 content_oracle 미지원**이라 무손실 증명 불가 → 증분 3은 `.mdx` **이동 대상서 제외**(제자리, 증분 4 이연).
+
 ## 1. 아키텍처 (모듈 경계)
 
 **통찰 — 신규는 세 조각뿐.** doc-health가 분류(`inventory`)·모순(J4)을 이미 하고, render_report는 plan 모드 UI가 완성, content_oracle·gate·scaffold도 있다. 증분 3 신규 = **배정 + 스크래치 검증 + 계획 조립.**
 
 | 신규/수정 | 성격 | 책임 |
 |---|---|---|
-| `skills/setup-docs/scripts/migrate.py` (신규) | 결정론 엔진 | `plan_moves(inventory)` 타입→목적지 배정 · 스크래치에 이동+링크리라이트 · scaffold 호출(spine·loop) · gate + content_oracle → `{broken, orphan, unaccounted}` |
+| `skills/setup-docs/scripts/migrate.py` (신규) | 결정론 엔진 | `plan_moves(inventory)` 타입→목적지 배정(`contract.disposition`로 router/tooling/legacy skip) · 스크래치에 이동+링크리라이트 · **`register_in_indexes`(이동 문서를 폴더 인덱스·map에 등록 → orphan=0)** · scaffold 호출(spine·loop) · gate + content_oracle → `{broken, orphan, unaccounted}` |
+| `skills/setup-docs/scripts/contract.py` (수정) | 공유 단일소스 | **`disposition(rel_path)` 이관**(scorecard→contract). gate·scorecard·migrate가 크로스-dir 없이 공유(F2). |
+| `skills/setup-docs/scripts/inject_claude_md.py` (수정) | 안전 주입 | import를 **빈 줄 넣어** 주입(content_oracle 오탐 제거, F3). |
 | `skills/setup-docs/SKILL.md` (수정) | 에이전트 절차 | MESSY 무거운 차선을 새 파이프라인으로 재배선(Phase 0·1·2) |
 | 재사용(신규 아님) | — | doc-health(진단·재채점) · content_oracle · gate · scaffold · render_report · scaffold 링크리라이트 헬퍼(`_rewrite_urls`) |
 
@@ -39,17 +57,19 @@ Phase 0 (before 진단)
 
 Phase 1a (배정)
   migrate.plan_moves(inventory) [결정론]:
-    ADR→decisions/ · how-to/troubleshooting→how-to/ · spec→specs/<feature>/ · PRD→product/
-    · reference/explanation→docs/평면 · router/tooling→제자리(이동 X)
-  + SKILL 판단: 토픽폴더(co-change≥2)·feature명·동결역사(인덱스만)·임팩트플래그(코드참조·외부싱크 깨짐)
+    disposition=contract.disposition(path)로 router/tooling/legacy·.mdx → 제자리(이동 X)
+    ADR→decisions/ · how-to→how-to/ · spec→specs/<feature>/ · PRD→product/
+    · reference/explanation→docs/평면
+  + SKILL 판단: 토픽폴더(co-change≥2)·feature명·동결역사 식별(legacy 태깅→미이동)·임팩트플래그(코드참조·외부싱크 깨짐)
     → move_plan = [{src, dest, ops:[move|rename], impact}]
 
 Phase 1b (자체검증 = 엔진)   migrate.build_and_verify(repo, move_plan):
-    ① 스크래치 사본  ② 이동+링크리라이트  ③ scaffold(스크래치: spine+성장루프)
-    ④ gate → broken/orphan  ⑤ content_oracle(base=repo, current=스크래치) → unaccounted
+    ① 스크래치 사본  ② 이동+링크리라이트(apply_moves; 기존 dest 충돌 사전 STOP)
+    ③ scaffold(스크래치: spine+성장루프)  ④ register_in_indexes(이동 문서를 폴더 _README·map에 등록)
+    ⑤ gate → broken/orphan  ⑥ content_oracle(base=repo, current=스크래치) → unaccounted
     → {broken, orphan, unaccounted}
   SKILL: 스크래치에 doc-health 재실행 → 기계등급 확인
-  ✋ STOP(§3): grade 미달·unaccounted>0·목적지충돌 → 아티팩트 안 냄
+  ✋ STOP(§3): broken>0·orphan>0·unaccounted>0·목적지충돌 → 아티팩트 안 냄
 
 Phase 2 (계획 아티팩트 + 승인)   계획 데이터 조립:
     repo·grade(현재/목표A)·scorecard·trees.before  ← doc-health
@@ -67,14 +87,15 @@ Phase 2 (계획 아티팩트 + 승인)   계획 데이터 조립:
 
 STOP 조건(1b):
 1. `content_oracle unaccounted > 0` → 유실 위험. 미분류 세그먼트 보고.
-2. gate broken≠0 또는 orphan≠0 → 도달성 미달.
+2. gate broken≠0 또는 orphan≠0 → 도달성 미달. (**register_in_indexes 후에도** orphan≠0이면 배정/등록 결함.)
 3. 스크래치 재채점 후 기계등급 미달(M1~M5 not all pass) → 배정 부족(어느 차원인지).
-4. 목적지 충돌(둘 → 같은 경로).
+4. 목적지 충돌 — (a) 계획 내 둘이 같은 dest(`plan_moves` ValueError), (b) dest가 repo 기존 파일과 충돌(제자리 이동 아닌데 덮어씀 → `apply_moves` 사전 STOP).
 
 **엣지(design 계승):**
 - **자세별 차등:** GREENFIELD=조용히 설치(아티팩트 X) · HEALTHY=등급 카드만 · **MESSY만 풀 파이프라인.**
-- **동결 역사**(날짜박힌 specs/plans): 인덱스만·내용 verbatim·repoint 금지. 증분 3은 최소 처리(이동 대상서 "인덱스만"으로 배정, 깊은 de-link는 증분 4).
+- **동결 역사**(날짜박힌 specs/plans): 인덱스만·내용 verbatim·repoint 금지. 증분 3은 **legacy를 이동 대상서 제외**(제자리), 깊은 de-link는 증분 4.
 - **비-git repo:** 스코프 밖(P2). 감지 시 "git init 먼저" 안내(content_oracle 전제).
+- **`.mdx` 문서:** content_oracle 미지원(무손실 증명 불가) → 증분 3은 **이동 제외**(제자리), 증분 4 이연.
 - **이동할 content 0**: move_plan 빈 계획 → 1b는 spine/loop만 검증.
 
 ## 4. 정직성 정밀화 — "등급 A 증명"의 엄밀한 의미
@@ -102,4 +123,4 @@ design §7 "등급=A 증명"의 정직한 해석(J를 결정론으로 증명하�
 
 - **Phase 3 실제 실행** — worktree 격리·배치·실제 repo 이동·랜드. migrate.py 재사용.
 - **Phase 4 결과 재진단** — doc-health 재실행 → render_report("result"). result-모드 CSS(증분 1 이연분) 여기서.
-- 정규화 transformed(내부 포맷) · 비-git clone 경로 · 동결역사 깊은 de-link — 이연(P2).
+- 정규화 transformed(내부 포맷) · 비-git clone 경로 · 동결역사 깊은 de-link · `.mdx` 이동(content_oracle .mdx 확장) — 이연(P2).
