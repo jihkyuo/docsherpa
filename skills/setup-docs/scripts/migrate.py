@@ -138,7 +138,9 @@ def _ensure_folder_index(folder):
 def _home_links_index(home_text, rel):
     """home이 rel 폴더의 인덱스에 도달하는 링크(dir 링크 또는 _README/README 파일 링크)를
     이미 가졌는지. 하위 임의 파일 링크(예: rel/other.md)는 인덱스 도달을 보장 못 하므로 제외 —
-    느슨한 substring 매칭이 새 중첩 폴더를 '이미 링크됨'으로 오탐해 orphan을 남기던 버그(F1) 방지."""
+    느슨한 substring 매칭이 새 중첩 폴더를 '이미 링크됨'으로 오탐해 orphan을 남기던 버그(F1) 방지.
+    펜스 코드블록(예시 문법)은 제거 후 검사 — 펜스 속 예시가 실링크로 오탐되는 것 방지(R5)."""
+    home_text = gate.FENCE_RE.sub("", home_text)
     return (f"]({rel}/)" in home_text
             or f"]({rel}/_README.md)" in home_text
             or f"]({rel}/README.md)" in home_text)

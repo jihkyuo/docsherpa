@@ -274,3 +274,17 @@ def test_register_all_ignores_fenced_example_links(tmp_path):
     _mk(tmp_path, "docs/_map.md", "# Map\n<!-- docsherpa:index -->\n- [g](g/)\n")
     migrate.register_all(tmp_path)
     assert not gate.analyze(tmp_path).orphans          # bar.md가 펜스오탐으로 방치되지 않음
+
+
+def test_register_all_ignores_fenced_example_link_in_home_file(tmp_path):
+    """home(map) 파일 자체의 펜스 예시가 실링크로 오탐되면 진짜 등록이 skip되고
+    진행가드가 (해결 가능한데도) 거짓 RuntimeError를 낸다 — code-review에서 발견."""
+    import gate
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n<!-- docsherpa:map -->\n- [map](docs/_map.md)\n")
+    # home(docs/_map.md) 자체가 펜스 안에 실링크와 똑같은 문법을 예시로 담고 있음
+    _mk(tmp_path, "docs/_map.md",
+        "# Map\n<!-- docsherpa:index -->\n\n예시 문법:\n```\n- [decisions](decisions/)\n```\n")
+    _mk(tmp_path, "docs/decisions/moved.md", "# 이동된 ADR\n")
+    migrate.register_all(tmp_path)                      # RuntimeError 없이 실제로 배선돼야
+    assert not gate.analyze(tmp_path).orphans
