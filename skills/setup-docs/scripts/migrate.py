@@ -9,6 +9,7 @@ content_oracle이 링크를 정규화해 무시하므로 내용보존=content_or
 import posixpath
 import re
 import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -328,6 +329,55 @@ def build_and_verify(repo, move_plan, plugin_root=None):
     finally:
         shutil.rmtree(base, ignore_errors=True)
         shutil.rmtree(current, ignore_errors=True)
+
+
+def _git_out(cwd, *args):
+    return subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, check=True).stdout
+
+
+def land_migration(repo, move_plan, head_sha, decisions=None, *, plugin_root=None):
+    """검증된 계획을 worktree 격리로 실 브랜치에 랜딩(R3·R8). 통과 시에만 커밋, 실패/크래시 흔적0.
+
+    이중 worktree(wt_cur=적용 대상 새 브랜치, wt_base=오라클 base 둘 다 head_sha에서 분기) →
+    apply_moves→prune_empty_dirs→scaffold→register_all(wt_cur) → verify_migration(wt_base, wt_cur).
+    검증한 그 wt_cur를 그대로 커밋(재실행 없음). finally에서 worktree 2개 제거, 미커밋이면 브랜치도 삭제."""
+    repo = Path(repo).resolve()
+    if not (repo / ".git").exists():
+        raise RuntimeError("git repo 아님 — land_migration은 git 전제(git init 선행).")
+    cur_head = _git_out(repo, "rev-parse", "HEAD").strip()
+    if cur_head != head_sha:
+        raise RuntimeError(f"HEAD 스테일(계획 시 {head_sha[:8]} ≠ 현재 {cur_head[:8]}) — 재진단 필요.")
+    stamp = head_sha[:8]
+    branch = f"docsherpa/migrate-{stamp}"
+    wt_cur = Path(tempfile.mkdtemp(prefix="docsherpa-land-"))
+    wt_base = Path(tempfile.mkdtemp(prefix="docsherpa-base-"))
+    committed = False
+    try:
+        subprocess.run(["git", "-C", str(repo), "worktree", "add", "-q", "-b", branch, str(wt_cur), head_sha], check=True)
+        subprocess.run(["git", "-C", str(repo), "worktree", "add", "-q", "--detach", str(wt_base), head_sha], check=True)
+        apply_moves(wt_cur, move_plan)
+        prune_empty_dirs(wt_cur)
+        scaffold.scaffold(wt_cur, plugin_root_dir=plugin_root)
+        register_all(wt_cur)
+        v = verify_migration(wt_base, wt_cur, move_plan)
+        ok = (not v["unaccounted"] and not v["new_broken"] and not v["anchor_lost"]
+              and v["orphan"] == 0 and not v["per_file"])
+        if not ok:
+            raise RuntimeError(f"랜딩 오라클 실패 → 흔적0 STOP: { {k: v[k] for k in ('unaccounted', 'new_broken', 'anchor_lost', 'orphan', 'per_file')} }")
+        subprocess.run(["git", "-C", str(wt_cur), "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(wt_cur), "commit", "-q", "-m",
+                        f"📦 docs: docsherpa 마이그레이션(이동 {len(move_plan)}건, 검증트리=커밋트리)"], check=True)
+        committed = True
+        return {"branch": branch, "unaccounted": [], "new_broken": [], "anchor_lost": [],
+                "preexisting_broken": v["preexisting_broken"], "moved": len(move_plan)}
+    finally:
+        subprocess.run(["git", "-C", str(repo), "worktree", "remove", "--force", str(wt_cur)],
+                        capture_output=True)
+        subprocess.run(["git", "-C", str(repo), "worktree", "remove", "--force", str(wt_base)],
+                        capture_output=True)
+        shutil.rmtree(wt_cur, ignore_errors=True); shutil.rmtree(wt_base, ignore_errors=True)
+        if not committed:
+            subprocess.run(["git", "-C", str(repo), "branch", "-D", branch], capture_output=True)  # 흔적0(R8)
 
 
 def _after_tree(move_plan):
