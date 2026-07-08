@@ -241,3 +241,36 @@ def test_assemble_plan_data_renders_without_keyerror():
     html = render_report.render_report(d, "plan")
     assert html.count("<div") == html.count("</div>")
     assert 'style="' not in html
+
+
+def test_register_all_registers_inplace_and_moved_uniformly(tmp_path):
+    import gate
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n<!-- docsherpa:map -->\n- [map](docs/_map.md)\n")
+    _mk(tmp_path, "docs/_map.md", "# Map\n<!-- docsherpa:index -->\n")
+    _mk(tmp_path, "docs/harness/inplace.md", "# 제자리 문서\n")     # 이동 안 함 → 기존 register 누락
+    _mk(tmp_path, "docs/decisions/moved.md", "# 이동된 ADR\n")
+    migrate.register_all(tmp_path)
+    assert not gate.analyze(tmp_path).orphans          # 제자리·이동 전부 도달
+
+
+def test_register_all_progress_guard_raises_on_stuck(tmp_path, monkeypatch):
+    import gate
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n")                # 라우터에 map 마커 없음 → home 없음
+    _mk(tmp_path, "docs/x.md", "# X\n")                # 등록할 home이 없어 도달 불가
+    import pytest
+    with pytest.raises(RuntimeError):
+        migrate.register_all(tmp_path)                  # 무한루프 대신 즉시 error
+
+
+def test_register_all_ignores_fenced_example_links(tmp_path):
+    import gate
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n<!-- docsherpa:map -->\n- [map](docs/_map.md)\n")
+    # 폴더 인덱스에 펜스 코드블록으로 bar.md 링크가 예시로 들어있음(실링크 아님)
+    _mk(tmp_path, "docs/g/_README.md", "# G\n```\n- [예시](bar.md)\n```\n")
+    _mk(tmp_path, "docs/g/bar.md", "# Bar\n")
+    _mk(tmp_path, "docs/_map.md", "# Map\n<!-- docsherpa:index -->\n- [g](g/)\n")
+    migrate.register_all(tmp_path)
+    assert not gate.analyze(tmp_path).orphans          # bar.md가 펜스오탐으로 방치되지 않음

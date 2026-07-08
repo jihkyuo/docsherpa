@@ -207,6 +207,63 @@ def register_in_indexes(root, move_plan):
         _append_links(home, map_entries)
 
 
+def _live_link_targets(text):
+    """gate와 동일 의미론: 펜스 코드블록 제거 후 실제 ](target) 만 추출(raw substring 오탐 방지, R5)."""
+    return set(gate.LINK_RE.findall(gate.FENCE_RE.sub("", text)))
+
+
+def _append_links_live(path, entries):
+    """_append_links와 동일하나 '이미 있음' 판정을 live-link 파싱으로(R5). 반환=신규 추가 수."""
+    text = path.read_text(encoding="utf-8", errors="surrogateescape") if path.exists() else ""
+    have = _live_link_targets(text)
+    add = [(lab, t) for lab, t in entries if t not in have]
+    if not add:
+        return 0
+    block = "\n".join(f"- [{lab}]({t})" for lab, t in add) + "\n"
+    sep = "" if text.endswith("\n\n") else ("\n" if text.endswith("\n") else ("\n\n" if text else ""))
+    path.write_text(text + sep + block, encoding="utf-8", errors="surrogateescape")
+    return len(add)
+
+
+def register_all(root):
+    """도달성-구동: gate가 orphan으로 보는 docs/**/*.md 전부를 폴더 인덱스·map에 배선.
+    이동/제자리/legacy 균일(L3). 진행 가드로 미수렴 시 RuntimeError(R5)."""
+    root = Path(root)
+    while True:
+        orphans = [p.relative_to(root).as_posix() for p in gate.analyze(root).orphans]
+        if not orphans:
+            return
+        added = _register_orphan_rels(root, orphans)
+        if added == 0:
+            raise RuntimeError(f"register_all 미수렴 — 등록 불가 orphan: {orphans}")
+
+
+def _register_orphan_rels(root, rels):
+    """orphan 상대경로들을 폴더별로 묶어 인덱스+map에 등록. 반환=신규 링크 수(진행 측정)."""
+    home = _index_home(root)
+    if home is None:
+        raise RuntimeError("register_all 미수렴 — index home(맵/라우터 마커) 없음")
+    home_dir = home.parent.relative_to(root).as_posix()
+    home_text = home.read_text(encoding="utf-8", errors="surrogateescape")
+    by_folder, flats, added = {}, [], 0
+    for rel in rels:
+        folder = posixpath.dirname(rel)
+        (flats if folder == "docs" else by_folder.setdefault(folder, [])).append(rel)
+    map_entries = []
+    for folder, items in sorted(by_folder.items()):
+        idx = _ensure_folder_index(root / folder)
+        names = sorted(posixpath.basename(r) for r in items if (root / folder / posixpath.basename(r)) != idx)
+        added += _append_links_live(idx, [(posixpath.splitext(n)[0], n) for n in names])
+        rel_to_home = posixpath.relpath(folder, home_dir or ".")
+        if not _home_links_index(home_text, rel_to_home):
+            map_entries.append((posixpath.basename(folder), rel_to_home + "/"))
+    for rel in sorted(flats):
+        map_entries.append((posixpath.splitext(posixpath.basename(rel))[0], posixpath.relpath(rel, home_dir or ".")))
+    if map_entries:
+        added += _append_links_live(home, map_entries)
+    return added
+
+
 _COPY_IGNORE = shutil.ignore_patterns("node_modules", ".git", "dist", "build", "vendor")
 
 
