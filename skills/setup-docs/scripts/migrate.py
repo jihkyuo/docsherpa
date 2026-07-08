@@ -340,7 +340,8 @@ def land_migration(repo, move_plan, head_sha, decisions=None, *, plugin_root=Non
 
     이중 worktree(wt_cur=적용 대상 새 브랜치, wt_base=오라클 base 둘 다 head_sha에서 분기) →
     apply_moves→prune_empty_dirs→scaffold→register_all(wt_cur) → verify_migration(wt_base, wt_cur).
-    검증한 그 wt_cur를 그대로 커밋(재실행 없음). finally에서 worktree 2개 제거, 미커밋이면 브랜치도 삭제."""
+    검증한 그 wt_cur를 그대로 커밋(재실행 없음). finally에서 worktree 2개 제거, 이번 호출이 만든
+    브랜치를 커밋 못 했을 때만 삭제(재호출로 남의 성공 브랜치 force-delete 방지)."""
     repo = Path(repo).resolve()
     if not (repo / ".git").exists():
         raise RuntimeError("git repo 아님 — land_migration은 git 전제(git init 선행).")
@@ -349,11 +350,18 @@ def land_migration(repo, move_plan, head_sha, decisions=None, *, plugin_root=Non
         raise RuntimeError(f"HEAD 스테일(계획 시 {head_sha[:8]} ≠ 현재 {cur_head[:8]}) — 재진단 필요.")
     stamp = head_sha[:8]
     branch = f"docsherpa/migrate-{stamp}"
+    # 브랜치명은 head_sha 결정론 → 이미 이 커밋의 랜딩 브랜치가 있으면 조용히 덮지 말고 STOP.
+    # (자동머지 안 하므로 성공 후 HEAD 불변 → 재호출이 일상 경로. 남의 성공 브랜치 보호 = 내용 소실 0.)
+    if subprocess.run(["git", "-C", str(repo), "branch", "--list", branch],
+                      capture_output=True, text=True).stdout.strip():
+        raise RuntimeError(f"이미 이 커밋에 대한 랜딩 브랜치 {branch}가 있음 — 검토·머지 후 재실행하거나 삭제하라.")
     wt_cur = Path(tempfile.mkdtemp(prefix="docsherpa-land-"))
     wt_base = Path(tempfile.mkdtemp(prefix="docsherpa-base-"))
+    branch_created = False
     committed = False
     try:
         subprocess.run(["git", "-C", str(repo), "worktree", "add", "-q", "-b", branch, str(wt_cur), head_sha], check=True)
+        branch_created = True                                       # 이번 호출이 만든 브랜치(뒤 단계 실패 시에만 삭제 대상)
         subprocess.run(["git", "-C", str(repo), "worktree", "add", "-q", "--detach", str(wt_base), head_sha], check=True)
         apply_moves(wt_cur, move_plan)
         prune_empty_dirs(wt_cur)
@@ -376,8 +384,9 @@ def land_migration(repo, move_plan, head_sha, decisions=None, *, plugin_root=Non
         subprocess.run(["git", "-C", str(repo), "worktree", "remove", "--force", str(wt_base)],
                         capture_output=True)
         shutil.rmtree(wt_cur, ignore_errors=True); shutil.rmtree(wt_base, ignore_errors=True)
-        if not committed:
-            subprocess.run(["git", "-C", str(repo), "branch", "-D", branch], capture_output=True)  # 흔적0(R8)
+        subprocess.run(["git", "-C", str(repo), "worktree", "prune"], capture_output=True)  # remove 실패 시 메타 잔존 폴백
+        if branch_created and not committed:
+            subprocess.run(["git", "-C", str(repo), "branch", "-D", branch], capture_output=True)  # 이번 호출이 만든 미커밋 브랜치만 삭제(흔적0, R8)
 
 
 def _after_tree(move_plan):

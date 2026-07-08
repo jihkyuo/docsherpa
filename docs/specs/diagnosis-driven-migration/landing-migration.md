@@ -54,7 +54,7 @@
 
 | 신규/수정 | 성격 | 책임 |
 |---|---|---|
-| `migrate.py` `land_migration(repo, move_plan, decisions=None, *, plugin_root=None)` (신규) | 실행 진입점 | HEAD sha 핀 검증 → git worktree(current)+새 브랜치 & 두번째 worktree(base@핀HEAD) → apply_moves(src존재 단언)→빈디렉터리 제거→scaffold→register_all → `verify_migration` → **통과 시 그 current worktree를 커밋**(재실행 없음)·worktree들 제거·브랜치 반환; 실패/크래시 시 `finally`로 흔적 0. git 전제(non-git STOP) |
+| `migrate.py` `land_migration(repo, move_plan, head_sha, decisions=None, *, plugin_root=None)` (신규) | 실행 진입점 | HEAD sha 핀 검증 → git worktree(current)+새 브랜치 & 두번째 worktree(base@핀HEAD) → apply_moves(src존재 단언)→빈디렉터리 제거→scaffold→register_all → `verify_migration` → **통과 시 그 current worktree를 커밋**(재실행 없음)·worktree들 제거·브랜치 반환; 실패/크래시 시 `finally`로 흔적 0. git 전제(non-git STOP) |
 | `migrate.py` `verify_migration(base_root, current_root, move_plan)` (신규, `build_and_verify` 검증부 추출) | 오라클 일원화 | 세 판정을 한 곳에: `unaccounted`(content_oracle) · `new_broken`+`preexisting_broken`+`anchor_lost`(링크 오라클, §5) · `orphan`(gate) + `per_file`(§5 인스턴스 회계). Phase 1b(스크래치)·Phase 3(worktree)가 **동일 함수** 호출 |
 | `migrate.py` `register_all(root)` (신규, `register_in_indexes` 대체) | 도달성-구동 등록 | gate.analyze의 orphan을 폴더 인덱스·map에 등록(멱등, **진행 가드** + gate live-link 파싱). legacy 특별취급 없음(L3). 읽기 `surrogateescape`(R6) |
 | `migrate.py` 링크 오라클 헬퍼 (신규) | new/preexisting/anchor 판별 | 도달성-무관 전-문서 링크 해석(base 쪽) + **역-move_map 소스정체성 페어링** → base-satisfiable & current-broken = new_broken; 앵커 diff(§5) |

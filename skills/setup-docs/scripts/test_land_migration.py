@@ -38,8 +38,36 @@ def test_land_migration_success_creates_branch_no_worktree_impact(tmp_path):
 def test_land_migration_stale_head_stops(tmp_path):
     repo = tmp_path / "repo"; _init_repo(repo)
     stale = "0" * 40
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError, match="스테일"):
         migrate.land_migration(repo, [], stale)
+
+
+def test_land_migration_recall_same_head_preserves_first_branch(tmp_path):
+    """같은 head_sha로 2회 호출 → 2차는 STOP, 1차 성공 브랜치·내용 보존(내용 소실 0)."""
+    repo = tmp_path / "repo"; _init_repo(repo)
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    plan = [{"src": "guide.md", "dest": "docs/how-to/guide.md", "ops": ["move"], "impact": None}]
+    res1 = migrate.land_migration(repo, plan, head)                  # 1차 성공
+    branch = res1["branch"]
+    with pytest.raises(RuntimeError, match=branch):                  # 2차는 명확한 STOP
+        migrate.land_migration(repo, plan, head)
+    assert branch in _git(repo, "branch").stdout                     # 1차 브랜치 여전히 존재
+    show = _git(repo, "show", f"{branch}:docs/how-to/guide.md").stdout
+    assert "가이드 세그먼트" in show                                 # 1차 커밋 내용 보존
+
+
+def test_land_migration_oracle_failure_leaves_zero_trace(tmp_path, monkeypatch):
+    """verify_migration이 new_broken 검출 → raise + 흔적0(자기 브랜치 삭제·worktree 0)."""
+    repo = tmp_path / "repo"; _init_repo(repo)
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    plan = [{"src": "guide.md", "dest": "docs/how-to/guide.md", "ops": ["move"], "impact": None}]
+    monkeypatch.setattr(migrate, "verify_migration", lambda b, c, mp: {
+        "unaccounted": [], "new_broken": [("docs/how-to/guide.md", "[x](missing.md)")],
+        "preexisting_broken": [], "anchor_lost": [], "orphan": 0, "per_file": []})
+    with pytest.raises(RuntimeError, match="오라클 실패"):
+        migrate.land_migration(repo, plan, head)
+    assert "docsherpa/migrate-" not in _git(repo, "branch").stdout   # 자기 브랜치 삭제(흔적0)
+    assert _git(repo, "worktree", "list").stdout.count("\n") <= 1    # 메인 worktree만
 
 
 def test_land_migration_failure_leaves_zero_trace(tmp_path):
