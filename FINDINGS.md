@@ -23,6 +23,11 @@
   git-optional) + 루트 관례 대소문자 무시. vd-front M5 49(오염)→38(정직). 리뷰가 비-ASCII 경로 인용 버그도
   잡아 `-z` 픽스(한글 경로 가드 테스트). 30 테스트 green.
   참고: ADR 0010 `doc-*` 패밀리 폐기 → 새 스킬은 merit로 명명(그래서 `doc-health`).
+  **📌 이연 기록(2026-07-08):** vd-front 독푸딩+설계 논의에서 표면화된 **문서 타입 템플릿·메타·트리거** 개선을
+  [doc-type-templates/design.md](docs/specs/doc-type-templates/design.md)에 기록. 핵심 = doc-reconcile 트리거가
+  판단-소프트(reference/explanation 트리거 없음·메타 스탬핑·게이트 부재). **심장은 템플릿 아니라 트리거.**
+  합의 결정(B 스캐폴드·created/adopted 정직·타입-메타 게이트·관계메타·산업표준) 기록됨. **착수는 setup 완료 후**
+  (doc-reconcile 개선 루프). ⚠️ B 착수 시 ADR 0013 supersede 필요.
 - **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · N11 spine · Track2/F12 · loop-refresh · PRD 1급 타입 ·
   **M5 출시 산출물 완비 + v0.1.0 발행 완료(2026-07-06).** 빌드 사실상 종료.
   다음 = **사용자 정지점만 남음**(터미널 설치 실검증 (c) · 중복 global 제거 (d) · 마켓플레이스 등록 —
