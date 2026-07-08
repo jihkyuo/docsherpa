@@ -57,6 +57,14 @@
   네이티브 disclosure(JS 0·시맨틱·비버튼)로 Before→After 2열 펼침. vd-backend 아티팩트에 후처리로 프로토타입(프리즈
   테마 변수 재사용·인라인 style 0·반응형 ≤640px 1열·legacy prd/ 흐림). 정식화 = `render_report`에 트리 `collapsible`
   플래그 + 전용 프리즈 CSS + 대비/구조 게이트 테스트 추가(렌더러 확장). 프리즈 품질 게이트와 충돌 없음(외부리소스 0 유지).
+  (D5) **배치는 타입 우선이어야 — 폴더명 topic 남발 금지(백엔드 개발자 검토가 실증)** — vd-backend 첫 배치에서
+  분류는 내용을 읽고 정확했으나(`기획서`=PRD·`N일차_진행`=legacy 정확) 오케스트레이션이 **폴더명 기반 topic
+  클러스터링**을 남발해 그 type을 배치에서 덮어씀 → PRD 기획서가 `product/` 아닌 `onboarding/`로, 결제(일본결제)
+  spec이 `onboarding/`로 오배치. 도메인 전문가가 "내용 안 보고 배치했냐"고 정확히 감지. **설계 §7 "타입 먼저,
+  토픽은 co-change일 때만"을 위반한 것.** 교정 v2(type 우선: PRD→product·spec→specs/<feature>·ADR→decisions,
+  일본결제→specs/payment)로 재배치·재검증(orphan=0·유실0) — 두 예시 정상화. 교훈: SKILL Phase 1a enrich에서
+  **topic은 co-change 클러스터에만, 배치 1순위는 분류 type**임을 산문에 강제(폴더명 승계 유혹 차단). 남은 판단:
+  타입 vs 기능응집 조직(Diátaxis 흩뿌림 vs 폴더 응집)은 도메인 결정 — 결정 패널로.
   (D4) **아티팩트 은어 누출(자기설명 부재)** — 승인-대상 산출물인데 `scorecard.py`의 차원 라벨/sub가 내부 은어
   (`성장 루프 3종`·`맵 척추`·`마커 home`)라 docsherpa 개념 모르는 외부 뷰어는 이해·행동 불가(채택률 직결).
   렌더러 아닌 scorecard의 name/sub를 자기설명형(무엇을 재나+결과)으로 바꿔야. 예: M4 → "코드 변경 시 문서
