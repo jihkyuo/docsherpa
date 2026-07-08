@@ -834,8 +834,7 @@ def assemble(root, files, judgment, inventory=None):
     res = gate.analyze(root)
     mech = machine_dims(res, files)
     orphan_ratio = (len(res.orphans) / len(res.all_docs)) if res.all_docs else 0.0
-    grade = rollup(mech, judgment, orphan_ratio,
-                   len(outside_content(files)), res.router_present)
+    grade = rollup(mech, judgment, orphan_ratio, res.router_present)
     out = {
         "repo": {"name": Path(root).resolve().name,
                  "docs_count": len(files),
