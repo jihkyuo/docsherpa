@@ -306,6 +306,54 @@ def _after_tree(move_plan):
     return {"title": "docs/ 중앙집중", "tag": "목표", "sub": sub, "lines": lines}
 
 
+def doc_links(root, rel):
+    """도달성 무관, 한 문서의 링크들을 해석. resolve는 gate.resolve(파일위치 기준)."""
+    root = Path(root); path = root / rel
+    out = []
+    for raw in gate.targets_in(path):                 # fence 제거된 raw 링크들
+        kind, target = gate.resolve(path, raw)
+        anchor = raw.split("#", 1)[1] if "#" in raw else ""
+        if kind == "skip":
+            out.append({"raw": raw, "kind": "skip", "resolved": True, "anchor": anchor}); continue
+        if kind == "dir":
+            resolved = Path(target).is_dir()
+        else:  # file
+            resolved = (not target.name.endswith(".md")) or target.is_file()   # 비-.md는 gate가 skip(해석성공 취급)
+        out.append({"raw": raw, "kind": kind, "resolved": resolved, "anchor": anchor})
+    return out
+
+
+def classify_links(base_root, cur_root, move_plan):
+    """소스정체성 페어링(R1): base 문서 ↔ cur 문서(move_map) · 링크 index zip.
+    new_broken = base-satisfiable & cur-broken. preexisting = 둘 다 broken. anchor_lost = 앵커 축소.
+
+    zip-by-index 가정: register_in_indexes/register_all은 새 링크를 인덱스 문서 "끝에" append하므로
+    (append-at-end), cur의 링크 리스트는 base와 같은 순서로 시작해 뒤에 신규 항목만 덧붙는다.
+    그래서 base[i]↔cur[i]로 앞에서부터 zip해도 정렬이 어긋나지 않는다. cur 쪽이 base보다 짧아지는
+    경우(i >= len(cl))는 안전하게 None으로 건너뛴다."""
+    base_root, cur_root = Path(base_root), Path(cur_root)
+    move_map = {p["src"]: p["dest"] for p in move_plan}
+    res = {"new_broken": [], "preexisting_broken": [], "anchor_lost": []}
+    for bmd in sorted(base_root.rglob("*.md")):
+        old_rel = bmd.relative_to(base_root).as_posix()
+        new_rel = move_map.get(old_rel, old_rel)
+        if not (cur_root / new_rel).is_file():
+            continue                                   # dest 부재는 per_file 회계(Task 4)가 담당
+        bl = [l for l in doc_links(base_root, old_rel) if l["kind"] != "skip"]
+        cl = [l for l in doc_links(cur_root, new_rel) if l["kind"] != "skip"]
+        for i, b in enumerate(bl):                     # append-at-end(register)라 base index가 앞에서 정렬
+            c = cl[i] if i < len(cl) else None
+            if c is None:
+                continue
+            if b["resolved"] and not c["resolved"]:
+                res["new_broken"].append((new_rel, c["raw"]))
+            elif not b["resolved"] and not c["resolved"]:
+                res["preexisting_broken"].append((new_rel, c["raw"]))
+            if b["anchor"] and b["anchor"] != c["anchor"]:
+                res["anchor_lost"].append((new_rel, c["raw"]))
+    return res
+
+
 def assemble_plan_data(health, move_plan, decisions=None):
     """doc-health 부분 dict → render_report plan 계약(trees.after·migration·decisions 추가)."""
     data = dict(health)
