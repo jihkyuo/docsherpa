@@ -184,3 +184,19 @@ def test_build_and_verify_empty_plan_verifies_spine(tmp_path):
     res = migrate.build_and_verify(tmp_path, [])
     assert res["unaccounted"] == []      # 이동 없음 → 무손실
     assert res["broken"] == 0            # scaffold spine 설치 후 링크 무결
+
+
+def test_build_and_verify_no_false_loss_on_preexisting_index(tmp_path):
+    # 이미 내용 있는 index 파일을 가진 repo(부분 마이그레이션)에 문서 추가 → register의 append가
+    # 기존 세그먼트에 안 붙어야(content_oracle 오탐 = false STOP 방지).
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n- [map](docs/_map.md)\n")
+    _mk(tmp_path, "docs/_map.md",
+        "# 지도\n\n## 먼저 읽기 <!-- docsherpa:index -->\n- [기존](existing.md)\n")
+    _mk(tmp_path, "docs/existing.md", "# 기존\n기존 세그먼트.\n")
+    _mk(tmp_path, "notes.md", "# Notes\n새 참조 세그먼트.\n")
+    (tmp_path / ".git").mkdir()
+    plan = [{"src": "notes.md", "dest": "docs/notes.md", "ops": ["move"], "impact": None}]
+    res = migrate.build_and_verify(tmp_path, plan)
+    assert res["unaccounted"] == []      # 기존 index 세그먼트 보존
+    assert res["broken"] == 0
