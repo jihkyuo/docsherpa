@@ -103,7 +103,7 @@ def machine_dims(res, files):
 
 
 # --- 등급 rollup (결정론, 임계값 🔴 튜닝) --------------------------------------
-def rollup(mech, judg, orphan_ratio, outside_count, router_present):
+def rollup(mech, judg, orphan_ratio, router_present):
     """9차원 상태 + 신호 → 등급 'A'..'F' (spec §3c 산식)."""
     m = {d["code"]: d["status"] for d in mech}
     if not router_present:

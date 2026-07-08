@@ -112,37 +112,37 @@ def _judg(j1, j2, j3, j4):
 def test_rollup_grade_A_all_pass():
     m = _mech("pass", "pass", "pass", "pass", "pass")
     j = _judg("pass", "pass", "pass", "pass")
-    assert scorecard.rollup(m, j, 0.0, 0, True) == "A"
+    assert scorecard.rollup(m, j, 0.0, True) == "A"
 
 
 def test_rollup_grade_B_one_j_warn():
     m = _mech("pass", "pass", "pass", "pass", "pass")
     j = _judg("warn", "pass", "pass", "pass")
-    assert scorecard.rollup(m, j, 0.0, 0, True) == "B"
+    assert scorecard.rollup(m, j, 0.0, True) == "B"
 
 
 def test_rollup_grade_C_j_fail_or_one_m_nonpass():
     m = _mech("pass", "pass", "pass", "pass", "pass")
-    assert scorecard.rollup(m, _judg("fail", "pass", "pass", "pass"), 0.0, 0, True) == "C"
+    assert scorecard.rollup(m, _judg("fail", "pass", "pass", "pass"), 0.0, True) == "C"
     m2 = _mech("pass", "warn", "pass", "pass", "pass")   # M2~M5 중 1개 비-pass
-    assert scorecard.rollup(m2, _judg("pass", "pass", "pass", "pass"), 0.0, 0, True) == "C"
+    assert scorecard.rollup(m2, _judg("pass", "pass", "pass", "pass"), 0.0, True) == "C"
 
 
 def test_rollup_grade_D_many_m_nonpass_or_m5_fail():
     m = _mech("pass", "fail", "fail", "fail", "pass")    # M2~M5 중 3개 비-pass
-    assert scorecard.rollup(m, _judg("pass", "pass", "pass", "pass"), 0.0, 0, True) == "D"
+    assert scorecard.rollup(m, _judg("pass", "pass", "pass", "pass"), 0.0, True) == "D"
     m5f = _mech("pass", "pass", "pass", "pass", "fail")  # 대량 밖
-    assert scorecard.rollup(m5f, _judg("pass", "pass", "pass", "pass"), 0.0, 8, True) == "D"
+    assert scorecard.rollup(m5f, _judg("pass", "pass", "pass", "pass"), 0.0, True) == "D"
 
 
 def test_rollup_grade_D_and_F_on_reachability():
     m = _mech("fail", "fail", "fail", "fail", "fail")
     # 라우터 있으나 소수 고아 → D
-    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.2, 5, True) == "D"
+    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.2, True) == "D"
     # 대부분 미도달 → F
-    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.7, 5, True) == "F"
+    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.7, True) == "F"
     # 라우터 없음 → F
-    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.0, 0, False) == "F"
+    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.0, False) == "F"
 
 
 def test_counts_tally():
