@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 import migrate
+import scaffold
 
 
 def test_plan_moves_type_to_folder():
@@ -116,3 +117,23 @@ def test_apply_moves_chained_dest_equals_other_src_preserves_both(tmp_path):
     assert (tmp_path / "docs/how-to/s.md").read_text(encoding="utf-8").count("UNIQUE_A") == 1
     assert (tmp_path / "docs/reference/s.md").read_text(encoding="utf-8").count("UNIQUE_B") == 1
     assert not (tmp_path / "notes/s.md").exists()
+
+
+def test_register_makes_moved_docs_reachable(tmp_path):
+    import gate
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n- [help](help.md)\n")
+    _mk(tmp_path, "help.md", "# Help\n절차.\n")
+    _mk(tmp_path, "notes.md", "# Notes\n참조.\n")
+    plan = [
+        {"src": "help.md", "dest": "docs/how-to/help.md", "ops": ["move"], "impact": None},
+        {"src": "notes.md", "dest": "docs/notes.md", "ops": ["move"], "impact": None},
+    ]
+    migrate.apply_moves(tmp_path, plan)
+    scaffold.scaffold(tmp_path, plugin_root_dir=scaffold.plugin_root())
+    # 등록 전: 이동 문서는 orphan
+    assert gate.analyze(tmp_path).orphans
+    migrate.register_in_indexes(tmp_path, plan)
+    # 등록 후: orphan=0
+    res = gate.analyze(tmp_path)
+    assert res.orphans == [] and res.broken == []

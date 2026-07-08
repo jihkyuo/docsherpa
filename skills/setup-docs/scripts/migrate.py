@@ -120,3 +120,67 @@ def apply_moves(root, move_plan):
         new_rel = move_map.get(old_rel, old_rel)
         if new_rel != old_rel and old_rel not in dests:
             (root / old_rel).unlink()
+
+
+def _ensure_folder_index(folder):
+    """폴더의 인덱스(_README.md > README.md). 없으면 _README.md 생성."""
+    folder = Path(folder)
+    for n in ("_README.md", "README.md"):
+        if (folder / n).is_file():
+            return folder / n
+    folder.mkdir(parents=True, exist_ok=True)
+    idx = folder / "_README.md"
+    idx.write_text(f"# {folder.name}\n", encoding="utf-8")
+    return idx
+
+
+def _append_links(path, entries):
+    """entries=[(label, target)] → '- [label](target)' 를 path에 append(멱등: 이미 있으면 skip)."""
+    text = path.read_text(encoding="utf-8")
+    add = [f"- [{lab}]({t})" for lab, t in entries if f"]({t})" not in text]
+    if add:
+        sep = "" if text.endswith("\n") else "\n"
+        path.write_text(text + sep + "\n".join(add) + "\n", encoding="utf-8")
+
+
+def _index_home(root):
+    """INDEX_MARKER를 담은 파일(docs/_map.md 우선, 없으면 진입 라우터). 없으면 None."""
+    root = Path(root)
+    for c in [root / "docs" / "_map.md"] + [root / n for n in ENTRY_FILENAMES]:
+        if c.is_file() and INDEX_MARKER in c.read_text(encoding="utf-8", errors="ignore"):
+            return c
+    return None
+
+
+def register_in_indexes(root, move_plan):
+    """이동 문서를 도달 가능하게 배선(orphan=0). scaffold spine 위에 얹는다.
+
+    폴더 문서 → 폴더 인덱스에 링크(+아직 map에 안 걸린 폴더만 map에 등록) · 평면 문서 → index home에 직접.
+    링크 타겟은 home 위치 기준 상대. 멱등."""
+    root = Path(root)
+    home = _index_home(root)
+    home_dir = home.parent.relative_to(root).as_posix() if home else ""
+    home_text = home.read_text(encoding="utf-8") if home else ""
+
+    by_folder, flats = {}, []
+    for p in move_plan:
+        dest = p["dest"]
+        folder = posixpath.dirname(dest)
+        if folder == "docs":
+            flats.append(dest)
+        else:
+            by_folder.setdefault(folder, []).append(posixpath.basename(dest))
+
+    map_entries = []
+    for folder, names in sorted(by_folder.items()):
+        idx = _ensure_folder_index(root / folder)
+        _append_links(idx, [(posixpath.splitext(n)[0], n) for n in sorted(names)])
+        rel = posixpath.relpath(folder, home_dir or ".")   # home 기준 폴더 경로
+        if f"]({rel}/" not in home_text:                   # 그 폴더로의 링크가 아직 없을 때만
+            map_entries.append((posixpath.basename(folder), rel + "/"))
+    for dest in sorted(flats):
+        rel = posixpath.relpath(dest, home_dir or ".")
+        map_entries.append((posixpath.splitext(posixpath.basename(dest))[0], rel))
+
+    if home and map_entries:
+        _append_links(home, map_entries)
