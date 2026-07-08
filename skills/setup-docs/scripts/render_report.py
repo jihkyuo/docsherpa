@@ -340,11 +340,42 @@ def _render_summary(data: dict) -> str:
             f'성장 루프 {"설치" if s.get("loop_installed") else "미설치"}</div>'
             '</div></div></div></section>')
 
+def _render_grade_compare(before: str, after: str) -> str:
+    return (
+      '<div class="card hero">'
+      '<p class="hero-title">재진단 등급 변화 <span class="n">Phase 0 → Phase 4</span></p>'
+      '<div class="scale" role="img" aria-label="마이그레이션 전후 등급 대비.">'
+      f'<span class="tick cur">{esc(before)}<span class="cap">이전</span></span>'
+      '<span class="seg"></span>'
+      f'<span class="tick tgt">{esc(after)}<span class="cap">이후</span></span>'
+      '</div></div>'
+    )
+
+
+def _render_preexisting(items) -> str:
+    rows = "".join(
+        f'<li><span class="path">{esc(rel)}</span> → <span class="fnt">{esc(raw)}</span></li>'
+        for rel, raw in items)
+    return (
+      f'<section aria-labelledby="pe"><h2 class="sec" id="pe">기존에 깨져 있던 링크 '
+      f'<span class="n">{len(items)}건 · 머지 전 결정 필요</span></h2>'
+      '<p class="sec-intro">마이그레이션 이전부터 깨져 있던 링크입니다 — 이번 변경이 만든 게 아니니 '
+      '머지 전 처리 여부를 따로 판단하세요.</p>'
+      f'<div class="card"><ul>{rows}</ul></div></section>'
+    )
+
+
 def _render_main(data: dict, mode: str) -> str:
     parts = [_render_masthead(data), _render_hero(data), _render_scorecard(data), _render_trees(data)]
     if mode == "plan":
         parts += [_render_migration(data), _render_decisions(data)]
     else:
         parts.append(_render_summary(data))
+        s = data.get("summary") or {}
+        if "grade_before" in s and "grade_after" in s:
+            parts.append(_render_grade_compare(s["grade_before"], s["grade_after"]))
+        pre = data.get("preexisting_broken")
+        if pre:
+            parts.append(_render_preexisting(pre))
     parts.append('<p class="foot">docsherpa · setup-docs</p>')
     return "<main>" + "".join(parts) + "</main>"
