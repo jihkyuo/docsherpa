@@ -245,8 +245,11 @@ def _append_links_live(path, entries):
 
 def register_all(root):
     """도달성-구동: gate가 orphan으로 보는 docs/**/*.md 전부를 폴더 인덱스·map에 배선.
-    이동/제자리/legacy 균일(L3). 진행 가드로 미수렴 시 RuntimeError(R5)."""
-    root = Path(root)
+    이동/제자리/legacy 균일(L3). 진행 가드로 미수렴 시 RuntimeError(R5).
+    root은 resolve() — gate.analyze가 내부에서 root를 resolve하므로(예: macOS /tmp→/private/tmp
+    심링크) 안 맞추면 orphans의 relative_to(root)가 ValueError로 터진다(build_and_verify가
+    tempfile.mkdtemp()의 미resolve 경로를 넘길 때 실제로 발생)."""
+    root = Path(root).resolve()
     while True:
         orphans = [p.relative_to(root).as_posix() for p in gate.analyze(root).orphans]
         if not orphans:
@@ -290,9 +293,24 @@ def _copy_tree(repo, dst):
     shutil.copytree(repo, dst, ignore=_COPY_IGNORE, dirs_exist_ok=True)
 
 
+def verify_migration(base_root, cur_root, move_plan):
+    """세 오라클 + per-file 일원화(Phase 1b·Phase 3 공유). 반환 dict."""
+    base_keys = set(content_oracle.collect(base_root))
+    cur_keys = set(content_oracle.collect(cur_root))
+    links = classify_links(base_root, cur_root, move_plan)
+    return {
+        "unaccounted": sorted(base_keys - cur_keys),
+        "new_broken": links["new_broken"],
+        "preexisting_broken": links["preexisting_broken"],
+        "anchor_lost": links["anchor_lost"],
+        "orphan": len(gate.analyze(cur_root).orphans),
+        "per_file": per_file_accounting(base_root, cur_root, move_plan),
+    }
+
+
 def build_and_verify(repo, move_plan, plugin_root=None):
     """두 스크래치(base=원본 복사, current=복사+이동+scaffold+등록)로 검증 →
-    {broken, orphan, unaccounted}. 실제 repo는 안 건드림."""
+    {broken, orphan, unaccounted, new_broken, anchor_lost, per_file}. 실제 repo는 안 건드림."""
     repo = Path(repo).resolve()
     base = Path(tempfile.mkdtemp(prefix="docsherpa-base-"))
     current = Path(tempfile.mkdtemp(prefix="docsherpa-cur-"))
@@ -300,14 +318,13 @@ def build_and_verify(repo, move_plan, plugin_root=None):
         _copy_tree(repo, base)
         _copy_tree(repo, current)
         apply_moves(current, move_plan)
+        prune_empty_dirs(current)
         scaffold.scaffold(current, plugin_root_dir=plugin_root)
-        register_in_indexes(current, move_plan)
-        res = gate.analyze(current)
-        base_keys = set(content_oracle.collect(base))
-        cur_keys = set(content_oracle.collect(current))
-        unaccounted = sorted(base_keys - cur_keys)
-        return {"broken": len(res.broken), "orphan": len(res.orphans),
-                "unaccounted": unaccounted}
+        register_all(current)
+        v = verify_migration(base, current, move_plan)
+        return {"broken": len(v["new_broken"]), "orphan": v["orphan"],
+                "unaccounted": v["unaccounted"], "new_broken": v["new_broken"],
+                "anchor_lost": v["anchor_lost"], "per_file": v["per_file"]}
     finally:
         shutil.rmtree(base, ignore_errors=True)
         shutil.rmtree(current, ignore_errors=True)

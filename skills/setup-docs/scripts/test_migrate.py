@@ -222,6 +222,17 @@ def test_build_and_verify_empty_plan_verifies_spine(tmp_path):
     assert res["broken"] == 0            # scaffold spine 설치 후 링크 무결
 
 
+def test_verify_migration_clean_all_zero(tmp_path):
+    base = tmp_path / "base"; cur = tmp_path / "cur"
+    _mk(base, "CLAUDE.md", "# C\n@AGENTS.md\n"); _mk(base, "AGENTS.md", "# A\n")
+    _mk(base, "docs/a.md", "# A\n본문.\n")
+    _mk(cur, "CLAUDE.md", "# C\n@AGENTS.md\n"); _mk(cur, "AGENTS.md", "# A\n\n<!-- docsherpa:map -->\n- [a](docs/a.md)\n")
+    _mk(cur, "docs/a.md", "# A\n본문.\n")
+    r = migrate.verify_migration(base, cur, [])
+    assert r["unaccounted"] == [] and r["new_broken"] == [] and r["anchor_lost"] == []
+    assert r["orphan"] == 0 and r["per_file"] == []
+
+
 def test_build_and_verify_no_false_loss_on_preexisting_index(tmp_path):
     # 이미 내용 있는 index 파일을 가진 repo(부분 마이그레이션)에 문서 추가 → register의 append가
     # 기존 세그먼트에 안 붙어야(content_oracle 오탐 = false STOP 방지).
