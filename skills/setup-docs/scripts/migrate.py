@@ -127,19 +127,14 @@ def apply_moves(root, move_plan):
 
 
 def prune_empty_dirs(root):
-    """이동으로 빈 디렉터리를 제거(R4: git 빈폴더 미커밋 → dir 링크 커밋후 파손 방지). 루트는 보존."""
+    """이동으로 빈 디렉터리를 제거(R4: git 빈폴더 미커밋 → dir 링크 커밋후 파손 방지). 루트는 보존.
+    deepest-first로 삭제 시점에 빈 여부를 재검사 → 자식을 먼저 지우면 부모가 그 시점에 비어 연쇄 제거되므로
+    중첩 빈 폴더까지 정리된다. 권한거부·경합 삭제는 try/except로 방어(그 폴더만 skip)."""
     root = Path(root)
-    dirs = sorted((p for p in root.rglob("*") if p.is_dir()), key=lambda p: len(p.parts), reverse=True)
-    empty = []
-    for d in dirs:                                                    # 삭제 전 스냅샷(연쇄 삭제 방지)
+    for d in sorted((p for p in root.rglob("*") if p.is_dir()), key=lambda p: len(p.parts), reverse=True):
         try:
             if d != root and not any(d.iterdir()):
-                empty.append(d)
-        except OSError:
-            pass
-    for d in empty:
-        try:
-            d.rmdir()
+                d.rmdir()
         except OSError:
             pass
 

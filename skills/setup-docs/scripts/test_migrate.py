@@ -137,10 +137,21 @@ def test_apply_moves_asserts_src_exists(tmp_path):
 
 
 def test_prune_empty_dirs_removes_emptied_folder(tmp_path):
+    _mk(tmp_path, "docs/keep.md", "# keep\n")          # docs는 비지 않음 → 보존돼야
     _mk(tmp_path, "docs/old/x.md", "# X\n")
     (tmp_path / "docs/old/x.md").unlink()              # 폴더만 빈 채 남음
     migrate.prune_empty_dirs(tmp_path)
     assert not (tmp_path / "docs/old").exists()
+    assert (tmp_path / "docs").exists()                # 비지 않은 상위는 보존
+
+
+def test_prune_empty_dirs_cascades_nested_emptied_folders(tmp_path):
+    _mk(tmp_path, "docs/keep.md", "# keep\n")          # docs는 비지 않음 → 보존돼야
+    _mk(tmp_path, "docs/old/sub/x.md", "# X\n")
+    (tmp_path / "docs/old/sub/x.md").unlink()          # docs/old·docs/old/sub 둘 다 빈 채 남음
+    migrate.prune_empty_dirs(tmp_path)
+    assert not (tmp_path / "docs/old/sub").exists()    # 깊은 빈 폴더 제거
+    assert not (tmp_path / "docs/old").exists()        # 자식 제거로 빈 부모까지 연쇄 제거(R4)
     assert (tmp_path / "docs").exists()                # 비지 않은 상위는 보존
 
 
