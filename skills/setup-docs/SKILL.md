@@ -39,6 +39,9 @@ AI 에이전트가 **진입 파일 하나에서 링크를 타고 필요한 문�
 | HEALTHY | 라우터 + gate PASS + 안티패턴 0 | "건강함" 보고 + 우리 아키텍처 기준 개선점만 |
 | MESSY | docs 있음 + (gate FAIL 또는 안티패턴≥1) | 아래 "MESSY — 진단-주도 제안 + 2차선" |
 
+5. **HEAD sha 기록**(git repo일 때만): `git rev-parse HEAD`. 이동이 필요해 무거운 차선으로 가면, 이
+   값을 Phase 3 랜딩(`land_migration`)이 스테일(진단 후 HEAD가 바뀜) 감지에 쓴다.
+
 도메인 지식·진단 휴리스틱: [reference/knowledge.md](reference/knowledge.md) 참조.
 
 ### 진단-주도 제안 (자세) — ADR 0014
@@ -292,11 +295,12 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
    (router/tooling)·`legacy`·`.mdx` skip은 엔진이 자동으로 한다** — 판단이 아니다. 코드참조·외부싱크가
    깨질 위험은 각 항목의 `impact`로 낸다.
 3. **Phase 1b(자체검증)** — `migrate.build_and_verify(repo, move_plan)` → `{broken, orphan,
-   unaccounted}`. 내부에서 repo를 스크래치에 복사해 이동+relink 적용 → `scaffold` → 등록
-   (`register_in_indexes`) → **두 오라클**(도달성=gate·내용보존=content_oracle)을 돌린다 — 실제 repo는
-   건드리지 않는다. **STOP 판정:** 셋 중 하나라도 >0이면 아티팩트를 내지 않는다 — 사유를 보고하고
-   자동수정 재시도(목적지 개명·배정 조정) 또는 사용자 에스컬레이션. 통과하면 스크래치 결과에 doc-health를
-   재실행해 기계등급을 확인한다.
+   unaccounted, new_broken, anchor_lost, per_file}`. 내부에서 repo를 스크래치에 복사해 이동+relink 적용 →
+   `scaffold` → 도달성 배선(`register_all`) → `verify_migration`(**두 오라클**: 도달성=gate·
+   내용보존=content_oracle + 앵커 유실·파일별 계정)을 돌린다 — 실제 repo는 건드리지 않는다.
+   **STOP 판정:** `unaccounted`·`new_broken`·`anchor_lost`·`per_file` 중 하나라도 비어 있지 않거나
+   `orphan`이 0이 아니면 아티팩트를 내지 않는다 — 사유를 보고하고 자동수정 재시도(목적지 개명·배정 조정)
+   또는 사용자 에스컬레이션. 통과하면 스크래치 결과에 doc-health를 재실행해 기계등급을 확인한다.
 4. **Phase 2(계획 아티팩트)** — `migrate.assemble_plan_data(health, move_plan, decisions)` →
    `render_report(data, "plan")`. `decisions`는 라우터 결정(예: 리치 CLAUDE.md인데 AGENTS.md 없음)·
    내용모순(doc-health J4)에서 조립한다. 이 아티팩트를 **사용자 승인** 게이트로 낸다.
@@ -308,6 +312,24 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
    위험)·gate가 2회 fix 후에도 broken/orphan 0을 못 만듦·이동이 기존 목적지 파일과 충돌/매핑
    모호(다중 후보)·승인된 계획 밖 범위 발견. 배치마다 `build_and_verify`를 재사용할지 `gate.py`/
    `content_oracle.py`를 직접 부를지는 증분4 설계 사항.
+7. **Phase 3(랜딩)** — 사용자가 Phase 2 계획을 승인하면, Phase 0에서 기록한 **HEAD sha**와 승인된
+   `move_plan`으로 `migrate.land_migration(repo, move_plan, head_sha)`를 호출한다. **git 전제** —
+   `.git`이 없는 repo는 STOP(수동 git init 안내, 실행하지 않는다). 내부는 이중 worktree로 격리해
+   이동+scaffold+`register_all`+`verify_migration`을 실행하고, 통과했을 때만 새 브랜치에 커밋한다.
+   **실패**(오라클 미통과·HEAD가 계획 시점과 달라짐(스테일)·이 커밋에 대한 랜딩 브랜치가 이미 존재)는
+   **흔적0 STOP**(worktree·미커밋 브랜치를 자동 정리)으로 처리한다 — 실패 사유를 그대로 사용자에게
+   리포트하고 조용히 우회하지 않는다. **성공하면** 산출 브랜치명(`docsherpa/migrate-<sha8>`)과
+   `preexisting_broken`(마이그레이션 이전부터 있던 깨진 링크 — "머지 전 결정할 것")을 안내한다.
+   **머지는 하지 않는다** — 브랜치 검토·머지는 항상 사용자 몫이다.
+8. **Phase 4(재진단·결과 리포트)** — Phase 3이 낸 랜딩 브랜치에서 doc-health를 재실행해 "after" 데이터를
+   얻고, Phase 0의 "before" 등급과 합쳐 `render_report(data, "result")` 아티팩트를 낸다. **조립 키를
+   정확히 맞춘다** — `data["summary"]["grade_before"]`·`data["summary"]["grade_after"]`(등급 비교
+   섹션)·`data["preexisting_broken"]`(머지 전 결정 섹션, Phase 3 결과에서 그대로 옮긴다). 이름이 다르거나
+   빠지면 렌더러는 `in`/`.get`으로 그 섹션을 조용히 스킵할 뿐 에러를 내지 않으니, 값을 채운 뒤 실제 dict를
+   눈으로 확인한다.
+9. **범위 밖.** 배치(타입 vs 토픽) 판단·기존 legacy 문서군 통합·타입 우선 vs 기능응집 조직 선택은 이
+   파이프라인이 하지 않는다 — 도메인 결정이라 별도 트랙(사용자와 상의)으로 다룬다. Phase 0~4는 기계
+   계정(도달성·내용보존)과 승인/랜딩 게이트만 책임진다.
 
 ---
 
