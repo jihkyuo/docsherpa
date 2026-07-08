@@ -593,21 +593,16 @@ def test_build_and_verify_reaches_clean_and_lossless(tmp_path):
     assert res["unaccounted"] == []      # 유실 0(두 세그먼트 살아남음)
 
 
-def test_build_and_verify_detects_content_loss(tmp_path):
-    # a.md를 docs/x.md로 옮기되 docs/x.md가 이미 존재 → apply_moves가 사전 STOP 대신
-    # 여기선 유실 감지 경로를 본다: 기존 dest 충돌은 ValueError로 잡히므로,
-    # 유실은 "이동 후 세그먼트가 사라지는" 케이스로 확인한다.
-    _mk(tmp_path, "AGENTS.md", "# R\n- [a](a.md)\n")
-    _mk(tmp_path, "a.md", "# A\n고유 세그먼트 A.\n")
+def test_build_and_verify_empty_plan_verifies_spine(tmp_path):
+    # 이동할 content 0(spec §3 엣지): 빈 계획 → spine/loop만 검증. 무손실·무결 당연.
+    _messy_repo(tmp_path)
     (tmp_path / ".git").mkdir()
-    # 정상 계획이지만, base에만 있는 세그먼트를 만들기 위해 current에서 파일이 사라지는 상황을
-    # 시뮬레이션: a.md를 옮기되 그 내용이 살아있으면 unaccounted=0이어야(대조군).
-    plan = [{"src": "a.md", "dest": "docs/a.md", "ops": ["move"], "impact": None}]
-    res = migrate.build_and_verify(tmp_path, plan)
-    assert res["unaccounted"] == []      # verbatim 이동은 무손실(대조군 — 유실 아님)
+    res = migrate.build_and_verify(tmp_path, [])
+    assert res["unaccounted"] == []      # 이동 없음 → 무손실
+    assert res["broken"] == 0            # scaffold spine 설치 후 링크 무결
 ```
 
-> 주(테스트 설계): 원안의 "덮어써서 유실" 케이스는 이제 `apply_moves`가 `ValueError`(사전 STOP)로 잡으므로 build_and_verify까지 도달 안 함. 유실 감지의 진짜 단위 검증은 content_oracle 자체 테스트(`test_content_oracle.py`)가 이미 커버한다. 여기선 **verbatim 이동이 무손실(unaccounted=0)** 임을 대조군으로 확인하고, 충돌-유실은 Task 3의 `test_apply_moves_existing_dest_collision_raises`가 STOP로 커버한다.
+> 주(테스트 설계): 원안의 "덮어써서 유실" 케이스는 이제 `apply_moves`가 `ValueError`(사전 STOP)로 잡으므로 build_and_verify까지 도달 안 한다. 유실 감지(unaccounted>0)의 단위 검증은 content_oracle 자체 테스트(`test_content_oracle.py`)가 이미 커버 — build_and_verify에서 중복 증명 안 한다. 대신 여기선 **클린 도달(orphan=0·broken=0·무손실)** 과 **빈 계획 엣지**를 검증한다.
 
 - [ ] **Step 2: 실패 확인** — `uv run --with pytest pytest test_migrate.py -k build_and_verify -q` · Expected: FAIL.
 
