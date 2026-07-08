@@ -411,7 +411,9 @@ def test_apply_moves_existing_dest_collision_raises(tmp_path):
 ```python
 def apply_moves(root, move_plan):
     """root 트리에서 move_plan대로 파일 이동 + 트리 내 전 .md 링크 재작성.
-    dest가 이동 대상 아닌 기존 파일과 충돌하면 ValueError(사전 STOP, 조용한 덮어쓰기 차단)."""
+    dest가 이동 대상 아닌 기존 파일과 충돌하면 ValueError(사전 STOP, 조용한 덮어쓰기 차단).
+    쓰기는 2단계(모든 목적지 기록 → 이동으로 비워진 옛 경로만 삭제)로 chained-move
+    (dest==다른 src) 내용 소실을 막는다."""
     root = Path(root)
     move_map = {p["src"]: p["dest"] for p in move_plan}
     srcs = set(move_map)
@@ -420,22 +422,26 @@ def apply_moves(root, move_plan):
                    if (root / p["dest"]).exists() and p["dest"] not in srcs)
     if clash:
         raise ValueError(f"기존 파일과 목적지 충돌(덮어쓰기 위험): {clash}")
-    # 1) 모든 .md의 이동전 경로 → 재작성 내용 계산(먼저 전부 읽음).
+    # 1) 모든 .md의 이동전 경로 → 재작성 내용 계산(이동 전 전량 메모리 확보).
     rewritten = {}
     for md in root.rglob("*.md"):
         old_rel = md.relative_to(root).as_posix()
         rewritten[old_rel] = rewrite_links(
             md.read_text(encoding="utf-8", errors="ignore"), old_rel, move_map)
-    # 2) 물리 이동(+ 재작성 내용 기록). 이동 안 한 문서도 재작성 내용 반영.
+    dests = {move_map.get(old_rel, old_rel) for old_rel in rewritten}
+    # 2) 모든 목적지에 먼저 기록(내용은 메모리에 있어 dest==다른 src여도 안전).
     for old_rel, new_text in rewritten.items():
-        new_rel = move_map.get(old_rel, old_rel)
-        dst = root / new_rel
-        src = root / old_rel
+        dst = root / move_map.get(old_rel, old_rel)
         dst.parent.mkdir(parents=True, exist_ok=True)
-        if new_rel != old_rel and src.exists():
-            src.unlink()
         dst.write_text(new_text, encoding="utf-8")
+    # 3) 이동으로 비워진 옛 경로만 삭제(누군가의 목적지인 경로는 보존).
+    for old_rel in rewritten:
+        new_rel = move_map.get(old_rel, old_rel)
+        if new_rel != old_rel and old_rel not in dests:
+            (root / old_rel).unlink()
 ```
+
+> 주(검증 중 발견·수정): 최초 안의 per-item unlink+write는 chained-move(한 이동의 dest가 다른 이동의 src와 같음 — `plan_moves`가 basename 충돌로 실제 생성)에서 순회 순서에 따라 **조용한 내용 소실**을 낸다(내용 소실 0 위반). 위 2단계(전량 읽기→전 목적지 기록→비워진 옛 경로만 삭제)로 해결. RED 테스트 `test_apply_moves_chained_dest_equals_other_src_preserves_both` 추가.
 
 - [ ] **Step 4: 통과 확인** — `uv run --with pytest pytest test_migrate.py -k apply_moves -q` · Expected: **2 passed**.
 - [ ] **Step 5: 커밋**
