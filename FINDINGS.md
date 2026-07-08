@@ -16,6 +16,12 @@
   reference/scoring.md, 23 테스트 green(전용 러너). ADR [0015](docs/decisions/0015-doc-health-module-extraction.md)
   (H1~H3 근거 기록). **다음 = setup-docs Phase 0·4 배선**(doc-health 호출부 리팩터).
   이연: Phase 4 result-모드 CSS·repo-키 스키마 하드닝(ledger `.superpowers/sdd/progress.md`).
+  **✅ 첫 실전 독푸딩(vd-front, 2026-07-08):** doc-health를 실제 레포에 적용 → **탐색이 코드 속
+  `src/features/custom/shared/docs/**` ~35개 파묻힌 문서를 전부 포착(G1 갭 실증)**, 등급 **F**(정직).
+  실데이터가 버그 2건 노출 → ADR [0016](docs/decisions/0016-inventory-respect-gitignore.md): **탐색 분모가
+  `.gitignore` 존중**(외부 플러그인 스크래치 `.superpowers/` 등을 하드코딩 없이 자동 제외 — 레포 선언 위임,
+  git-optional) + 루트 관례 대소문자 무시. vd-front M5 49(오염)→38(정직). 리뷰가 비-ASCII 경로 인용 버그도
+  잡아 `-z` 픽스(한글 경로 가드 테스트). 30 테스트 green.
   참고: ADR 0010 `doc-*` 패밀리 폐기 → 새 스킬은 merit로 명명(그래서 `doc-health`).
 - **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · N11 spine · Track2/F12 · loop-refresh · PRD 1급 타입 ·
   **M5 출시 산출물 완비 + v0.1.0 발행 완료(2026-07-06).** 빌드 사실상 종료.

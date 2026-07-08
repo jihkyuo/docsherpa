@@ -24,8 +24,9 @@ GREENFIELD_MAX = 2    # content 문서 이하 + 라우터 없음 = GREENFIELD
 
 # --- disposition (H1) --------------------------------------------------------
 _TOOLING_DIRS = (".claude", ".github", ".cursor", ".gitlab")
-_ROOT_CONVENTION = {"README.md", "CONTRIBUTING.md", "CHANGELOG.md",
-                    "SECURITY.md", "CODE_OF_CONDUCT.md"}
+# 루트 관례 파일 — 소문자로 비교(README.md·readme.md 둘 다 매칭)
+_ROOT_CONVENTION = {"readme.md", "contributing.md", "changelog.md",
+                    "security.md", "code_of_conduct.md"}
 
 
 def disposition(rel_path):
@@ -36,7 +37,7 @@ def disposition(rel_path):
         return "router"
     if parts and parts[0] in _TOOLING_DIRS:
         return "tooling"
-    if len(parts) == 1 and name in _ROOT_CONVENTION:
+    if len(parts) == 1 and name.lower() in _ROOT_CONVENTION:
         return "tooling"
     return "content"
 
