@@ -130,7 +130,13 @@ def prune_empty_dirs(root):
     """이동으로 빈 디렉터리를 제거(R4: git 빈폴더 미커밋 → dir 링크 커밋후 파손 방지). 루트는 보존."""
     root = Path(root)
     dirs = sorted((p for p in root.rglob("*") if p.is_dir()), key=lambda p: len(p.parts), reverse=True)
-    empty = [d for d in dirs if d != root and not any(d.iterdir())]   # 삭제 전 스냅샷(연쇄 삭제 방지)
+    empty = []
+    for d in dirs:                                                    # 삭제 전 스냅샷(연쇄 삭제 방지)
+        try:
+            if d != root and not any(d.iterdir()):
+                empty.append(d)
+        except OSError:
+            pass
     for d in empty:
         try:
             d.rmdir()
