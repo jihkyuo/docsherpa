@@ -295,16 +295,30 @@ def _copy_tree(repo, dst):
 
 
 def verify_migration(base_root, cur_root, move_plan):
-    """세 오라클 + per-file 일원화(Phase 1b·Phase 3 공유). 반환 dict."""
+    """세 오라클 + per-file + 미설명 broken 안전망 일원화(Phase 1b·Phase 3 공유). 반환 dict.
+
+    unexplained_broken: gate가 cur 전체에서 본 broken 링크 중 classify_links의
+    new_broken∪preexisting_broken으로 설명되지 않는 것. classify_links는 base 문서만 페어링하므로
+    cur-only 파일(scaffold의 _map/router·register_all의 폴더 인덱스)의 broken 파일-링크는 거기 안
+    잡히고 orphan(미도달)도 아니라 랜딩 게이트를 새어나갈 수 있다(증분3이 gate.analyze.broken 전체를
+    직접 게이트하던 안전망을 T6 재배선이 떨어뜨림). register_all 후 orphan=0이라 gate가 cur 전
+    문서를 방문하므로 gate.broken이 cur 전체 broken을 커버한다."""
     base_keys = set(content_oracle.collect(base_root))
     cur_keys = set(content_oracle.collect(cur_root))
     links = classify_links(base_root, cur_root, move_plan)
+    gres = gate.analyze(cur_root)
+    cur_r = Path(cur_root).resolve()
+    explained = set(links["new_broken"]) | set(links["preexisting_broken"])
+    unexplained_broken = sorted(
+        (src.relative_to(cur_r).as_posix(), raw) for src, raw in gres.broken
+        if (src.relative_to(cur_r).as_posix(), raw) not in explained)
     return {
         "unaccounted": sorted(base_keys - cur_keys),
         "new_broken": links["new_broken"],
         "preexisting_broken": links["preexisting_broken"],
         "anchor_lost": links["anchor_lost"],
-        "orphan": len(gate.analyze(cur_root).orphans),
+        "orphan": len(gres.orphans),
+        "unexplained_broken": unexplained_broken,
         "per_file": per_file_accounting(base_root, cur_root, move_plan),
     }
 
@@ -325,7 +339,8 @@ def build_and_verify(repo, move_plan, plugin_root=None):
         v = verify_migration(base, current, move_plan)
         return {"broken": len(v["new_broken"]), "orphan": v["orphan"],
                 "unaccounted": v["unaccounted"], "new_broken": v["new_broken"],
-                "anchor_lost": v["anchor_lost"], "per_file": v["per_file"]}
+                "anchor_lost": v["anchor_lost"], "unexplained_broken": v["unexplained_broken"],
+                "per_file": v["per_file"]}
     finally:
         shutil.rmtree(base, ignore_errors=True)
         shutil.rmtree(current, ignore_errors=True)
@@ -369,9 +384,9 @@ def land_migration(repo, move_plan, head_sha, decisions=None, *, plugin_root=Non
         register_all(wt_cur)
         v = verify_migration(wt_base, wt_cur, move_plan)
         ok = (not v["unaccounted"] and not v["new_broken"] and not v["anchor_lost"]
-              and v["orphan"] == 0 and not v["per_file"])
+              and v["orphan"] == 0 and not v["unexplained_broken"] and not v["per_file"])
         if not ok:
-            raise RuntimeError(f"랜딩 오라클 실패 → 흔적0 STOP: { {k: v[k] for k in ('unaccounted', 'new_broken', 'anchor_lost', 'orphan', 'per_file')} }")
+            raise RuntimeError(f"랜딩 오라클 실패 → 흔적0 STOP: { {k: v[k] for k in ('unaccounted', 'new_broken', 'anchor_lost', 'orphan', 'unexplained_broken', 'per_file')} }")
         subprocess.run(["git", "-C", str(wt_cur), "add", "-A"], check=True)
         subprocess.run(["git", "-C", str(wt_cur), "commit", "-q", "-m",
                         f"📦 docs: docsherpa 마이그레이션(이동 {len(move_plan)}건, 검증트리=커밋트리)"], check=True)
@@ -462,8 +477,9 @@ def classify_links(base_root, cur_root, move_plan):
 
 
 def per_file_accounting(base_root, cur_root, move_plan):
-    """각 base 문서의 세그먼트 집합이 그 dest 파일에 존재하는지 + 파일수 보존(R7).
-    content_oracle의 '고유 세그먼트 집합' 사각(인스턴스 소실) 보완. 반환=위반 리스트([]=ok)."""
+    """각 base 문서의 세그먼트 집합이 그 dest 파일에 존재하는지(파일 단위 회계, R7).
+    content_oracle의 '고유 세그먼트 집합' 사각(같은 내용 여러 문서 중 일부 소실)을 base 문서마다
+    dest 도달을 확인해 보완한다. dest 부재 또는 세그먼트 미도달을 잡는다. 반환=위반 리스트([]=ok)."""
     base_root, cur_root = Path(base_root), Path(cur_root)
     move_map = {p["src"]: p["dest"] for p in move_plan}
     viol = []

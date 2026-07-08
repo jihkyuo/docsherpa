@@ -233,6 +233,24 @@ def test_verify_migration_clean_all_zero(tmp_path):
     assert r["orphan"] == 0 and r["per_file"] == []
 
 
+def test_verify_migration_flags_cur_only_broken_as_unexplained(tmp_path):
+    # 정체성 안전망: cur에만 있는 파일(scaffold/register가 만든 인덱스 등)의 broken 파일-링크는
+    # classify_links(base만 페어링)의 new_broken에 안 잡히고 orphan도 아니다. gate 전체 broken을
+    # new_broken∪preexisting로 설명 못 하는 잔여를 unexplained_broken으로 잡아 랜딩을 STOP해야 한다.
+    base = tmp_path / "base"; cur = tmp_path / "cur"
+    _mk(base, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(base, "AGENTS.md", "# A\n\n<!-- docsherpa:map -->\n- [map](docs/_map.md)\n")
+    _mk(base, "docs/_map.md", "# M\n\n<!-- docsherpa:index -->\n- [howto](how-to/)\n")
+    _mk(cur, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(cur, "AGENTS.md", "# A\n\n<!-- docsherpa:map -->\n- [map](docs/_map.md)\n")
+    _mk(cur, "docs/_map.md", "# M\n\n<!-- docsherpa:index -->\n- [howto](how-to/)\n")
+    _mk(cur, "docs/how-to/_README.md", "# H\n- [gone](gone.md)\n")   # cur-only, 없는 .md 가리킴
+    r = migrate.verify_migration(base, cur, [])
+    assert ("docs/how-to/_README.md", "gone.md") in r["unexplained_broken"]
+    assert r["new_broken"] == []          # base엔 이 파일 없어 new_broken엔 안 잡히던 gap
+    assert r["orphan"] == 0               # 미도달 아님 — broken이지 orphan 아님
+
+
 def test_build_and_verify_no_false_loss_on_preexisting_index(tmp_path):
     # 이미 내용 있는 index 파일을 가진 repo(부분 마이그레이션)에 문서 추가 → register의 append가
     # 기존 세그먼트에 안 붙어야(content_oracle 오탐 = false STOP 방지).

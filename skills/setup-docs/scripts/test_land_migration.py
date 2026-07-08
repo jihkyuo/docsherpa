@@ -63,7 +63,8 @@ def test_land_migration_oracle_failure_leaves_zero_trace(tmp_path, monkeypatch):
     plan = [{"src": "guide.md", "dest": "docs/how-to/guide.md", "ops": ["move"], "impact": None}]
     monkeypatch.setattr(migrate, "verify_migration", lambda b, c, mp: {
         "unaccounted": [], "new_broken": [("docs/how-to/guide.md", "[x](missing.md)")],
-        "preexisting_broken": [], "anchor_lost": [], "orphan": 0, "per_file": []})
+        "preexisting_broken": [], "anchor_lost": [], "orphan": 0,
+        "unexplained_broken": [], "per_file": []})
     with pytest.raises(RuntimeError, match="오라클 실패"):
         migrate.land_migration(repo, plan, head)
     assert "docsherpa/migrate-" not in _git(repo, "branch").stdout   # 자기 브랜치 삭제(흔적0)
