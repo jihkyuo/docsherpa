@@ -64,6 +64,20 @@ def test_anchor_dropped_flagged(tmp_path):
     assert ("docs/a.md", "guide.md") in r["anchor_lost"]
 
 
+def test_import_prepend_does_not_shift_link_pairing(tmp_path):
+    # 정체성 직결: scaffold의 inject_claude_md가 @AGENTS.md를 CLAUDE.md 맨 앞에 prepend하면
+    # doc_links가 import를 링크로 세어 zip 인덱스가 밀려 무손실 마이그레이션이 오분류된다.
+    # classify_links는 본문 링크(](target))만 봐야 한다 — import는 gate가 별도로 본다.
+    base = tmp_path / "base"; cur = tmp_path / "cur"
+    _mk(base, "SETUP.md", "# S\n")                 # setup 링크는 실재(satisfiable)
+    _mk(base, "CLAUDE.md", "# P\n\n[ghost](ghost.md) [setup](SETUP.md)\n")  # ghost=없음(preexisting)
+    _mk(cur, "SETUP.md", "# S\n")
+    _mk(cur, "CLAUDE.md", "@AGENTS.md\n\n# P\n\n[ghost](ghost.md) [setup](SETUP.md)\n")  # import prepend
+    r = migrate.classify_links(base, cur, [])
+    assert not any(f == "CLAUDE.md" for f, _ in r["new_broken"])   # 무손실 → 거짓 new_broken 없음
+    assert ("CLAUDE.md", "ghost.md") in r["preexisting_broken"]    # ghost는 원래 깨짐(정확 페어링)
+
+
 def test_per_file_catches_dropped_duplicate_content_doc(tmp_path):
     base = tmp_path / "base"; cur = tmp_path / "cur"
     dup = "# 공통\n동일한 보일러플레이트 세그먼트.\n"

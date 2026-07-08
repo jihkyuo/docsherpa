@@ -340,10 +340,17 @@ def _after_tree(move_plan):
 
 
 def doc_links(root, rel):
-    """도달성 무관, 한 문서의 링크들을 해석. resolve는 gate.resolve(파일위치 기준)."""
+    """도달성 무관, 한 문서의 본문 링크들을 해석. resolve는 gate.resolve(파일위치 기준).
+
+    본문 링크(](target))만 본다 — 라우터 import(@AGENTS.md)는 제외한다. gate.targets_in은
+    import 매치를 링크 매치보다 앞에 반환하는데, scaffold의 inject_claude_md가 import를 CLAUDE.md
+    맨 앞에 prepend하면 그 앞선 import 한 줄이 링크 리스트 인덱스를 통째로 밀어 classify_links의
+    zip-by-index 정렬을 깨뜨린다(무손실 마이그레이션이 오분류 → 거짓 STOP/거짓 PASS). import는
+    라우터 메커니즘이고 도달성은 gate가 별도로 본다."""
     root = Path(root); path = root / rel
+    text = path.read_text(encoding="utf-8", errors="surrogateescape")   # G2 일관
     out = []
-    for raw in gate.targets_in(path):                 # fence 제거된 raw 링크들
+    for raw in gate.LINK_RE.findall(gate.FENCE_RE.sub("", text)):       # 펜스 제거 후 본문 링크만
         kind, target = gate.resolve(path, raw)
         anchor = raw.split("#", 1)[1] if "#" in raw else ""
         if kind == "skip":
