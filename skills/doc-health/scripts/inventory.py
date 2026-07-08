@@ -11,6 +11,7 @@ repo 전체 *.md·*.mdx 나열(= "잊힌 문서 0"의 분모) + 분류 매니페
 import argparse
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -18,8 +19,34 @@ EXCLUDE_DIRS = {"node_modules", ".git", "dist", "build", "vendor"}
 DOC_SUFFIXES = (".md", ".mdx")
 
 
+def _gitignored(root, candidates):
+    """candidates(repo-상대 POSIX) 중 .gitignore 대상인 것들의 집합.
+
+    분모 = "레포가 자기 것이라 선언한 문서"(디스크의 모든 .md가 아님). git이
+    있으면 git의 무시-엔진에 위임(중첩 .gitignore·전역 exclude까지 정확). git이
+    없으면(비-git 레포) 빈 집합 = 폴백(디스크 워크 그대로). 우리가 특정 외부
+    도구 디렉터리를 하드코딩으로 판단하지 않고, 레포 선언만 존중한다."""
+    if not candidates or not (root / ".git").exists():
+        return set()
+    try:
+        # -z: 입출력 NUL 구분 + 경로 인용 안 함(비-ASCII/한글 경로가 core.quotePath로
+        # 옥탈 인용돼 문자열 매칭이 깨지는 것 방지).
+        proc = subprocess.run(
+            ["git", "-C", str(root), "check-ignore", "-z", "--stdin"],
+            input="\0".join(candidates), capture_output=True, text=True,
+        )
+    except OSError:
+        return set()  # git 실행 불가 → 폴백
+    if proc.returncode not in (0, 1):   # 0=일부 무시됨, 1=무시 없음, 그 외=오류
+        return set()
+    return set(proc.stdout.split("\0")) - {""}   # 후행 NUL → 빈 문자열 제거
+
+
 def list_docs(root):
-    """ROOT 하위 전 *.md·*.mdx(제외 디렉터리 밖) → repo-상대 POSIX 경로 정렬 리스트."""
+    """ROOT 하위 전 *.md·*.mdx → repo-상대 POSIX 경로 정렬 리스트.
+
+    제외: 빌드 정크(EXCLUDE_DIRS) + .gitignore 대상(git 있을 때만 — 레포가
+    "프로젝트 아님"이라 선언한 것 존중; 비-git이면 디스크 워크 폴백)."""
     root = Path(root).resolve()
     if not root.is_dir():
         raise FileNotFoundError(f"root가 디렉터리가 아님(오타·이동 의심): {root}")
@@ -30,7 +57,8 @@ def list_docs(root):
             if fn.endswith(DOC_SUFFIXES):
                 rel = Path(dirpath, fn).relative_to(root)
                 out.append(rel.as_posix())
-    return sorted(out)
+    ignored = _gitignored(root, out)
+    return sorted(c for c in out if c not in ignored)
 
 
 def unaccounted(root, manifest_paths):

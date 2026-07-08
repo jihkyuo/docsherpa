@@ -248,3 +248,10 @@ def test_assemble_raises_on_short_judgment(tmp_path):
     files = ["AGENTS.md", "docs/_map.md", "docs/a.md"]
     with pytest.raises(ValueError):
         scorecard.assemble(tmp_path, files, _judg("pass", "pass", "pass", "pass")[:3])
+
+
+def test_disposition_root_convention_case_insensitive():
+    # 루트 관례 파일은 대소문자 무시(readme.md·README.md 둘 다 tooling)
+    assert scorecard.disposition("readme.md") == "tooling"
+    assert scorecard.disposition("README.md") == "tooling"
+    assert scorecard.disposition("Changelog.MD") == "tooling"
