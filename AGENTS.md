@@ -26,7 +26,7 @@ docsherpa는 **비파괴적 보조 도구**다. 아래 셋이 정체성이고, �
 
 ## 명령어
 
-- 테스트: `cd skills/setup-docs/scripts && uv run --with pytest pytest -q`
+- 테스트: `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` · `cd skills/doc-health/scripts && uv run --with pytest pytest -q`
 
 ## 문서 지도 <!-- docsherpa:map -->
 - 라우팅·인덱스 → [문서 지도](docs/_map.md)
