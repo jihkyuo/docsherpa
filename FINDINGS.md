@@ -43,6 +43,16 @@
   (G1) `inject_claude_md` frontmatter 분기가 `@AGENTS.md`를 frontmatter 세그먼트에 붙여(빈 줄 없음)
   build_and_verify가 false-STOP(F3 확장 — 빈 줄 앞에도 삽입 필요). (G2) `apply_moves`·`content_oracle` 둘 다
   `errors="ignore"`라 invalid UTF-8 바이트 소실이 오라클에 안 잡힘 → 실제 쓰기 전 바이트 비교/surrogateescape.
+  **🧪 실전 dogfood(vd-backend, 2026-07-08):** Phase 0·1·2 파이프라인을 실 레포에 적용(스크래치, 비파괴).
+  75 docs·등급 **F**(정직: 라우터 도달 orphan 67/67 + 마커·척추·성장루프 전무 → 기계 M1~M4 FAIL, M5만 PASS).
+  분류 병렬 서브에이전트 4개(완결성 68/68) → plan_moves 이동 43 + legacy/제자리 등록 24 → build_and_verify
+  **orphan=0·unaccounted=0(내용 소실 0)·broken=3** → render_report plan 아티팩트 산출. **증분 4 입력 3건 발굴:**
+  (D1) **제자리·legacy 문서도 인덱스 등록 필요** — `plan_moves`/`register`가 이동 문서만 등록 →
+  이미 올바른 위치의 docs(`docs/harness/*`·`docs/README.md`)와 legacy가 고아. 등록 대상을 docs/ 아래 전체
+  content로 확장해야(이번엔 수동으로 넓혀 orphan=0). (D2) **도달성 확보가 잠복 broken 링크 노출** —
+  원본 미도달이라 gate가 방문 안 해 숨겨졌던 코드-디렉터리 링크(FRONT-END_API_INVENTORY.md → `src/apis/` 등 3개)가
+  이사 후 드러남 → 링크 교정(de-link) 단계 필요. (D3) **트리 시각화 생성기 스텁** — `scorecard._before_tree`는
+  docs/ 밖 흩어짐만·`migrate._after_tree`는 평면 12개만 → 실제 중첩 폴더 트리 미표현. 증분 4에서 실 계층 렌더로 개선.
 - **상태:** M0·M1·M3·M2 · 자기-독푸딩 · 갭1 · N11 spine · Track2/F12 · loop-refresh · PRD 1급 타입 ·
   **M5 출시 산출물 완비 + v0.1.0 발행 완료(2026-07-06).** 빌드 사실상 종료.
   다음 = **사용자 정지점만 남음**(터미널 설치 실검증 (c) · 중복 global 제거 (d) · 마켓플레이스 등록 —
