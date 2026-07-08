@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import content_oracle
 import migrate
 
 
@@ -61,3 +62,17 @@ def test_anchor_dropped_flagged(tmp_path):
     _mk(cur, "docs/guide.md", "# G\n")
     r = migrate.classify_links(base, cur, [])
     assert ("docs/a.md", "guide.md") in r["anchor_lost"]
+
+
+def test_per_file_catches_dropped_duplicate_content_doc(tmp_path):
+    base = tmp_path / "base"; cur = tmp_path / "cur"
+    dup = "# 공통\n동일한 보일러플레이트 세그먼트.\n"
+    _mk(base, "docs/a.md", dup)
+    _mk(base, "docs/b.md", dup)                        # a·b 동일내용
+    _mk(cur, "docs/a.md", dup)                         # b가 통째 소실(이동 실패 시뮬)
+    plan = [{"src": "docs/a.md", "dest": "docs/a.md"}, {"src": "docs/b.md", "dest": "docs/b.md"}]
+    # content_oracle는 통과(고유 세그먼트 살아있음)
+    assert not (set(content_oracle.collect(base)) - set(content_oracle.collect(cur)))
+    # 하지만 per_file은 b의 dest 미도달을 잡아야
+    viol = migrate.per_file_accounting(base, cur, plan)
+    assert any("docs/b.md" in str(v) for v in viol)

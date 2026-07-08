@@ -362,6 +362,28 @@ def classify_links(base_root, cur_root, move_plan):
     return res
 
 
+def per_file_accounting(base_root, cur_root, move_plan):
+    """각 base 문서의 세그먼트 집합이 그 dest 파일에 존재하는지 + 파일수 보존(R7).
+    content_oracle의 '고유 세그먼트 집합' 사각(인스턴스 소실) 보완. 반환=위반 리스트([]=ok)."""
+    base_root, cur_root = Path(base_root), Path(cur_root)
+    move_map = {p["src"]: p["dest"] for p in move_plan}
+    viol = []
+    for bmd in sorted(base_root.rglob("*.md")):
+        old_rel = bmd.relative_to(base_root).as_posix()
+        new_rel = move_map.get(old_rel, old_rel)
+        dest = cur_root / new_rel
+        if not dest.is_file():
+            viol.append((new_rel, "dest 파일 미도달")); continue
+        base_keys = {content_oracle.seg_key(s)
+                     for s in content_oracle.segment(bmd.read_text(encoding="utf-8", errors="surrogateescape"))}
+        dest_keys = {content_oracle.seg_key(s)
+                     for s in content_oracle.segment(dest.read_text(encoding="utf-8", errors="surrogateescape"))}
+        missing = base_keys - dest_keys
+        if missing:
+            viol.append((new_rel, f"세그먼트 dest 미도달 {len(missing)}건"))
+    return viol
+
+
 def assemble_plan_data(health, move_plan, decisions=None):
     """doc-health 부분 dict → render_report plan 계약(trees.after·migration·decisions 추가)."""
     data = dict(health)
