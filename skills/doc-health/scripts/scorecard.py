@@ -174,6 +174,10 @@ def _before_tree(files):
 
 def assemble(root, files, judgment, inventory=None):
     """root + inventory files + 에이전트 판단 J차원 → render_report 부분 데이터 모델."""
+    j_codes = {d["code"] for d in judgment}
+    if j_codes != {"J1", "J2", "J3", "J4"}:
+        raise ValueError(
+            f"judgment must assess all 4 dims (J1-J4); got codes {sorted(j_codes)}")
     res = gate.analyze(root)
     mech = machine_dims(res, files)
     orphan_ratio = (len(res.orphans) / len(res.all_docs)) if res.all_docs else 0.0

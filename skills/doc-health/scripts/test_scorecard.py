@@ -234,3 +234,17 @@ def test_main_without_judgment_exits_nonzero(tmp_path):
     with pytest.raises(SystemExit) as exc:
         scorecard.main([str(tmp_path)])
     assert exc.value.code != 0
+
+
+def test_assemble_raises_on_empty_judgment(tmp_path):
+    _healthy_repo(tmp_path)
+    files = ["AGENTS.md", "docs/_map.md", "docs/a.md"]
+    with pytest.raises(ValueError):
+        scorecard.assemble(tmp_path, files, [])
+
+
+def test_assemble_raises_on_short_judgment(tmp_path):
+    _healthy_repo(tmp_path)
+    files = ["AGENTS.md", "docs/_map.md", "docs/a.md"]
+    with pytest.raises(ValueError):
+        scorecard.assemble(tmp_path, files, _judg("pass", "pass", "pass", "pass")[:3])

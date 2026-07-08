@@ -21,7 +21,7 @@ design.md §4는 이 정합성 논거로 진단을 별도 모듈로 뺄 것을 �
 계획·worktree 실행)은 setup-docs 몫으로 남긴다 — 진단과 실행을 깨끗이 분리한다.
 
 - **H1 (M5 분모 = 흩어진 content 문서만):** 라우터(AGENTS/CLAUDE/GEMINI)·도구 디렉터리(`.claude/`·
-  `.github/`·`.cursor/`)·루트 관례 파일(README·CONTRIBUTING·CHANGELOG·SECURITY·CODE_OF_CONDUCT)은
+  `.github/`·`.cursor/`·`.gitlab/`)·루트 관례 파일(README·CONTRIBUTING·CHANGELOG·SECURITY·CODE_OF_CONDUCT)은
   accounted-but-not-violation으로 취급하고 M5(문서 위치 위반) 분모에서 제외한다. 이들이 M5에 들어가면
   구조적으로 등급 A를 받을 수 없는 repo가 생겨 채점 자체가 거짓이 된다. README 비대 같은 문제는 M5가 아니라
   J3(판단 차원)의 몫이다.
