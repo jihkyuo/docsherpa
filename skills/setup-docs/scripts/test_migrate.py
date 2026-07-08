@@ -70,3 +70,34 @@ def test_rewrite_links_preserves_anchor_slash_and_skips_external_and_absolute():
     assert migrate.rewrite_links("[abs](/root/x.md)", "a.md", mm) == "[abs](/root/x.md)"  # 루트상대 skip
     # 디렉터리 링크(후행 /)는 파일화되면 안 됨 — 슬래시 보존
     assert migrate.rewrite_links("[d](sub/)", "a.md", mm) == "[d](../sub/)"
+
+
+def _mk(root, rel, text=""):
+    from pathlib import Path
+    p = Path(root) / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text or "# doc\n", encoding="utf-8")
+
+
+def test_apply_moves_relocates_and_relinks(tmp_path):
+    _mk(tmp_path, "a.md", "# A\nsee [B](b.md)\n")
+    _mk(tmp_path, "b.md", "# B\n")
+    _mk(tmp_path, "keep.md", "# Keep\nlink [A](a.md)\n")   # 안 움직임, a로의 링크 갱신돼야
+    plan = [
+        {"src": "a.md", "dest": "docs/reference/a.md", "ops": ["move"], "impact": None},
+        {"src": "b.md", "dest": "docs/how-to/b.md", "ops": ["move"], "impact": None},
+    ]
+    migrate.apply_moves(tmp_path, plan)
+    assert (tmp_path / "docs/reference/a.md").is_file()
+    assert (tmp_path / "docs/how-to/b.md").is_file()
+    assert not (tmp_path / "a.md").exists()
+    assert "(../how-to/b.md)" in (tmp_path / "docs/reference/a.md").read_text(encoding="utf-8")
+    assert "(docs/reference/a.md)" in (tmp_path / "keep.md").read_text(encoding="utf-8")
+
+
+def test_apply_moves_existing_dest_collision_raises(tmp_path):
+    _mk(tmp_path, "a.md", "# A\n")
+    _mk(tmp_path, "docs/x.md", "# X\n")                     # 기존 파일, 이동 대상 아님
+    plan = [{"src": "a.md", "dest": "docs/x.md", "ops": ["move"], "impact": None}]
+    with pytest.raises(ValueError):
+        migrate.apply_moves(tmp_path, plan)
