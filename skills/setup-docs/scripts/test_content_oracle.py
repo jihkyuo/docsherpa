@@ -111,6 +111,15 @@ class InvalidByteTests(unittest.TestCase):
             cur_keys = set(co.collect(cur))
             self.assertTrue(base_keys - cur_keys)   # 최소 하나 unaccounted(소실 감지)
 
+    def test_collect_preview_is_strict_utf8_encodable(self):
+        # preview는 표시용(cmd_keys/cmd_check가 print) — lone surrogate가 남으면
+        # strict stdout(PYTHONIOENCODING=utf-8:strict 등)에서 print가 크래시한다.
+        # key는 정확 바이트를 담되, preview는 표시-안전해야(surrogateescape 후속).
+        with tempfile.TemporaryDirectory() as base:
+            (Path(base) / "a.md").write_bytes("seg ".encode("utf-8") + b"\xff" + "mark".encode("utf-8"))
+            for e in co.collect(base).values():
+                e["preview"].encode("utf-8")   # strict — surrogate면 UnicodeEncodeError
+
 
 if __name__ == "__main__":
     unittest.main()
