@@ -119,6 +119,16 @@ def test_apply_moves_chained_dest_equals_other_src_preserves_both(tmp_path):
     assert not (tmp_path / "notes/s.md").exists()
 
 
+def test_apply_moves_preserves_invalid_utf8_bytes(tmp_path):
+    # UTF-8로 디코드 안 되는 바이트(라틴1·깨진 인코딩 등)가 있어도 이동 후 소실 0
+    # (정체성 불변식). errors="ignore"면 읽을 때 조용히 버려지고 오라클도 못 잡음(G2).
+    raw = "# Doc\n".encode("utf-8") + b"\xff\xfe" + " tail 세그먼트.\n".encode("utf-8")
+    (tmp_path / "a.md").write_bytes(raw)
+    plan = [{"src": "a.md", "dest": "docs/a.md", "ops": ["move"], "impact": None}]
+    migrate.apply_moves(tmp_path, plan)
+    assert b"\xff\xfe" in (tmp_path / "docs/a.md").read_bytes()
+
+
 def test_register_makes_moved_docs_reachable(tmp_path):
     import gate
     _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")

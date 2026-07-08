@@ -97,5 +97,20 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(rc, 1)
 
 
+class InvalidByteTests(unittest.TestCase):
+    def test_collect_surfaces_dropped_invalid_utf8_bytes(self):
+        # invalid UTF-8 바이트가 current에서 소실되면 base 세그먼트 key가 달라져
+        # 오라클이 unaccounted로 잡아야 한다. errors="ignore"면 양쪽 다 바이트를
+        # 버려 차이가 안 보이는 사각(G2) — surrogateescape로 바이트를 key에 반영.
+        with tempfile.TemporaryDirectory() as base, tempfile.TemporaryDirectory() as cur:
+            (Path(base) / "a.md").write_bytes(
+                "keep this segment ".encode("utf-8") + b"\xff" + "unique-marker".encode("utf-8"))
+            (Path(cur) / "a.md").write_bytes(
+                "keep this segment unique-marker".encode("utf-8"))   # 바이트 소실판
+            base_keys = set(co.collect(base))
+            cur_keys = set(co.collect(cur))
+            self.assertTrue(base_keys - cur_keys)   # 최소 하나 unaccounted(소실 감지)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -108,13 +108,14 @@ def apply_moves(root, move_plan):
     for md in root.rglob("*.md"):
         old_rel = md.relative_to(root).as_posix()
         rewritten[old_rel] = rewrite_links(
-            md.read_text(encoding="utf-8", errors="ignore"), old_rel, move_map)
+            md.read_text(encoding="utf-8", errors="surrogateescape"), old_rel, move_map)
     dests = {move_map.get(old_rel, old_rel) for old_rel in rewritten}
     # 2) 모든 목적지에 먼저 기록(내용은 메모리에 있어 dest==다른 src여도 안전).
     for old_rel, new_text in rewritten.items():
         dst = root / move_map.get(old_rel, old_rel)
         dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_text(new_text, encoding="utf-8")
+        # surrogateescape로 읽은 invalid UTF-8 바이트를 그대로 되쓴다(소실 0, G2).
+        dst.write_text(new_text, encoding="utf-8", errors="surrogateescape")
     # 3) 이동으로 비워진 옛 경로만 삭제(누군가의 목적지인 경로는 보존).
     for old_rel in rewritten:
         new_rel = move_map.get(old_rel, old_rel)
