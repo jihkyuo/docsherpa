@@ -65,7 +65,8 @@ setup-docs는 아키텍처를 "슥 설치하고 끝"이 아니다. **프로젝�
 
 자세별 차등: GREENFIELD=조용히 설치(아티팩트 없음). HEALTHY=등급 카드만. MESSY=풀 파이프라인.
 
-> **구현 spec:** [setup-pipeline.md](setup-pipeline.md) — 증분 3(Phase 0·1·2: 진단→목표트리→검증된 계획→승인). Phase 3·4는 증분 4로 이연.
+> **구현 spec:** [setup-pipeline.md](setup-pipeline.md) — 증분 3(Phase 0·1·2: 진단→목표트리→검증된 계획→승인).
+> [landing-migration.md](landing-migration.md) — 증분 4(Phase 3·4: 승인된 계획의 실제 랜딩→재진단, worktree 격리·D1 도달성-구동 등록·D2 new-vs-preexisting 링크).
 
 ## 6. 진단 상세 (`doc-health`)
 
