@@ -53,6 +53,10 @@
   원본 미도달이라 gate가 방문 안 해 숨겨졌던 코드-디렉터리 링크(FRONT-END_API_INVENTORY.md → `src/apis/` 등 3개)가
   이사 후 드러남 → 링크 교정(de-link) 단계 필요. (D3) **트리 시각화 생성기 스텁** — `scorecard._before_tree`는
   docs/ 밖 흩어짐만·`migrate._after_tree`는 평면 12개만 → 실제 중첩 폴더 트리 미표현. 증분 4에서 실 계층 렌더로 개선.
+  (D3보강) **트리 접이식(collapsible) 전체보기** — 요약(폴더+개수)은 기본, 전체 파일 스캐폴딩은 `<details>/<summary>`
+  네이티브 disclosure(JS 0·시맨틱·비버튼)로 Before→After 2열 펼침. vd-backend 아티팩트에 후처리로 프로토타입(프리즈
+  테마 변수 재사용·인라인 style 0·반응형 ≤640px 1열·legacy prd/ 흐림). 정식화 = `render_report`에 트리 `collapsible`
+  플래그 + 전용 프리즈 CSS + 대비/구조 게이트 테스트 추가(렌더러 확장). 프리즈 품질 게이트와 충돌 없음(외부리소스 0 유지).
   (D4) **아티팩트 은어 누출(자기설명 부재)** — 승인-대상 산출물인데 `scorecard.py`의 차원 라벨/sub가 내부 은어
   (`성장 루프 3종`·`맵 척추`·`마커 home`)라 docsherpa 개념 모르는 외부 뷰어는 이해·행동 불가(채택률 직결).
   렌더러 아닌 scorecard의 name/sub를 자기설명형(무엇을 재나+결과)으로 바꿔야. 예: M4 → "코드 변경 시 문서
