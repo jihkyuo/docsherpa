@@ -235,3 +235,23 @@ def build_and_verify(repo, move_plan, plugin_root=None):
     finally:
         shutil.rmtree(base, ignore_errors=True)
         shutil.rmtree(current, ignore_errors=True)
+
+
+def _after_tree(move_plan):
+    """move_plan → "후" 트리 dict (tag='목표', 문서들을 'new'로 표시)."""
+    lines = [["docs/", None]]
+    for p in move_plan[:12]:
+        lines.append([p["dest"], "new"])
+    sub = f"docs/ 중앙집중 · 이동 {len(move_plan)}건"
+    return {"title": "docs/ 중앙집중", "tag": "목표", "sub": sub, "lines": lines}
+
+
+def assemble_plan_data(health, move_plan, decisions=None):
+    """doc-health 부분 dict → render_report plan 계약(trees.after·migration·decisions 추가)."""
+    data = dict(health)
+    data["trees"] = dict(data.get("trees", {}))
+    data["trees"]["after"] = _after_tree(move_plan)
+    data["migration"] = list(move_plan)
+    data["decisions"] = list(decisions or [])
+    data.setdefault("summary", {})
+    return data

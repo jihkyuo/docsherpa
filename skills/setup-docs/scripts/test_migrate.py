@@ -200,3 +200,34 @@ def test_build_and_verify_no_false_loss_on_preexisting_index(tmp_path):
     res = migrate.build_and_verify(tmp_path, plan)
     assert res["unaccounted"] == []      # 기존 index 세그먼트 보존
     assert res["broken"] == 0
+
+
+def _health_stub():
+    return {
+        "repo": {"name": "r", "docs_count": 3, "branch": "main"},
+        "grade": {"current": "F", "target": "A"},
+        "counts": {"fail": 5, "warn": 0, "pass": 4},
+        "scorecard": {"mechanical": [], "judgment": []},
+        "trees": {"before": {"title": "지금", "tag": "지금", "sub": "", "lines": []}},
+        "posture": "MESSY",
+    }
+
+
+def test_assemble_plan_data_fills_after_and_migration():
+    plan = [{"src": "help.md", "dest": "docs/how-to/help.md", "ops": ["move"],
+             "impact": "custom-sync grep 경로 깨짐"}]
+    d = migrate.assemble_plan_data(_health_stub(), plan)
+    assert d["migration"] == [{"src": "help.md", "dest": "docs/how-to/help.md",
+                               "ops": ["move"], "impact": "custom-sync grep 경로 깨짐"}]
+    assert d["trees"]["after"]["tag"] == "목표"
+    assert any(cls == "new" for _, cls in d["trees"]["after"]["lines"])
+    assert d["decisions"] == []
+
+
+def test_assemble_plan_data_renders_without_keyerror():
+    import render_report
+    d = migrate.assemble_plan_data(_health_stub(),
+        [{"src": "a.md", "dest": "docs/a.md", "ops": ["move"], "impact": None}])
+    html = render_report.render_report(d, "plan")
+    assert html.count("<div") == html.count("</div>")
+    assert 'style="' not in html
