@@ -50,3 +50,14 @@ def test_cur_link_loss_falls_back_to_new_broken(tmp_path):
     r = migrate.classify_links(base, cur, plan)
     assert ("docs/g.md", "./gone.md") in r["new_broken"]   # 은폐 차단 → new_broken
     assert not r["preexisting_broken"]
+
+
+def test_anchor_dropped_flagged(tmp_path):
+    base = tmp_path / "base"
+    cur = tmp_path / "cur"
+    _mk(base, "docs/a.md", "# A\n[api](guide.md#api-v1)\n")
+    _mk(base, "docs/guide.md", "# G\n")
+    _mk(cur, "docs/a.md", "# A\n[api](guide.md)\n")     # 앵커 소실(버그 시뮬)
+    _mk(cur, "docs/guide.md", "# G\n")
+    r = migrate.classify_links(base, cur, [])
+    assert ("docs/a.md", "guide.md") in r["anchor_lost"]
