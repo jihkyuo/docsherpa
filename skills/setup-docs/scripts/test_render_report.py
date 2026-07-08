@@ -159,6 +159,14 @@ def test_result_mode_shows_grade_before_after_and_preexisting_broken():
     assert html.count("<div") == html.count("</div>")
 
 
+def test_result_mode_preexisting_broken_escapes_hostile_content():
+    d = {**MIN, "preexisting_broken": [("<script>x</script>", "docs/a&b.md")]}
+    html = render_report(d, "result")
+    assert "<script>x" not in html
+    assert "&lt;script&gt;" in html
+    assert html.count("<div") == html.count("</div>")
+
+
 def test_result_mode_without_grade_or_preexisting_still_renders():
     d = {**MIN, "summary": {"moved": 1, "orphans_before": 1, "orphans_after": 0,
                             "outside_before": 1, "outside_after": 0,
