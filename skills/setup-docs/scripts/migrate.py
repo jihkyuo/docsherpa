@@ -193,3 +193,34 @@ def register_in_indexes(root, move_plan):
 
     if home and map_entries:
         _append_links(home, map_entries)
+
+
+_COPY_IGNORE = shutil.ignore_patterns("node_modules", ".git", "dist", "build", "vendor")
+
+
+def _copy_tree(repo, dst):
+    """repo → dst 복사(제외 디렉터리 빼고). base·current가 동일 파일집합을 보게 해 content_oracle 오탐 방지."""
+    shutil.copytree(repo, dst, ignore=_COPY_IGNORE, dirs_exist_ok=True)
+
+
+def build_and_verify(repo, move_plan, plugin_root=None):
+    """두 스크래치(base=원본 복사, current=복사+이동+scaffold+등록)로 검증 →
+    {broken, orphan, unaccounted}. 실제 repo는 안 건드림."""
+    repo = Path(repo).resolve()
+    base = Path(tempfile.mkdtemp(prefix="docsherpa-base-"))
+    current = Path(tempfile.mkdtemp(prefix="docsherpa-cur-"))
+    try:
+        _copy_tree(repo, base)
+        _copy_tree(repo, current)
+        apply_moves(current, move_plan)
+        scaffold.scaffold(current, plugin_root_dir=plugin_root)
+        register_in_indexes(current, move_plan)
+        res = gate.analyze(current)
+        base_keys = set(content_oracle.collect(base))
+        cur_keys = set(content_oracle.collect(current))
+        unaccounted = sorted(base_keys - cur_keys)
+        return {"broken": len(res.broken), "orphan": len(res.orphans),
+                "unaccounted": unaccounted}
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+        shutil.rmtree(current, ignore_errors=True)

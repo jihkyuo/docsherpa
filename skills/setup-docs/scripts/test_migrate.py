@@ -155,3 +155,32 @@ def test_register_nested_folder_reachable_despite_preexisting_subpath_link(tmp_p
     migrate.register_in_indexes(tmp_path, plan)
     res = gate.analyze(tmp_path)
     assert res.orphans == [] and res.broken == []
+
+
+def _messy_repo(root):
+    _mk(root, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(root, "AGENTS.md", "# A\n- [help](help.md)\n")
+    _mk(root, "help.md", "# Help\n순수 절차 세그먼트 하나.\n")
+    _mk(root, "notes.md", "# Notes\n참조 세그먼트 하나.\n")
+
+
+def test_build_and_verify_reaches_clean_and_lossless(tmp_path):
+    _messy_repo(tmp_path)
+    (tmp_path / ".git").mkdir()
+    plan = [
+        {"src": "help.md", "dest": "docs/how-to/help.md", "ops": ["move"], "impact": None},
+        {"src": "notes.md", "dest": "docs/notes.md", "ops": ["move"], "impact": None},
+    ]
+    res = migrate.build_and_verify(tmp_path, plan)
+    assert res["broken"] == 0            # 링크 무결
+    assert res["orphan"] == 0            # register가 도달성 회복
+    assert res["unaccounted"] == []      # 유실 0(두 세그먼트 살아남음)
+
+
+def test_build_and_verify_empty_plan_verifies_spine(tmp_path):
+    # 이동할 content 0(spec §3 엣지): 빈 계획 → spine/loop만 검증. 무손실·무결 당연.
+    _messy_repo(tmp_path)
+    (tmp_path / ".git").mkdir()
+    res = migrate.build_and_verify(tmp_path, [])
+    assert res["unaccounted"] == []      # 이동 없음 → 무손실
+    assert res["broken"] == 0            # scaffold spine 설치 후 링크 무결
