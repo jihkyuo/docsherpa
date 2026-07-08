@@ -129,6 +129,21 @@ def test_apply_moves_preserves_invalid_utf8_bytes(tmp_path):
     assert b"\xff\xfe" in (tmp_path / "docs/a.md").read_bytes()
 
 
+def test_apply_moves_asserts_src_exists(tmp_path):
+    _mk(tmp_path, "real.md", "# real\n")
+    plan = [{"src": "ghost.md", "dest": "docs/ghost.md", "ops": ["move"], "impact": None}]  # 없는 src
+    with pytest.raises(ValueError):
+        migrate.apply_moves(tmp_path, plan)
+
+
+def test_prune_empty_dirs_removes_emptied_folder(tmp_path):
+    _mk(tmp_path, "docs/old/x.md", "# X\n")
+    (tmp_path / "docs/old/x.md").unlink()              # 폴더만 빈 채 남음
+    migrate.prune_empty_dirs(tmp_path)
+    assert not (tmp_path / "docs/old").exists()
+    assert (tmp_path / "docs").exists()                # 비지 않은 상위는 보존
+
+
 def test_register_makes_moved_docs_reachable(tmp_path):
     import gate
     _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")

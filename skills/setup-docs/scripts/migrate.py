@@ -96,6 +96,9 @@ def apply_moves(root, move_plan):
     쓰기는 2단계(모든 목적지 기록 → 이동으로 비워진 옛 경로만 삭제)로 chained-move
     (dest==다른 src) 내용 소실을 막는다."""
     root = Path(root)
+    missing = [p["src"] for p in move_plan if not (root / p["src"]).exists()]
+    if missing:
+        raise ValueError(f"move_plan.src 부재(조용한 no-op 차단): {missing}")
     move_map = {p["src"]: p["dest"] for p in move_plan}
     srcs = set(move_map)
     # 사전 충돌 감지: dest가 이미 있고, 그게 이동으로 비워질 src가 아니면 STOP.
@@ -121,6 +124,18 @@ def apply_moves(root, move_plan):
         new_rel = move_map.get(old_rel, old_rel)
         if new_rel != old_rel and old_rel not in dests:
             (root / old_rel).unlink()
+
+
+def prune_empty_dirs(root):
+    """이동으로 빈 디렉터리를 제거(R4: git 빈폴더 미커밋 → dir 링크 커밋후 파손 방지). 루트는 보존."""
+    root = Path(root)
+    dirs = sorted((p for p in root.rglob("*") if p.is_dir()), key=lambda p: len(p.parts), reverse=True)
+    empty = [d for d in dirs if d != root and not any(d.iterdir())]   # 삭제 전 스냅샷(연쇄 삭제 방지)
+    for d in empty:
+        try:
+            d.rmdir()
+        except OSError:
+            pass
 
 
 def _ensure_folder_index(folder):
