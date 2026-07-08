@@ -34,3 +34,19 @@ def test_stale_code_ref_is_preexisting(tmp_path):
     r = migrate.classify_links(base, cur, plan)
     assert r["preexisting_broken"]                    # 원래 깨짐 → 표면화만
     assert not r["new_broken"]
+
+
+def test_cur_link_loss_falls_back_to_new_broken(tmp_path):
+    # 정체성 fail-safe: cur가 링크를 잃으면(삭제/재정렬) zip 정렬이 붕괴해 자가유발 broken을
+    # preexisting로 은폐할 수 있다. 이때는 차단 방향(new_broken)으로 폴백해야 한다.
+    base = tmp_path / "base"
+    cur = tmp_path / "cur"
+    # base g.md: [./missing.md](broken=preexisting), [./real.md](sat) — 링크 2개
+    _mk(base, "docs/g.md", "# G\n[x](./missing.md)\n[y](./real.md)\n")
+    _mk(base, "docs/real.md", "# R\n")
+    # cur 같은 g.md: 링크 1개, 그것도 broken(자가유발) — 링크 수 감소
+    _mk(cur, "docs/g.md", "# G\n[z](./gone.md)\n")
+    plan = []                                            # 이동 없음(정체성 페어링은 같은 경로)
+    r = migrate.classify_links(base, cur, plan)
+    assert ("docs/g.md", "./gone.md") in r["new_broken"]   # 은폐 차단 → new_broken
+    assert not r["preexisting_broken"]

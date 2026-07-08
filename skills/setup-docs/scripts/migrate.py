@@ -329,8 +329,11 @@ def classify_links(base_root, cur_root, move_plan):
 
     zip-by-index 가정: register_in_indexes/register_all은 새 링크를 인덱스 문서 "끝에" append하므로
     (append-at-end), cur의 링크 리스트는 base와 같은 순서로 시작해 뒤에 신규 항목만 덧붙는다.
-    그래서 base[i]↔cur[i]로 앞에서부터 zip해도 정렬이 어긋나지 않는다. cur 쪽이 base보다 짧아지는
-    경우(i >= len(cl))는 안전하게 None으로 건너뛴다."""
+    그래서 base[i]↔cur[i]로 앞에서부터 zip해도 정렬이 어긋나지 않는다.
+
+    cur 링크 감소 시 차단 방향 폴백(정체성 fail-safe): cur가 링크를 잃으면(len(cl)<len(bl):
+    삭제/재정렬) index 페어링이 붕괴해 자가유발 broken을 preexisting로 은폐할 수 있다. 그 문서는
+    zip을 신뢰하지 않고 cur의 broken 링크를 전부 new_broken(차단)으로 분류한다."""
     base_root, cur_root = Path(base_root), Path(cur_root)
     move_map = {p["src"]: p["dest"] for p in move_plan}
     res = {"new_broken": [], "preexisting_broken": [], "anchor_lost": []}
@@ -341,6 +344,11 @@ def classify_links(base_root, cur_root, move_plan):
             continue                                   # dest 부재는 per_file 회계(Task 4)가 담당
         bl = [l for l in doc_links(base_root, old_rel) if l["kind"] != "skip"]
         cl = [l for l in doc_links(cur_root, new_rel) if l["kind"] != "skip"]
+        if len(cl) < len(bl):                          # 링크 감소 → 정렬 붕괴, 차단 방향 폴백
+            for c in cl:
+                if not c["resolved"]:
+                    res["new_broken"].append((new_rel, c["raw"]))
+            continue
         for i, b in enumerate(bl):                     # append-at-end(register)라 base index가 앞에서 정렬
             c = cl[i] if i < len(cl) else None
             if c is None:
