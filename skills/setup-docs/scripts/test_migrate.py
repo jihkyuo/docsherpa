@@ -48,3 +48,25 @@ def test_plan_moves_collision_raises():
     ]
     with pytest.raises(ValueError):
         migrate.plan_moves(inv)
+
+
+def test_rewrite_links_updates_moved_target():
+    mm = {"a.md": "docs/reference/a.md", "b.md": "docs/how-to/b.md"}
+    out = migrate.rewrite_links("see [B](b.md)", "a.md", mm)
+    assert out == "see [B](../how-to/b.md)"
+
+
+def test_rewrite_links_self_moved_target_stationary():
+    mm = {"a.md": "docs/reference/a.md"}
+    out = migrate.rewrite_links("[R](root.md)", "a.md", mm)
+    assert out == "[R](../../root.md)"
+
+
+def test_rewrite_links_preserves_anchor_slash_and_skips_external_and_absolute():
+    mm = {"a.md": "docs/a.md"}
+    assert migrate.rewrite_links("[x](b.md#sec)", "a.md", mm) == "[x](../b.md#sec)"
+    assert migrate.rewrite_links("[e](https://x.com)", "a.md", mm) == "[e](https://x.com)"
+    assert migrate.rewrite_links("[a](#top)", "a.md", mm) == "[a](#top)"
+    assert migrate.rewrite_links("[abs](/root/x.md)", "a.md", mm) == "[abs](/root/x.md)"  # 루트상대 skip
+    # 디렉터리 링크(후행 /)는 파일화되면 안 됨 — 슬래시 보존
+    assert migrate.rewrite_links("[d](sub/)", "a.md", mm) == "[d](../sub/)"

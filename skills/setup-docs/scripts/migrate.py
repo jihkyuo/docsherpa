@@ -56,3 +56,35 @@ def plan_moves(inventory):
     if dups:
         raise ValueError(f"목적지 충돌(둘 이상이 같은 경로): {dups}")
     return plan
+
+
+_URL_RE = re.compile(r"\[([^\]]*)\]\(([^)]*)\)")   # [label](target)
+_EXTERNAL = ("http://", "https://", "mailto:", "tel:", "#", "/")   # "/" = 루트상대(F6)
+
+
+def _relpath(from_file, to_file):
+    """repo-상대 POSIX 두 경로 → from_file 위치 기준 to_file 상대경로."""
+    return posixpath.relpath(to_file, posixpath.dirname(from_file) or ".")
+
+
+def rewrite_links(text, old_self, move_map):
+    """text의 마크다운 링크를, 문서가 old_self→move_map[old_self]로 이동한다는 전제로 재작성.
+    이동한 타겟은 새 경로로, 안 움직인 타겟도 새 자기위치 기준 상대경로로.
+    후행 슬래시(디렉터리 링크) 보존 · 외부/앵커/루트상대 skip(F6)."""
+    new_self = move_map.get(old_self, old_self)
+    old_dir = posixpath.dirname(old_self)
+
+    def repl(m):
+        label, raw = m.group(1), m.group(2).strip()
+        if not raw or raw.startswith(_EXTERNAL):
+            return m.group(0)
+        target, hashsep, anchor = raw.partition("#")
+        if not target:
+            return m.group(0)
+        trailing = "/" if target.endswith("/") else ""
+        old_target = posixpath.normpath(posixpath.join(old_dir, target))
+        new_target = move_map.get(old_target, old_target)
+        newrel = _relpath(new_self, new_target) + trailing
+        return f"[{label}]({newrel}{hashsep}{anchor})"
+
+    return _URL_RE.sub(repl, text)
