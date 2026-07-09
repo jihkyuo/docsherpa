@@ -2,6 +2,19 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
+- **✅ 아티팩트 자기설명 보정(A·라벨·C1) 완료(2026-07-09, subagent-driven 5태스크):**
+  vd-front dogfood·UX 피드백에서 드러난 진단서 아티팩트 결함 3건을 고침. **(A) 플랜 표면화** —
+  `build_and_verify`가 `preexisting_broken`을 반환 → `assemble_plan_data(..., preexisting_broken=...)`가
+  전달 → `render_report`가 plan·result 양 모드에서 기존 `_render_preexisting`으로 렌더(콜아웃/impact
+  아님 — 이동유발 위험은 이미 `new_broken=0` 게이트로 차단, preexisting은 별도 축). SKILL.md Phase 2
+  산문에 배선 명시. **(라벨) how-to 정직화** — tkey·`_TYPE_GROUP` 두 곳 모두 "가이드(how-to)"→"작업
+  절차·복구(how-to)"로 변경(트러블슈팅 은폐 방지, 위 트러블슈팅 1급 승격 결정과 정합). **(C1) before 트리
+  중첩** — `scorecard._before_tree`를 평면 나열에서 `_nested_lines` 기반 중첩 스캐폴딩으로(파묻힌 구조
+  가시화, `_after_tree`와 표현 일관). **architect 교차검증으로 defer:** B(before/after 규모 라인)·
+  C2(after 트리 접이식)는 중복/저부가로 미구현(§2 단순함 우선) — 필요해지면 별도 요청 시 재검토.
+  트러블슈팅 1급 승격(doc-type 트랙, 아래 항목)은 이 작업 범위 밖 유지. 브랜치
+  `fix/artifact-preexisting-label-beforetree`, 계획
+  [2026-07-09-artifact-selfdescribe-fixes.md](docs/plans/2026-07-09-artifact-selfdescribe-fixes.md).
 - **✅ 증분 4 `land_migration` 완료 + vd-front 실 dogfood 성공(2026-07-09, subagent-driven 9태스크):**
   승인된 계획을 git worktree 격리로 실 브랜치에 랜딩 + 재진단. 신규 `land_migration`(이중 worktree·HEAD sha 핀·
   **검증트리=커밋트리**·통과 시에만 커밋·`finally` 흔적0) · `register_all`(도달성-구동·진행가드·live-link) ·
