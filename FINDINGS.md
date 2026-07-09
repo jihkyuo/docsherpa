@@ -28,6 +28,34 @@
   즉 0018이 명문화한 in-place 클래스(router·tooling, 경로 기반)에 **legacy(타입 기반)가 빠져 있다.**
   후보: (a) `scorecard.assemble`이 이미 받는 `inventory` 매니페스트로 `type=="legacy"`를 M5 분모에서 제외 ·
   (b) legacy를 `docs/legacy/`로 이주 · (c) 수용. **(a)가 0018 정신과 정합**(제자리 클래스 = 도달성·M5 면제).
+- **🎨 DF5 픽스 완료 + DF6·DF7 발견(2026-07-09, 사용자가 렌더된 아티팩트를 보고 잡음 — 리뷰어 3명 다 놓침):**
+  **DF5(픽스됨, 32d5ec7·9151d8e) — 타입색 `--fail-ink`가 `.stray`와 충돌해 범례가 거짓말했다.**
+  `.tree .stray`(before 트리 파일, 선재)와 `.tree .t-troubleshooting`(이번 배치 추가)이 **같은 토큰**.
+  result 모드는 after 트리를 안 그리는데(`t.get("after")` 없음) **타입색 범례는 무조건 렌더**돼,
+  사용자가 본 화면은 "빨강 파일 + 바로 아래 '빨강=문제 해결(troubleshooting)'" — 그 repo엔 트러블슈팅 0건.
+  intro의 "파일은 무색"도 자기 그림과 모순. **내 계획서가 스스로 경고했다가("stray와 토큰 공유하나 같은
+  pane에서 공존하지 않고 범례가 구분한다") 무시한 지점 — 둘 다 틀렸다.**
+  **픽스 방향(중요):** 동결 팔레트엔 트러블슈팅에 줄 새 색이 **없다**(AA on `--bg` 통과 + 미사용 =
+  `--muted`·`--ink` 무채색뿐. `--warn` 2.89 · `--pass` 3.28 · `--fail` 4.14 = 라이트 AA 미달).
+  그래서 "빨강을 stray에서 회수" — ⓐ `_nested_lines` 파일 클래스 `stray`→`None`(before 트리 무색).
+  이건 **기록된 설계 의도 D6①("before=회색투성이/after=타입별 컬러")의 복원**이고, before 트리는 정의상
+  전부 stray(`outside_content`만 나열)라 빨강이 **정보량 0**이었다. ⓑ after 트리 없으면 타입 범례 미렌더.
+  ⓒ result 모드 제목 `Before → After`→`잔여`, 2단 그리드 해제(빈 오른쪽 절반 제거). 동결 CSS 토큰 무변경.
+  **DF6(신규) — 절대(루트-상대) 링크에서 두 엔진의 계약이 어긋난다.**
+  `migrate._EXTERNAL`은 `"/"`를 skip(F6 결정: 재작성 안 함)하는데, `gate.resolve`는 `(base.parent / "/src/x.md")`로
+  **파일시스템 절대경로**로 해석 → 없는 파일 → **broken**. 즉 사용자가 절대경로를 쓰면 재작성은 안 되는데
+  gate가 깨졌다고 한다. (실증: 합성 fixture로 확인.) 애초에 절대경로를 정본으로 못 쓰는 이유 = 마크다운/
+  CommonMark엔 repo 루트 개념이 없고, GitHub은 선행 `/`를 사이트 루트로, VSCode 프리뷰는 FS 루트로 해석해
+  **사람이 클릭하는 모든 경로에서 깨진다.** doc-상대만 GitHub·IDE·에이전트 셋 다에서 산다. 대가는 이사 시
+  재작성 필요 → 그게 `rewrite_links` + 두 오라클의 존재 이유.
+  **DF7(신규, 진단 실행가능성) — "repo-상대로 쓴 링크"를 별도 카테고리로.**
+  vd-front preexisting_broken 8건은 전부 저자가 repo-상대로 쓴 것이고, 타겟 5개 중 **4개가 repo 루트 기준으론
+  실재**한다. 지금 gate는 그냥 "broken"이라 말할 뿐이다. `doc-상대로는 깨짐 ∧ repo-루트 기준 실재` →
+  "저자가 repo-상대로 씀" 힌트 + 정확한 수정안(`../../src/...`) 제시. **고치지 않고 제안만**(비파괴).
+  **왜 깨진 링크를 굳이 재작성하나(설계 근거, 실증됨):** `rewrite_links`가 타겟 정체성을 보존하지 않으면,
+  `src/a/note.md`의 `[x](README.md)`(깨짐)가 `docs/note.md`로 이사한 뒤 **실재하는 `docs/README.md`에 조용히
+  재결합**되고 gate는 `broken=0`이라 아무도 모른다. 정체성 보존은 틀린 걸 틀린 채로 시끄럽게 남긴다 —
+  이중 경로(`../../src/.../work-plans/src/.../c00-gate.md`)의 못생김은 그 안전성의 대가다.
 - **▶️ 다음 작업 — 이 순서로 (2026-07-09 갱신: ①②③④ 완료):**
   아티팩트 자기설명 트랙은 **완료**. 증분 4 land_migration 엔진은 **origin/main 머지됨**(PR#10).
   **①트러블슈팅 1급 + ②disposition 하드닝도 이번 배치로 완료**(아래 🧭 블록). 현재 작업 브랜치 =
