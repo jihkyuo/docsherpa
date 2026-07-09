@@ -1,6 +1,7 @@
 # 0017. Troubleshooting을 1급 문서 타입으로 승격
 
-- 상태: 채택(2026-07-09)
+- 상태: 수락
+- 날짜: 2026-07-09
 - 관련: [0013](0013-prd-first-class-doc-type.md)(PRD 1급 선례) · [doc-type-templates 트랙](../specs/doc-type-templates/design.md)
 
 ## 맥락
