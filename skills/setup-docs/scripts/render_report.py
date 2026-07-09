@@ -243,7 +243,7 @@ TEMPLATE_CSS = r"""
   details.scaffold .sc-cols { display:grid; grid-template-columns:1fr 1fr; gap:var(--s3); padding:var(--s3) 0 0; }
   details.scaffold .sc-col { border:1px solid var(--line); border-radius:var(--r-sm); }
   details.scaffold .sc-col h4 { font-size:12px; font-weight:600; margin:0 0 var(--s2); color:var(--ink); }
-  details.scaffold .sc-col pre { max-height:56vh; }
+  details.scaffold .sc-col pre { max-height:56vh; overflow-y:auto; }
 
   @media (max-width:680px) {
     details.scaffold .sc-cols { grid-template-columns:1fr; }

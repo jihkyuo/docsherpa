@@ -39,6 +39,8 @@ AA_PAIRS = [
     ("--fail-ink", "--fail-soft", 4.5), ("--fail-ink", "--panel", 4.5),
     ("--pass-ink", "--pass-soft", 4.5),
     ("--pass-ink", "--panel", 4.5),
+    # 접이식 스캐폴딩(C2)이 --bg 위에 새로 노출하는 타입색(t-adr/t-howto/t-prd; t-spec=accent-ink는 위에 이미 있음)
+    ("--warn-ink", "--bg", 4.5), ("--pass-ink", "--bg", 4.5), ("--accent", "--bg", 4.5),
 ]
 
 def _tokens_for(theme: str) -> dict:
