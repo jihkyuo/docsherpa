@@ -24,8 +24,8 @@ def test_disposition_paths():
     assert scorecard.disposition("CHANGELOG.md") == "tooling"
     assert scorecard.disposition("docs/x.md") == "content"
     assert scorecard.disposition("src/a/docs/guide.md") == "content"
-    # 하위 폴더의 AGENTS.md는 router 아님(루트만)
-    assert scorecard.disposition("sub/AGENTS.md") == "content"
+    # 하위 폴더의 AGENTS.md도 router(DF2: 중첩 스코프 라우터, 제자리 skip)
+    assert scorecard.disposition("sub/AGENTS.md") == "router"   # DF2: 중첩 라우터 제자리 skip
 
 
 def test_outside_content_ignores_router_and_tooling():
@@ -113,42 +113,6 @@ def _judg(j1, j2, j3, j4):
     return _dims({"J1": j1, "J2": j2, "J3": j3, "J4": j4})
 
 
-def test_rollup_grade_A_all_pass():
-    m = _mech("pass", "pass", "pass", "pass", "pass")
-    j = _judg("pass", "pass", "pass", "pass")
-    assert scorecard.rollup(m, j, 0.0, True) == "A"
-
-
-def test_rollup_grade_B_one_j_warn():
-    m = _mech("pass", "pass", "pass", "pass", "pass")
-    j = _judg("warn", "pass", "pass", "pass")
-    assert scorecard.rollup(m, j, 0.0, True) == "B"
-
-
-def test_rollup_grade_C_j_fail_or_one_m_nonpass():
-    m = _mech("pass", "pass", "pass", "pass", "pass")
-    assert scorecard.rollup(m, _judg("fail", "pass", "pass", "pass"), 0.0, True) == "C"
-    m2 = _mech("pass", "warn", "pass", "pass", "pass")   # M2~M5 중 1개 비-pass
-    assert scorecard.rollup(m2, _judg("pass", "pass", "pass", "pass"), 0.0, True) == "C"
-
-
-def test_rollup_grade_D_many_m_nonpass_or_m5_fail():
-    m = _mech("pass", "fail", "fail", "fail", "pass")    # M2~M5 중 3개 비-pass
-    assert scorecard.rollup(m, _judg("pass", "pass", "pass", "pass"), 0.0, True) == "D"
-    m5f = _mech("pass", "pass", "pass", "pass", "fail")  # 대량 밖
-    assert scorecard.rollup(m5f, _judg("pass", "pass", "pass", "pass"), 0.0, True) == "D"
-
-
-def test_rollup_grade_D_and_F_on_reachability():
-    m = _mech("fail", "fail", "fail", "fail", "fail")
-    # 라우터 있으나 소수 고아 → D
-    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.2, True) == "D"
-    # 대부분 미도달 → F
-    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.7, True) == "F"
-    # 라우터 없음 → F
-    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.0, False) == "F"
-
-
 def test_counts_tally():
     m = _mech("pass", "fail", "warn", "pass", "pass")
     j = _judg("warn", "pass", "pass", "fail")
@@ -175,21 +139,23 @@ def test_assemble_shape_and_keys(tmp_path):
     files = ["AGENTS.md", "docs/_map.md", "docs/a.md"]
     j = _judg("pass", "pass", "pass", "pass")
     d = scorecard.assemble(tmp_path, files, j)
-    assert set(d) >= {"repo", "grade", "counts", "scorecard", "trees", "posture"}
+    assert set(d) >= {"repo", "counts", "scorecard", "trees", "posture"}
+    assert "grade" not in d          # ADR 0020: 등급 폐기 — 승인 아티팩트에 거짓말 금지
     assert set(d["repo"]) == {"name", "docs_count", "branch"}
     assert d["repo"]["docs_count"] == 3
-    assert d["grade"] == {"current": "A", "target": "A"}
     assert d["scorecard"]["mechanical"] and d["scorecard"]["judgment"]
     assert "before" in d["trees"]
     assert d["posture"] == "HEALTHY"
 
 
-def test_assemble_before_tree_marks_stray(tmp_path):
+def test_assemble_before_tree_files_uncolored(tmp_path):
+    # 파일 클래스는 색 없음(None) — 색은 타입 인코딩용으로 예약됨. "stray"=빨강을 쓰면
+    # troubleshooting 타입색(fail-ink)과 충돌해 범례가 거짓말을 하게 된다.
     _healthy_repo(tmp_path)
     files = ["AGENTS.md", "docs/a.md", "api-help.md"]
     d = scorecard.assemble(tmp_path, files, _judg("warn", "pass", "pass", "pass"))
     lines = d["trees"]["before"]["lines"]
-    assert ["api-help.md", "stray"] in lines
+    assert ["api-help.md", None] in lines
 
 
 def test_assemble_feeds_render_report_without_keyerror(tmp_path):
@@ -209,7 +175,7 @@ def test_assemble_feeds_render_report_without_keyerror(tmp_path):
     assert d["repo"]["name"] in html
 
 
-def test_main_with_judgment_and_manifest_returns_grade_json(tmp_path, capsys):
+def test_main_with_judgment_and_manifest_returns_json(tmp_path, capsys):
     _healthy_repo(tmp_path)
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps([]), encoding="utf-8")
@@ -223,8 +189,8 @@ def test_main_with_judgment_and_manifest_returns_grade_json(tmp_path, capsys):
 
     assert rc == 0
     data = json.loads(capsys.readouterr().out)
-    assert set(data) >= {"repo", "grade", "scorecard"}
-    assert data["grade"]["target"] == "A"
+    assert set(data) >= {"repo", "scorecard"}
+    assert "grade" not in data
     j_codes = {d["code"] for d in data["scorecard"]["judgment"]}
     assert j_codes == {"J1", "J2", "J3", "J4"}
 
@@ -255,3 +221,43 @@ def test_disposition_root_convention_case_insensitive():
     assert scorecard.disposition("readme.md") == "tooling"
     assert scorecard.disposition("README.md") == "tooling"
     assert scorecard.disposition("Changelog.MD") == "tooling"
+
+
+def test_disposition_nested_readme_is_inplace_tooling():
+    # DF1: 코드-인접 README는 outside_content(M5)에도 안 잡힌다(중앙집중 대상 아님)
+    assert scorecard.disposition("src/x/mocks/README.md") == "tooling"
+    assert scorecard.outside_content(["src/x/mocks/README.md", "notes.md"]) == ["notes.md"]
+
+
+def test_outside_content_counts_buried_docs_index_readme():
+    # 리뷰 픽스: 매몰된 docs 트리의 README(인덱스)는 content이므로 M5(outside_content)가
+    # 진단상 정직하게 잡아야 한다 — tooling으로 숨어서 안 세는 건 소실 신호를 죽인다.
+    assert scorecard.outside_content(
+        ["src/a/docs/README.md", "src/a/mocks/README.md"]
+    ) == ["src/a/docs/README.md"]
+
+
+def test_before_tree_is_nested_scaffolding_not_flat():
+    files = ["src/features/custom/shared/docs/a.md",
+             "src/features/custom/shared/docs/b.md",
+             "api-help.md"]
+    t = scorecard._before_tree(files)
+    texts = [line[0] for line in t["lines"]]
+    # 중첩: 상위 폴더 라인(src/·features/ 등)이 개수와 함께 존재(평면이면 없음)
+    assert any(s.strip().startswith("src/") and "(" in s for s in texts)
+    assert any(s.strip().startswith("docs/") and "(" in s for s in texts)
+    # 파일·폴더 모두 무색(색은 타입 인코딩 전용 — troubleshooting과 충돌 방지)
+    assert all(cls is None for _txt, cls in t["lines"])
+    # 들여쓰기(중첩) 존재
+    assert any(s.startswith("  ") for s in texts)
+
+
+def test_assemble_emits_structured_orphan_count(tmp_path):
+    # 고아 문서(라우터에서 도달 불가)가 있는 repo → orphans 정수 방출
+    (tmp_path / "AGENTS.md").write_text("# router\n", encoding="utf-8")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "orphan.md").write_text("# not linked\n", encoding="utf-8")
+    files = ["AGENTS.md", "docs/orphan.md"]
+    d = scorecard.assemble(tmp_path, files, _judg("fail", "pass", "pass", "pass"))
+    assert isinstance(d["orphans"], int)
+    assert d["orphans"] == 1

@@ -22,3 +22,8 @@
 | [0014](0014-setup-docs-diagnosis-driven-proposal.md) | setup-docs 진단-주도 제안 모델 — 4자세·루프 필수화·MESSY 경량 차선(§7 opt-in 정정) | 수락 | 2026-07-07 |
 | [0015](0015-doc-health-module-extraction.md) | doc-health 독립 스킬 추출 — 전용 scripts·gate.analyze 재사용·판단은 산문(H1~H3) | 수락 | 2026-07-08 |
 | [0016](0016-inventory-respect-gitignore.md) | 탐색 분모는 .gitignore 존중(레포 선언 위임·git-optional) — 외부 플러그인 스크래치 자동 제외 | 수락 | 2026-07-08 |
+| [0017](0017-troubleshooting-first-class-doc-type.md) | Troubleshooting 1급 문서 타입 승격(전용 홈 `docs/troubleshooting/`·knowledge.md 부분 supersede) | 수락 | 2026-07-09 |
+| [0018](0018-disposition-in-place-classes.md) | 코드-인접 README·중첩 라우터 = "제자리(in-place)" 클래스 — 문서-건강 우주 밖(M5·orphan 면제 명문화) | 수락 | 2026-07-09 |
+| [0019](0019-freeze-heavy-lane-and-renderer.md) | 무거운 차선·아티팩트 렌더러 기능 동결 — 새 타입·색·차원 금지, 에너지를 자가성장으로 | 수락 | 2026-07-09 |
+| [0020](0020-drop-letter-grade.md) | A~F 등급 폐기 — 판단을 코드로 박제 금지(0018 트레이드오프 근거 부분 supersede) | 수락 | 2026-07-09 |
+| [0021](0021-parity-experiment-control-group.md) | parity 실험 — 원형 프로토타입은 대조군(스캐폴드 금지), DESIGN §9-4 순서 정정 | 수락 | 2026-07-09 |

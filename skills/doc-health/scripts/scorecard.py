@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""문서 건강 점수표 — doc-health 채점(기계 차원 M1~M5 + 등급 rollup).
+"""문서 건강 점수표 — doc-health 채점(기계 차원 M1~M5).
 
 도달성은 gate.analyze 재사용(단일 엔진 = 정합성). disposition(H1)으로 M5 분모 결정.
 J1~J4 판단·분류·자세 하위는 SKILL.md 절차(코드 아님).
@@ -16,10 +16,8 @@ if str(_SHARED) not in sys.path:
 import gate                        # noqa: E402
 from contract import disposition   # noqa: E402
 
-# --- 임계값 (🔴 열린질문 — 하드닝 루프 튜닝, spec §3c) -------------------------
+# --- 임계값 -------------------------------------------------------------------
 M5_WARN_MAX = 3       # docs/ 밖 content 1~3 = warn, 초과 = fail
-ORPHAN_MOST = 0.5     # orphan_ratio >= 이 값이면 "대부분 미도달"(F)
-J_WARN_MAX = 2        # J warn 1~2 = B 유지, 초과 = C
 GREENFIELD_MAX = 2    # content 문서 이하 + 라우터 없음 = GREENFIELD
 
 
@@ -65,52 +63,26 @@ def machine_dims(res, files):
     m4 = "pass" if _m4_loop_ok(root) else "fail"
     m5 = _m5_status(files)
     outside = outside_content(files)
+    # kind: "필수"=능력(도구 무관 실제 문서 건강) · "채택도"=docsherpa 특정 부품 설치 여부(선택).
+    # (D4보강: 자체 등가물 보유자가 오해 없게 라벨로 구분.)
     return [
-        {"code": "M1", "name": "도달성", "status": m1,
-         "sub": f"broken={len(res.broken)} · orphan={len(res.orphans)}"},
-        {"code": "M2", "name": "라우터+마커", "status": m2,
-         "sub": ("라우터 없음" if not res.router_present
-                 else f"마커 home {n_home}개"
-                 + ("" if n_home == 1 else " (정확히 1 필요)"))},
-        {"code": "M3", "name": "맵 척추", "status": m3,
-         "sub": ("home=docs/_map.md" if m3 == "pass"
-                 else "척추 미분리(인라인 마커 또는 home≠1)")},
-        {"code": "M4", "name": "성장 루프", "status": m4,
-         "sub": ("prime·hook·doc-reconcile 설치" if m4 == "pass"
-                 else "성장 루프 3종 중 누락")},
-        {"code": "M5", "name": "커버리지", "status": m5,
-         "sub": (f"docs/ 밖 content {len(outside)}건" if outside
+        {"code": "M1", "name": "라우터에서 모든 문서 도달", "kind": "필수", "status": m1,
+         "sub": (f"깨진 링크 {len(res.broken)}개 · 어디서도 안 걸리는 문서 {len(res.orphans)}개"
+                 if (res.broken or res.orphans) else "깨진 링크 0 · 고아 문서 0")},
+        {"code": "M2", "name": "진입 라우터 + 계약 마커 설치", "kind": "채택도", "status": m2,
+         "sub": ("진입 라우터(AGENTS.md/CLAUDE.md) 없음" if not res.router_present
+                 else f"마커 담은 인덱스 {n_home}개"
+                 + ("" if n_home == 1 else " (정확히 1개여야)"))},
+        {"code": "M3", "name": "문서 지도(맵)를 중추 문서로 분리", "kind": "채택도", "status": m3,
+         "sub": ("지도 = docs/_map.md (단일 소스)" if m3 == "pass"
+                 else "맵이 라우터에 인라인이거나 인덱스 home이 1개가 아님")},
+        {"code": "M4", "name": "코드 변경 시 문서 자동 갱신 장치 3종", "kind": "채택도", "status": m4,
+         "sub": ("세션 훅·prime·doc-reconcile 스킬 설치됨" if m4 == "pass"
+                 else "자동 갱신 3종(세션 훅·prime·doc-reconcile) 중 누락")},
+        {"code": "M5", "name": "모든 문서가 docs/ 아래(파묻힘 0)", "kind": "필수", "status": m5,
+         "sub": (f"docs/ 밖에 흩어진 content {len(outside)}건" if outside
                  else "docs/ 밖 content 0")},
     ]
-
-
-# --- 등급 rollup (결정론, 임계값 🔴 튜닝) --------------------------------------
-def rollup(mech, judg, orphan_ratio, router_present):
-    """9차원 상태 + 신호 → 등급 'A'..'F' (spec §3c 산식)."""
-    m = {d["code"]: d["status"] for d in mech}
-    if not router_present:
-        return "F"
-    if m["M1"] == "fail" and orphan_ratio >= ORPHAN_MOST:
-        return "F"
-    if m["M1"] == "fail":
-        return "D"
-    if m["M5"] == "fail":
-        return "D"
-    # 여기서 M1 == pass
-    m_nonpass = sum(1 for c in ("M2", "M3", "M4", "M5") if m[c] != "pass")
-    if m_nonpass >= 3:
-        return "D"
-    if m_nonpass >= 1:
-        return "C"
-    # M1~M5 전부 pass
-    js = [d["status"] for d in judg]
-    j_fail = sum(1 for s in js if s == "fail")
-    j_warn = sum(1 for s in js if s == "warn")
-    if j_fail or j_warn > J_WARN_MAX:
-        return "C"
-    if 1 <= j_warn <= J_WARN_MAX:
-        return "B"
-    return "A"
 
 
 def counts(mech, judg):
@@ -142,13 +114,40 @@ def _git_branch(root):
     return txt[len(prefix):] if txt.startswith(prefix) else txt[:8]
 
 
+def _nested_lines(paths):
+    """repo-상대 경로들 → 중첩 폴더 트리 lines. 폴더=[text(개수),None]·파일=[text,None].
+    파일 무색: 색은 타입 인코딩 전용으로 예약(범례 fail-ink=troubleshooting과 충돌 방지)."""
+    root = {}
+    for p in sorted(paths):
+        parts = p.split("/")
+        node = root
+        for seg in parts[:-1]:
+            node = node.setdefault(seg, {})
+        node.setdefault("__f__", []).append(parts[-1])
+
+    def count(n):
+        c = len(n.get("__f__", []))
+        for k, v in n.items():
+            if k != "__f__":
+                c += count(v)
+        return c
+
+    lines = []
+
+    def walk(node, pre):
+        for d in sorted(k for k in node if k != "__f__"):
+            lines.append([f"{pre}{d}/  ({count(node[d])})", None])
+            walk(node[d], pre + "  ")
+        for fn in sorted(node.get("__f__", [])):
+            lines.append([f"{pre}{fn}", None])
+
+    walk(root, "")
+    return lines
+
+
 def _before_tree(files):
     outside = outside_content(files)
-    lines = []
-    if any(Path(f).parts[0] == "docs" for f in files):
-        lines.append(["docs/", None])
-    for f in outside[:12]:
-        lines.append([f, "stray"])
+    lines = _nested_lines(outside)
     sub = (f"docs/ 밖 흩어짐 · content {len(outside)}건" if outside
            else "docs/ 중심")
     return {"title": "현재 구조", "tag": "지금", "sub": sub, "lines": lines}
@@ -162,17 +161,15 @@ def assemble(root, files, judgment, inventory=None):
             f"judgment must assess all 4 dims (J1-J4); got codes {sorted(j_codes)}")
     res = gate.analyze(root)
     mech = machine_dims(res, files)
-    orphan_ratio = (len(res.orphans) / len(res.all_docs)) if res.all_docs else 0.0
-    grade = rollup(mech, judgment, orphan_ratio, res.router_present)
     out = {
         "repo": {"name": Path(root).resolve().name,
                  "docs_count": len(files),
                  "branch": _git_branch(root)},
-        "grade": {"current": grade, "target": "A"},
         "counts": counts(mech, judgment),
         "scorecard": {"mechanical": mech, "judgment": judgment},
         "trees": {"before": _before_tree(files)},
         "posture": posture_hint(res, files, mech),
+        "orphans": len(res.orphans),
     }
     if inventory is not None:
         out["inventory"] = inventory
@@ -187,7 +184,7 @@ def main(argv=None):
     ap.add_argument("--manifest", help="분류 매니페스트 JSON([{path,type,...}])")
     ap.add_argument("--judgment", required=True,
                      help="J1~J4 판단 차원 JSON([{code,name,sub,status}]) — "
-                          "9차원(M1~M5+J1~J4) 전부 평가해야 정직한 등급이므로 필수")
+                          "9차원(M1~M5+J1~J4)을 전부 평가해야 점수표가 정직하므로 필수")
     args = ap.parse_args(argv)
 
     import inventory as _inv

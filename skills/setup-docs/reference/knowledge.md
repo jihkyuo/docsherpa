@@ -14,7 +14,7 @@
 2. **단일 정본 진입 라우터**[🟢]: `AGENTS.md` 정본(최광 호환) + `CLAUDE.md`=`@AGENTS.md`. 라우터 = 항시룰 + 린 인덱스 + 라우팅룰.
 3. **도달성 불변식**[🟡]: 모든 문서가 진입→링크→도달(고아 0). **몇 홉인지는 무관**(*1홉 vs 멀티홉 최적* = 🔴).
 4. **폴더 승격 규칙**[🟡]: "**함께 읽혀야 할 ≥2개**(co-change locality)"일 때만 `docs/<topic>/`. 디폴트 평면. 단순 같은 주제가 아니라 *서로 의존해 같이 봐야* 할 때. (*토픽 vs 타입* 디폴트 = 🔴)
-5. **Diátaxis = 인덱스 렌즈, 폴더 아님**[🟡]: tutorial/how-to/reference/explanation은 커버리지 점검 사고틀이지 물리 폴더 아님. (사람 문서엔 권위, **Claude 공식 아님**)
+5. **Diátaxis = 인덱스 렌즈, 폴더 아님**[🟡]: tutorial/how-to/reference/explanation은 커버리지 점검 사고틀이지 물리 폴더 아님. (사람 문서엔 권위, **Claude 공식 아님**) — **예외: troubleshooting은 1급 타입으로 전용 폴더 `docs/troubleshooting/`에 식별한다(ADR 0017 — how-to와 구별 필요).**
 
 ---
 
@@ -24,10 +24,10 @@
 |---|---|---|---|
 | **ADR** | **왜** 결정했나 | 근거, append-only | `decisions/` |
 | **Rule/컨벤션** | **항상** 무엇을 | 선제 제약, 상시 로드 | `AGENTS.md` |
-| **Troubleshooting** | 깨졌을 때 **무엇을** | **반응적 복구 — 절차(명령·진단·복구)** | `how-to/` |
+| **Troubleshooting** | 깨졌을 때 **무엇을** | **반응적 복구 — 절차(명령·진단·복구)**, 1급 타입(ADR 0017) | `troubleshooting/` |
 | **Status/한계** | **지금** 뭐가 안 됐나 | 현황 | `ROADMAP`류 |
 
-- ⚠️ **Troubleshooting은 절차여야 한다.** symptom→link뿐이면 Status로 붕괴 → **링크-전용 트러블슈팅 문서 만들지 마라.** 증상 alias는 주인 문서(한계 목록·개념 함정)에 넣고, `how-to/`는 실제 절차가 생길 때 졸업.
+- ⚠️ **Troubleshooting은 절차여야 한다.** symptom→link뿐이면 Status로 붕괴 → **링크-전용 트러블슈팅 문서 만들지 마라.** 증상 alias는 주인 문서(한계 목록·개념 함정)에 넣고, `troubleshooting/`은 실제 절차가 생길 때 졸업. (1급 승격 후에도 유지되는 핵심 가드 — ADR 0017.)
 - **"Troubleshooting → Rule 졸업"** 은 *반복 + 비쌈 + 예방가능* 3조건일 때만(아니면 사후 서사).
 
 ---

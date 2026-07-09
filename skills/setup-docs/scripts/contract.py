@@ -30,11 +30,13 @@ def disposition(rel_path):
     if not parts:
         return "content"
     name = parts[-1]
-    if len(parts) == 1 and name in ENTRY_FILENAMES:
+    if name in ENTRY_FILENAMES:                 # DF2: 라우터는 어느 깊이든 라우터(중첩 CLAUDE.md 제자리 skip)
         return "router"
     if parts[0] in _TOOLING_DIRS:
         return "tooling"
     if len(parts) == 1 and name.lower() in _ROOT_CONVENTION:
+        return "tooling"
+    if name.lower() == "readme.md" and "docs" not in [p.lower() for p in parts[:-1]]:   # DF1: 코드-인접 README만 제자리(docs 트리의 인덱스는 문서로 이동, 부모 세그먼트 검사도 대소문자 무시)
         return "tooling"
     return "content"
 

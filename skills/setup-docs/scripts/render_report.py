@@ -76,23 +76,11 @@ TEMPLATE_CSS = r"""
   h2.sec::after { content:""; flex:1; height:1px; background:var(--line); }
   .sec-intro { font-size:12.5px; color:var(--muted); margin:0 2px var(--s3); }
 
-  /* grade header */
+  /* hero */
   .hero { padding:var(--s5) var(--s5) var(--s4); }
   .hero-title { font-size:11px; font-family:var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 var(--s5); text-align:center; }
-  .scale { display:flex; align-items:center; justify-content:center; max-width:500px; margin:0 auto; padding-bottom:22px; }
-  .scale .seg { flex:1; min-width:10px; height:2px; background:var(--line-strong); }
-  .tick { font-family:var(--mono); font-weight:700; display:grid; place-items:center; flex:none; }
-  .tick.mid { width:28px; height:28px; font-size:13px; color:var(--faint); }
-  .tick.cur, .tick.tgt { width:54px; height:54px; font-size:28px; border-radius:12px; position:relative; }
-  .tick.cur { color:var(--fail-ink); background:var(--fail-soft); border:2px solid var(--fail); }
-  .tick.tgt { color:var(--pass-ink); background:var(--pass-soft); border:2px solid var(--pass); }
-  .tick .cap { position:absolute; bottom:-20px; left:-12px; right:-12px; text-align:center; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.03em; }
-  .tick.cur .cap { color:var(--fail-ink); }
-  .tick.tgt .cap { color:var(--pass-ink); }
   .explain { max-width:660px; margin:0 auto var(--s5); text-align:center; font-size:14px; line-height:1.65; color:var(--muted); text-wrap:pretty; }
   .explain b { color:var(--ink); }
-  .explain b.f { color:var(--fail-ink); }
-  .explain b.a { color:var(--pass-ink); }
   .legend { display:flex; justify-content:center; flex-wrap:wrap; gap:var(--s5); border-top:1px solid var(--line); padding-top:var(--s4); }
   .lg { display:flex; align-items:center; gap:7px; font-size:12.5px; }
   .lg .cnt { font-family:var(--mono); font-weight:700; font-size:14px; }
@@ -192,13 +180,71 @@ TEMPLATE_CSS = r"""
 
   .foot { margin-top:var(--s4); text-align:center; font-family:var(--mono); font-size:10.5px; color:var(--faint); letter-spacing:.03em; }
 
+  /* D4 kind tag — 필수(능력) vs 채택도(docsherpa 준수) */
+  .kind { font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:.04em; font-weight:700; padding:1px 6px; border-radius:5px; margin-left:6px; white-space:nowrap; }
+  .kind.req { background:var(--accent-soft); color:var(--accent-ink); }
+  .kind.opt { background:var(--panel-2); color:var(--faint); border:1px solid var(--line); }
+
+  /* D6 마이그레이션 집약뷰(타입별) — 텍스트막대(인라인 style 0) */
+  .mig-agg { display:grid; gap:var(--s2); padding:var(--s4); }
+  .mig-grp { display:grid; grid-template-columns:minmax(130px,1.3fr) minmax(90px,auto) minmax(150px,1.4fr); gap:var(--s3); align-items:center; padding:var(--s2) var(--s3); border:1px solid var(--line); border-left:3px solid var(--line-strong); border-radius:var(--r-sm); background:var(--panel-2); }
+  .mig-grp.tc-adr { border-left-color:var(--warn-ink); }
+  .mig-grp.tc-spec { border-left-color:var(--accent); }
+  .mig-grp.tc-howto { border-left-color:var(--pass); }
+  .mig-grp.tc-prd { border-left-color:var(--accent-ink); }
+  .mig-grp.tc-flat { border-left-color:var(--line-strong); }
+  .mig-grp.tc-troubleshooting { border-left-color:var(--fail-ink); }
+  .mig-grp .gname { font-size:12.5px; font-weight:600; color:var(--ink); min-width:0; }
+  .mig-grp .gname .gsub { font-family:var(--mono); font-size:10px; color:var(--faint); display:block; margin-top:1px; }
+  .mig-grp .gbar { font-family:var(--mono); font-size:11px; letter-spacing:-1px; white-space:nowrap; color:var(--accent); }
+  .mig-grp .gbar .cnt { color:var(--ink); font-weight:700; letter-spacing:0; margin-left:6px; font-size:12px; }
+  .mig-grp .gdest { font-family:var(--mono); font-size:11px; color:var(--muted); word-break:break-all; }
+  .mig-head { font-size:13px; margin:0 0 var(--s3); color:var(--ink); }
+  .mig-head .win { color:var(--pass-ink); }
+  .mig-head .ok { color:var(--muted); }
+  .callout { margin:var(--s3) var(--s4) 0; padding:var(--s3) var(--s4); border:1px solid var(--fail); border-left:3px solid var(--fail); border-radius:var(--r-sm); background:var(--fail-soft); }
+  .callout .ct { font-size:12px; font-weight:700; color:var(--fail-ink); margin:0 0 var(--s2); }
+  .callout ul { margin:0; padding-left:18px; }
+  .callout li { font-size:11.5px; color:var(--ink); margin:3px 0; }
+  .callout li .path { font-family:var(--mono); color:var(--fail-ink); }
+
+  /* D3 트리 폴더=타입색(파일 무색) + 접이식 전체보기 */
+  .tree .t-adr { color:var(--warn-ink); font-weight:600; }
+  .tree .t-spec { color:var(--accent-ink); font-weight:600; }
+  .tree .t-howto { color:var(--pass-ink); font-weight:600; }
+  .tree .t-prd { color:var(--accent); font-weight:600; }
+  .tree .t-troubleshooting { color:var(--fail-ink); font-weight:600; }
+  .tree .t-legacy { color:var(--faint); }
+  .tree .t-dir { color:var(--ink); font-weight:600; }
+  details.full { margin:var(--s3) var(--s4) 0; border-top:1px solid var(--line); padding-top:var(--s3); }
+  details.full > summary { font-family:var(--mono); font-size:11px; color:var(--accent-ink); cursor:pointer; font-weight:600; list-style:none; }
+  details.full > summary::-webkit-details-marker { display:none; }
+  details.full > summary::before { content:"\25B8  "; }
+  details.full[open] > summary::before { content:"\25BE  "; }
+  .tkey { display:flex; flex-wrap:wrap; gap:var(--s2) var(--s4); padding:var(--s3) var(--s4) 0; font-size:11px; color:var(--muted); }
+  .tkey span { display:inline-flex; align-items:center; gap:5px; }
+  .tkey b { font-family:var(--mono); font-weight:700; }
+  .tkey .k-adr { color:var(--warn-ink); } .tkey .k-spec { color:var(--accent-ink); }
+  .tkey .k-howto { color:var(--pass-ink); } .tkey .k-prd { color:var(--accent); }
+  .tkey .k-troubleshooting { color:var(--fail-ink); }
+  .tkey .k-legacy { color:var(--faint); }
+
+  details.scaffold { margin:var(--s4) 0 0; }
+  details.scaffold summary { cursor:pointer; font-size:12px; color:var(--muted); }
+  details.scaffold .sc-cols { display:grid; grid-template-columns:1fr 1fr; gap:var(--s3); padding:var(--s3) 0 0; }
+  details.scaffold .sc-col { border:1px solid var(--line); border-radius:var(--r-sm); }
+  details.scaffold .sc-col h4 { font-size:12px; font-weight:600; margin:0 0 var(--s2); color:var(--ink); }
+  details.scaffold .sc-col pre { max-height:56vh; overflow-y:auto; }
+
   @media (max-width:680px) {
+    details.scaffold .sc-cols { grid-template-columns:1fr; }
     .hero { padding:var(--s4); }
     .trees { grid-template-columns:1fr; }
     .tree.a { border-right:none; border-bottom:1px solid var(--line); }
     .dim { grid-template-columns:1fr; }
     .choices { grid-template-columns:1fr; }
     .vs { display:none; }
+    .mig-grp { grid-template-columns:1fr; gap:var(--s1); }
   }
 """
 
@@ -218,18 +264,11 @@ def _render_masthead(data: dict) -> str:
 
 
 def _render_hero(data: dict) -> str:
-    g = data["grade"]; c = data["counts"]
+    c = data["counts"]
     return (
       '<div class="card hero">'
-      '<p class="hero-title">문서 아키텍처 건강 등급</p>'
-      '<div class="scale" role="img" aria-label="등급 스케일 F부터 A까지. 현재/목표 표시.">'
-      f'<span class="tick cur">{esc(g["current"])}<span class="cap">현재</span></span>'
-      '<span class="seg"></span><span class="tick mid">D</span>'
-      '<span class="seg"></span><span class="tick mid">C</span>'
-      '<span class="seg"></span><span class="tick mid">B</span>'
-      f'<span class="seg"></span><span class="tick tgt">{esc(g["target"])}<span class="cap">목표</span></span>'
-      '</div>'
-      f'<p class="explain">9개 진단 차원 중 <b>{c["pass"]}개</b>만 충족 → 목표 <b class="a">{esc(g["target"])}등급</b>.</p>'
+      '<p class="hero-title">문서 아키텍처 건강</p>'
+      f'<p class="explain">{c["fail"] + c["warn"] + c["pass"]}개 진단 차원 중 <b>{c["pass"]}개</b> 충족.</p>'
       '<div class="legend">'
       f'<div class="lg on-fail"><span class="chip fail">미달</span><span class="cnt">{c["fail"]}</span><span class="gl">기준 미충족</span></div>'
       f'<div class="lg on-warn"><span class="chip warn">부분</span><span class="cnt">{c["warn"]}</span><span class="gl">일부만 충족</span></div>'
@@ -239,10 +278,14 @@ def _render_hero(data: dict) -> str:
 
 
 _LABEL = {"fail": "미달", "warn": "부분", "pass": "통과"}
+_KIND_CLS = {"필수": "req", "채택도": "opt"}
 def _dim(d: dict) -> str:
     st = d["status"]
+    kind = d.get("kind")
+    kind_tag = (f'<span class="kind {_KIND_CLS.get(kind, "opt")}">{esc(kind)}</span>'
+                if kind else "")
     return (f'<div class="dim d-{st}"><div><div class="name">{esc(d["name"])}'
-            f'<span class="code">{esc(d["code"])}</span></div>'
+            f'<span class="code">{esc(d["code"])}</span>{kind_tag}</div>'
             f'<div class="sub">{esc(d["sub"])}</div></div>'
             f'<span class="chip {st}">{_LABEL[st]}</span></div>')
 
@@ -252,6 +295,9 @@ def _render_scorecard(data: dict) -> str:
     j = "".join(_dim(x) for x in sc["judgment"])
     return ('<section aria-labelledby="sc"><h2 class="sec" id="sc">진단 점수표 '
             '<span class="n">현재 상태</span></h2>'
+            '<p class="sec-intro"><b>필수</b> = 도구와 무관한 실제 문서 건강(도달성·커버리지). '
+            '<b>채택도</b> = docsherpa 특정 장치(라우터 마커·맵 척추·자동 갱신) 설치 여부 — '
+            '자체 등가물이 있으면 “미달”이라도 실제 결함이 아닐 수 있습니다.</p>'
             f'<p class="grp">기계 채점</p><div class="grid">{m}</div>'
             f'<p class="grp">판단 채점</p><div class="grid">{j}</div></section>')
 
@@ -262,21 +308,82 @@ def _tree_pre(lines) -> str:
         out.append(f'<span class="{cls}">{esc(text)}</span>' if cls else esc(text))
     return "\n".join(out)
 
-def _tree(side: dict, which: str) -> str:
+_SCAFFOLD_TYPECLS = {"product": "t-prd", "specs": "t-spec",
+                     "decisions": "t-adr", "how-to": "t-howto",
+                     "troubleshooting": "t-troubleshooting"}
+def _scaffold_lines(paths, colored):
+    """flat 경로 리스트 → 중첩 트리 lines([[text, cls], ...]), 절단 없음(전체 파일).
+    colored=True면 docs/<type>/ 폴더를 타입색 클래스로(after 측). 파일·기타 폴더는 무색."""
+    tree = {}
+    for p in paths:
+        parts = p.split("/")
+        node = tree
+        for d in parts[:-1]:
+            node = node.setdefault(d, {})
+        node.setdefault("__f__", []).append(parts[-1])
+    lines = []
+    def walk(node, prefix, pathparts):
+        for d in sorted(k for k in node if k != "__f__"):
+            full = pathparts + [d]
+            cls = None
+            if colored and len(full) >= 2 and full[0] == "docs":
+                cls = _SCAFFOLD_TYPECLS.get(full[1])
+            lines.append([prefix + d + "/", cls])
+            walk(node[d], prefix + "  ", full)
+        for fn in sorted(node.get("__f__", [])):
+            lines.append([prefix + fn, None])
+    walk(tree, "", [])
+    return lines
+
+def _tree(side: dict, which: str, side_cls: str = None) -> str:
+    """side_cls=""면 2단 그리드용 열 클래스(a=좌·구분선/b=우)를 붙이지 않는다(단독 pane)."""
     tagcls = "now" if which == "before" else "tgt"
-    return (f'<div class="tree {"a" if which=="before" else "b"}">'
+    if side_cls is None:
+        side_cls = "a" if which == "before" else "b"
+    cls = f"tree {side_cls}".rstrip()
+    return (f'<div class="{cls}">'
             f'<h3>{esc(side["title"])} <span class="htag {tagcls}">{esc(side["tag"])}</span></h3>'
             f'<div class="st">{esc(side["sub"])}</div>'
             f'<pre>{_tree_pre(side["lines"])}</pre></div>')
 
 def _render_trees(data: dict) -> str:
     t = data["trees"]
-    return ('<section aria-labelledby="tr"><h2 class="sec" id="tr">문서 구조 '
-            '<span class="n">Before → After</span></h2>'
-            f'<div class="card trees">{_tree(t["before"],"before")}{_tree(t["after"],"after")}</div>'
-            '<div class="key"><span><span class="sw stray"></span>산재·문제</span>'
-            '<span><span class="sw new"></span>신설</span>'
-            '<span><span class="sw grp"></span>폴더</span></div></section>')
+    mig = data.get("migration") or []
+    scaffold = ""
+    if mig:
+        before_lines = _scaffold_lines([r["src"] for r in mig], False)
+        after_lines = _scaffold_lines([r["dest"] for r in mig], True)
+        scaffold = (
+            '<details class="full scaffold"><summary>전체 파일 스캐폴딩 펼치기 '
+            '(Before → After · 타입색)</summary><div class="sc-cols">'
+            '<div class="tree sc-col"><h4>현재 (원본 위치 — 파묻힘)</h4>'
+            f'<pre>{_tree_pre(before_lines)}</pre></div>'
+            '<div class="tree sc-col"><h4>정리 후 (타입별)</h4>'
+            f'<pre>{_tree_pre(after_lines)}</pre></div>'
+            '</div></details>')
+    has_after = bool(t.get("after"))
+    after = f'{_tree(t["after"],"after")}' if has_after else ""
+    intro = ('왼쪽 = 지금(docs/ 밖 흩어짐), 오른쪽 = 정리 후. 오른쪽 폴더 색 = 문서 타입(아래 범례). '
+              '파일은 무색 — 색은 “어느 타입 폴더에 모였나”를 뜻합니다.' if has_after
+              else 'docs/ 밖에 남아 있는 문서입니다. 폴더 옆 숫자는 그 아래 문서 수.')
+    tkey = (
+        '<div class="tkey"><span><b class="k-prd">■</b> 제품요구(PRD)</span>'
+        '<span><b class="k-spec">■</b> 명세(spec)</span>'
+        '<span><b class="k-adr">■</b> 결정(ADR)</span>'
+        '<span><b class="k-howto">■</b> 작업 절차·복구(how-to)</span>'
+        '<span><b class="k-troubleshooting">■</b> 문제 해결(troubleshooting)</span>'
+        '<span><b class="k-legacy">■</b> 동결(legacy)</span></div>'
+    ) if has_after else ""
+    # after 트리가 없으면(result 모드) 2단 그리드를 쓰지 않는다 — 빈 오른쪽 절반과
+    # "Before → After" 제목은 있지도 않은 pane을 약속하는 자기설명 결함이다.
+    kicker = "Before → After" if has_after else "잔여"
+    card_cls = "card trees" if has_after else "card"
+    before = _tree(t["before"], "before", None if has_after else "")
+    return (f'<section aria-labelledby="tr"><h2 class="sec" id="tr">문서 구조 '
+            f'<span class="n">{kicker}</span></h2>'
+            f'<p class="sec-intro">{intro}</p>'
+            f'<div class="{card_cls}">{before}{after}</div>'
+            f'{tkey}{scaffold}</section>')
 
 
 _BADGE = {"move": '<span class="badge move">move</span>',
@@ -291,15 +398,70 @@ def _mig_row(r: dict) -> str:
     return (f'<tr><td class="path">{esc(r["src"])}<br>→ '
             f'<span class="dest">{esc(r["dest"])}</span></td><td>{ops}</td>{imp}</tr>')
 
+_TYPE_GROUP = {   # docs/ 아래 1단계 폴더 → (표시명, tc-클래스)
+    "decisions": ("결정 기록 (ADR)", "tc-adr"),
+    "specs": ("명세 (spec)", "tc-spec"),
+    "how-to": ("작업 절차·복구 (how-to)", "tc-howto"),
+    "troubleshooting": ("문제 해결 (troubleshooting)", "tc-troubleshooting"),
+    "product": ("제품 요구 (PRD)", "tc-prd"),
+}
+def _mig_group_key(dest: str):
+    parts = dest.split("/")            # docs/<folder>/... 또는 docs/<file>
+    if len(parts) >= 3 and parts[0] == "docs":
+        return parts[1]
+    return "_flat"
+
+def _bar(count: int, mx: int) -> str:
+    n = max(1, round(count / mx * 10)) if mx else 0
+    return "█" * n + "░" * (10 - n)
+
 def _render_migration(data: dict) -> str:
-    rows = "".join(_mig_row(r) for r in data["migration"])
+    mig = data["migration"]
+    groups = {}
+    for r in mig:
+        groups.setdefault(_mig_group_key(r["dest"]), []).append(r)
+    mx = max((len(v) for v in groups.values()), default=1)
+    order = ["product", "specs", "decisions", "how-to", "troubleshooting", "_flat"]
+    rows = []
+    for key in sorted(groups, key=lambda k: (order.index(k) if k in order else 99, k)):
+        items = groups[key]
+        name, tc = _TYPE_GROUP.get(key, ("조회·설명 (reference/explanation)", "tc-flat"))
+        # 목적지: 공통 폴더(specs는 feature별로 여러 개일 수 있으니 접두 폴더까지)
+        dests = sorted({("/".join(p["dest"].split("/")[:-1]) or "docs") for p in items})
+        dest_disp = dests[0] + ("" if len(dests) == 1 else f" 외 {len(dests)-1}")
+        rows.append(
+            f'<div class="mig-grp {tc}"><div class="gname">{esc(name)}'
+            f'<span class="gsub">{esc(key if key != "_flat" else "docs/ 직속")}</span></div>'
+            f'<div class="gbar" aria-hidden="true">{_bar(len(items), mx)}'
+            f'<span class="cnt">{len(items)}건</span></div>'
+            f'<div class="gdest">→ {esc(dest_disp)}/</div></div>')
+    ob, oa = data.get("orphans_before"), data.get("orphans_after")
+    orphan_seg = (f' · <b class="win">고아(미도달) {esc(ob)} → {esc(oa)}</b>'
+                  if ob is not None and oa is not None else "")
+    mig_head = (f'<div class="mig-head"><b>{len(mig)}개 옮김</b>{orphan_seg}'
+                f' · <span class="ok">전체 내용 그대로 보존(유실 0)</span></div>')
+    impacts = [r for r in mig if r.get("impact")]
+    callout = ""
+    if impacts:
+        lis = "".join(
+            f'<li><span class="path">{esc(r["src"].split("/")[-1])}</span> — {esc(r["impact"])}</li>'
+            for r in impacts)
+        callout = (f'<div class="callout"><p class="ct">▲ 옮기기 전 결정·조치할 것 '
+                   f'({len(impacts)}건)</p><ul>{lis}</ul></div>')
+    full = "".join(_mig_row(r) for r in mig)
     return ('<section aria-labelledby="mg"><h2 class="sec" id="mg">이동 계획 '
-            '<span class="n">per-doc · 유실 0</span></h2><div class="card"><div class="tbl-scroll">'
-            '<table><caption class="vh">문서별 이동 계획</caption>'
+            f'<span class="n">타입별 {len(groups)}묶음 · {len(mig)}개 문서 · 유실 0</span></h2>'
+            '<p class="sec-intro">문서를 타입별로 어디로 모으는지 요약입니다. '
+            '막대 = 문서 수(상대), 오른쪽 = 목적지 폴더. ▲는 옮기기 전에 당신이 정해야 할 것. '
+            '문서별 전체 목록은 아래 “전체 펼치기”.</p>'
+            f'<div class="card">{mig_head}<div class="mig-agg">{"".join(rows)}</div>{callout}'
+            '<details class="full"><summary>문서별 전체 이동 목록 펼치기</summary>'
+            '<div class="tbl-scroll"><table><caption class="vh">문서별 이동 계획</caption>'
             '<thead><tr><th scope="col">원본 → 목적지</th><th scope="col">연산</th>'
-            f'<th scope="col">주의</th></tr></thead><tbody>{rows}</tbody></table></div>'
+            f'<th scope="col">주의</th></tr></thead><tbody>{full}</tbody></table></div>'
             '<div class="tbl-key"><span><b>move</b> 이동</span><span><b>rename</b> 개명</span>'
-            '<span><b>frozen</b> 동결</span><span><b>▲</b> 이동 시 깨짐</span></div></div></section>')
+            '<span><b>frozen</b> 동결</span><span><b>▲</b> 이동 시 깨짐</span></div>'
+            '</details></div></section>')
 
 
 def _choice(c: dict) -> str:
@@ -340,18 +502,6 @@ def _render_summary(data: dict) -> str:
             f'성장 루프 {"설치" if s.get("loop_installed") else "미설치"}</div>'
             '</div></div></div></section>')
 
-def _render_grade_compare(before: str, after: str) -> str:
-    return (
-      '<div class="card hero">'
-      '<p class="hero-title">재진단 등급 변화 <span class="n">Phase 0 → Phase 4</span></p>'
-      '<div class="scale" role="img" aria-label="마이그레이션 전후 등급 대비.">'
-      f'<span class="tick cur">{esc(before)}<span class="cap">이전</span></span>'
-      '<span class="seg"></span>'
-      f'<span class="tick tgt">{esc(after)}<span class="cap">이후</span></span>'
-      '</div></div>'
-    )
-
-
 def _render_preexisting(items) -> str:
     rows = "".join(
         f'<li><span class="path">{esc(rel)}</span> → <span class="fnt">{esc(raw)}</span></li>'
@@ -371,11 +521,8 @@ def _render_main(data: dict, mode: str) -> str:
         parts += [_render_migration(data), _render_decisions(data)]
     else:
         parts.append(_render_summary(data))
-        s = data.get("summary") or {}
-        if "grade_before" in s and "grade_after" in s:
-            parts.append(_render_grade_compare(s["grade_before"], s["grade_after"]))
-        pre = data.get("preexisting_broken")
-        if pre:
-            parts.append(_render_preexisting(pre))
+    pre = data.get("preexisting_broken")
+    if pre:
+        parts.append(_render_preexisting(pre))
     parts.append('<p class="foot">docsherpa · setup-docs</p>')
     return "<main>" + "".join(parts) + "</main>"

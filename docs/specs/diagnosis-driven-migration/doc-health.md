@@ -5,7 +5,7 @@
 - 선행: [design.md](design.md) §4·§6(진단 상세)·§14 · [render_report 계획](../../plans/2026-07-07-render-report-renderer.md)(데이터 계약)
 - 파생 ADR(구현 시 신설): 모듈 분해(doc-health 추출)
 
-> **범위:** doc-health = **읽기 전용 진단 생산자.** 전체-repo 탐색 → 9차원 채점 → 등급 → 자세 →
+> **범위:** doc-health = **읽기 전용 진단 생산자.** 전체-repo 탐색 → 9차원 채점 → 자세 →
 > render_report가 먹는 데이터 모델 **부분집합**을 반환한다. 독립 실행(수시 건강검진) + setup-docs
 > Phase 0·4가 호출. **소비·변경(목표트리·마이그레이션·결정 패널)은 setup-docs 몫이지 여기 아님.**
 
@@ -13,7 +13,7 @@
 
 | # | 결정 | 근거 |
 |---|---|---|
-| H1 | **M5 분모 = 흩어진 content 문서만.** 라우터(AGENTS/CLAUDE/GEMINI)·도구(`.claude/`·`.github/`·`.cursor/`)·루트 관례(README·CONTRIBUTING·CHANGELOG·SECURITY·CODE_OF_CONDUCT)는 **accounted-but-not-violation**(제자리 유지). README 비대는 M5 아니라 J3. | 라우터·도구가 M5에 들면 등급 A 원천 불가 → 채점이 거짓말. "예외 없음 이동"은 *content 문서* 대상이지 라우터·도구·관례 파일 아님 |
+| H1 | **M5 분모 = 흩어진 content 문서만.** 라우터(AGENTS/CLAUDE/GEMINI)·도구(`.claude/`·`.github/`·`.cursor/`)·루트 관례(README·CONTRIBUTING·CHANGELOG·SECURITY·CODE_OF_CONDUCT)는 **accounted-but-not-violation**(제자리 유지). README 비대는 M5 아니라 J3. | 라우터·도구가 M5에 들면 M5 pass 원천 불가 → 채점이 거짓말. "예외 없음 이동"은 *content 문서* 대상이지 라우터·도구·관례 파일 아님 |
 | H2 | **doc-health 전용 `skills/doc-health/scripts/`.** 새 `inventory.py`·`scorecard.py`는 여기. `gate`·`contract`·`render_report`는 `setup-docs/scripts`에서 재사용(`conftest.py`가 `sys.path` 부트스트랩 → `import gate` 그대로). | 스킬 자립성. 재사용은 단일 채점기 유지(정합성) — 복제 금지 |
 | H3 | **`gate.analyze()` 외과적 추출.** `gate.main()`의 BFS 코어를 `analyze(root) → {broken, orphans, homes, all_docs, visited}`로 뽑고, `main()`은 그것을 호출+출력(CLI 바이트동일). scorecard가 재사용. | before/after 동일 채점기를 **코드 레벨**에서 보장(도달성 엔진 1개). 기존 gate 테스트가 회귀 방어 |
 
@@ -23,12 +23,12 @@
 skills/doc-health/
   SKILL.md                    # 에이전트 절차(탐색 디스패치·판단 J1~J4·데이터 dict 조립)
   reference/
-    scoring.md                # 9차원 루브릭·등급 산식·자세 정의(doc-health 고유)
+    scoring.md                # 9차원 루브릭·자세 정의(doc-health 고유)
                               #   판단 휴리스틱은 setup-docs/reference/knowledge.md 참조(단일 소스)
   scripts/
     conftest.py               # setup-docs/scripts를 sys.path에 부트스트랩(import gate/contract/render_report)
     inventory.py              # list(분모 산출) · check(매니페스트 커버 → unaccounted)
-    scorecard.py              # M1~M5 기계 채점 + disposition + 등급 rollup(gate.analyze 재사용)
+    scorecard.py              # M1~M5 기계 채점 + disposition(gate.analyze 재사용)
     test_inventory.py
     test_scorecard.py
 ```
@@ -53,7 +53,7 @@ inventory.py check [ROOT] --manifest m.json      # → unaccounted(목록에 있
 ### 2b. 병렬 분류 (SKILL.md 절차 — 코드 아님)
 
 design §6a 2단계. 목록을 슬라이스로 나눠 병렬 서브에이전트가 각 문서 판정 →
-`{path, type(ADR/spec/how-to/reference/PRD/legacy), role, coupling(코드참조·외부싱크·동결역사), summary}`.
+`{path, type(ADR/spec/how-to/troubleshooting/reference/PRD/legacy), role, coupling(코드참조·외부싱크·동결역사), summary}`.
 판단이라 **코드로 박제하지 않는다**(§7.5 anchor_signals.py 삭제 교훈과 정합).
 
 ### 2c. disposition — 결정론 (H1 강제)
@@ -62,9 +62,9 @@ design §6a 2단계. 목록을 슬라이스로 나눠 병렬 서브에이전트�
 
 | disposition | 규칙(경로 기반) | M5 | 이동 |
 |---|---|---|---|
-| **router** | 루트의 `AGENTS.md`·`CLAUDE.md`·`GEMINI.md`(`contract.ENTRY_FILENAMES`) | 제외 | 제자리(진입점 정의상) |
-| **tooling** | `.claude/`·`.github/`·`.cursor/`·`.gitlab/` 하위 + 루트 관례(`README`·`CONTRIBUTING`·`CHANGELOG`·`SECURITY`·`CODE_OF_CONDUCT`, **대소문자 무시** — ADR 0016) | 제외 | 제자리 |
-| **content** | 그 외 전부 | **분모** | 이동 대상(docs/ 밖이면 M5 위반) |
+| **router** | `AGENTS.md`·`CLAUDE.md`·`GEMINI.md`(`contract.ENTRY_FILENAMES`), **어느 깊이든** — 중첩 라우터는 그 서브트리의 제자리 라우터([0018](../../decisions/0018-disposition-in-place-classes.md)) | 제외 | 제자리(진입점 정의상) |
+| **tooling** | `.claude/`·`.github/`·`.cursor/`·`.gitlab/` 하위 + 루트 관례(`README`·`CONTRIBUTING`·`CHANGELOG`·`SECURITY`·`CODE_OF_CONDUCT`, **대소문자 무시** — ADR 0016) + 코드-인접 중첩 `README.md`(부모 경로에 `docs` 세그먼트 없음, 대소문자 무시 — [0018](../../decisions/0018-disposition-in-place-classes.md)) | 제외 | 제자리 |
+| **content** | 그 외 전부. `docs` 트리 안(어느 깊이든)의 `README.md`는 content로 남아 파묻힌 문서 인덱스도 내용과 함께 이주한다 | **분모** | 이동 대상(docs/ 밖이면 M5 위반) |
 
 `scorecard.py`가 이 disposition을 계산 → M5 = `docs/` 밖 **content** 개수. **완결성 가드는 여전히 성립**: router·tooling도 매니페스트에 accounted(disposition으로), unaccounted=0.
 
@@ -89,26 +89,13 @@ M1~M4 = 2치(pass/fail). M5 = 3치. `status ∈ {"pass","warn","fail"}`(render �
 design §6b + `setup-docs/reference/knowledge.md`(단일 소스) 사용. J1 타입분류 정확성 · J2 폴더승격 적정성 ·
 J3 hollow·중복·bloat(README 비대 포함) · J4 정합성 플래그. 각 pass/warn/fail. 코드 아님(판단).
 
-### 3c. 등급 rollup (`scorecard.py` — 결정론, 임계값 🔴 튜닝)
+### 3c. 등급 rollup — **폐기됨**
 
-입력: `M[1..5]`·`J[1..4]` 상태 + 신호(`orphan_ratio`·`outside_count`·`router_present`).
-
-```
-if not router_present:                    F      # 라우터 없음
-if M1==fail and orphan_ratio >= 0.5:      F      # 대부분 미도달
-if M1==fail:                              D      # 다수 고아(<0.5)
-if M5==fail:                              D      # 대량 밖
-# 여기서 M1==pass 확정
-m_nonpass = count(M2..M5 not pass)
-if m_nonpass >= 3:                        D      # 도달되나 구조 취약
-if m_nonpass >= 1:                        C      # M2~M5 중 1~2개
-# M1~M5 전부 pass
-if any(J fail) or count(J warn) >= 3:     C
-if 1 <= count(J warn) <= 2:               B
-                                          A      # 전 차원 pass = 완료 정의
-```
-
-임계값(`orphan_ratio 0.5`·`N_WARN`·`J warn 2`) = 🔴 열린질문(design §14, 하드닝 루프 튜닝). **구조**(M1 관문·비-pass 카운트)는 고정. 픽스처(알려진 상태)→기대 등급으로 테스트(F/D/C/B/A).
+[ADR 0020](../../decisions/0020-drop-letter-grade.md)이 한 글자 등급(`A`~`F`)과 그 임계값
+(`orphan_ratio 0.5`·`J warn 2`)을 폐기했다. 임계값이 스스로 🔴 열린질문이었고, `M5==fail → D`가
+동결 역사 문서를 가진 건강한 레포에 거짓 등급을 줬다(DF4). 이제 9차원의 pass/warn/fail과 그
+합계만 남는다. **이 절 번호는 유지한다** — `plans/2026-07-08-doc-health.md`가 "spec §3c 산식"으로
+세 곳에서 참조하므로, 번호를 재사용하면 그 참조가 조용히 다른 내용을 가리킨다.
 
 ### 3d. 자세 (design §6c)
 
@@ -122,7 +109,6 @@ doc-health가 **생산**하는 키(render_report 데이터 모델의 부분집�
 ```python
 {
   "repo":      {"name", "docs_count", "branch"},   # inventory + git(브랜치·이름)
-  "grade":     {"current", "target": "A"},          # rollup
   "counts":    {"fail", "warn", "pass"},            # 9차원 tally
   "scorecard": {"mechanical": [M1..M5], "judgment": [J1..J4]},  # 각 {code,name,sub,status}
   "trees":     {"before": {...}},                   # 현재 구조(읽기전용 기술) — after는 setup-docs
@@ -148,7 +134,6 @@ KeyError 경로를 닫는다. 통합 테스트로 `doc-health dict → render_re
 | disposition | router·tooling·content 경로 샘플 | 정확 3분류, M5 = content-outside 카운트 |
 | scorecard M1~M5 | 상태별 fixture(broken·orphan·인라인마커·루프없음·docs밖) | 각 차원 pass/warn/fail 정확 |
 | gate.analyze 패리티 | 추출 전후 | CLI 출력 불변 + analyze 반환이 CLI와 일치 |
-| grade rollup | 알려진 차원상태 세트 | F/D/C/B/A 각각 |
 | 통합 | doc-health dict → render_report("plan") | KeyError 0, div 밸런스, style= 0 |
 
 판단(J1~J4·분류·MESSY 하위자세) = 테스트 안 함(산문 절차, §7.5 교훈).

@@ -67,3 +67,39 @@ def test_disposition_router_tooling_content():
     assert contract.disposition("readme.md") == "tooling"
     assert contract.disposition("docs/how-to/help.md") == "content"
     assert contract.disposition("notes.md") == "content"
+
+
+def test_disposition_nested_router_and_code_adjacent_readme():
+    # DF2: 중첩 라우터(스코프 CLAUDE.md/AGENTS.md)는 어느 깊이든 라우터 → 제자리 skip
+    assert contract.disposition("src/features/x/CLAUDE.md") == "router"
+    assert contract.disposition("sub/AGENTS.md") == "router"
+    # DF1: 코드-인접 중첩 README(mocks·api)는 중앙집중 대상 아님 → tooling(제자리 skip)
+    assert contract.disposition("src/features/x/mocks/README.md") == "tooling"
+    assert contract.disposition("src/apis/readme.md") == "tooling"
+    # docs/ 아래 README(폴더 인덱스)는 content 유지 — DF1이 과확장 안 함
+    assert contract.disposition("docs/how-to/README.md") == "content"
+    assert contract.disposition("docs/README.md") == "content"
+    # 루트 관례 README는 기존대로 tooling
+    assert contract.disposition("README.md") == "tooling"
+
+
+def test_disposition_buried_docs_index_readme_is_content():
+    # 리뷰 픽스: parts[0] != "docs"는 최상위만 봐서 매몰된 docs 트리의 인덱스를
+    # tooling(제자리)로 잘못 분류했다. "docs"가 부모 어디든 있으면 content로 이동.
+    assert contract.disposition("src/features/custom/shared/docs/README.md") == "content"
+    assert contract.disposition("src/a/docs/README.md") == "content"
+    # 코드-인접(부모에 docs 없음)은 여전히 tooling
+    assert contract.disposition("src/a/mocks/README.md") == "tooling"
+    assert contract.disposition("src/apis/readme.md") == "tooling"
+
+
+def test_disposition_buried_docs_index_readme_parent_case_insensitive():
+    # 어드버서리얼 codex 리뷰 픽스: 부모 세그먼트 "docs" 검사가 대소문자 구분이라
+    # Docs/README.md 같은 대문자 docs 트리의 인덱스가 tooling으로 잘못 분류됐다.
+    assert contract.disposition("Docs/README.md") == "content"
+    assert contract.disposition("src/Docs/README.md") == "content"
+    assert contract.disposition("src/a/DOCS/README.md") == "content"
+    # 회귀 가드: 기존 케이스는 그대로 유지
+    assert contract.disposition("src/a/mocks/README.md") == "tooling"
+    assert contract.disposition("src/a/docs/README.md") == "content"
+    assert contract.disposition("README.md") == "tooling"

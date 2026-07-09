@@ -3,7 +3,7 @@
 - 상태: 제안 (브레인스토밍 5-섹션 승인 · **2026-07-09 교차검증 개정** — §0b)
 - 날짜: 2026-07-09
 - 선행: [design.md](design.md) §5·§7·§8·§10 · [setup-pipeline.md](setup-pipeline.md)(증분 3 = Phase 0·1·2, 이 엔진 재사용) · [render_report 계획](../../plans/2026-07-07-render-report-renderer.md)
-- dogfood 타겟: `/Users/jiohyeon/Desktop/projects/vd-front` (git, ~70 docs, F등급 — 첫 doc-health dogfood 대상)
+- dogfood 타겟: `/Users/jiohyeon/Desktop/projects/vd-front` (git, ~70 docs, 다수 차원 미달 — 첫 doc-health dogfood 대상)
 
 > **범위:** 증분 4 = **Phase 3(승인된 계획을 실 repo에 안전 적용) + Phase 4(결과 재진단)**. 증분 3이 스크래치에서
 > "계획이 깨끗함"을 증명했다면, 증분 4는 그 검증된 계획을 **사용자가 검토할 실제 브랜치**로 랜딩하고, 옮긴 결과를
@@ -150,9 +150,9 @@ register_all(root):
 ## 6. Phase 4 — 재진단(결과 아티팩트)
 
 - doc-health를 **랜딩 브랜치(옮긴·커밋 상태)**에 재실행 → after 스코어.
-- Phase 0 before와 나란히 → `render_report(data, "result")`. before→after 대비(등급·orphan→0·마커/척추/성장루프)를 시각화. `preexisting_broken`을 "머지 전 결정할 것"으로 표면화(L4).
+- Phase 0 before와 나란히 → `render_report(data, "result")`. before→after 대비(차원 충족·orphan→0·마커/척추/성장루프)를 시각화. `preexisting_broken`을 "머지 전 결정할 것"으로 표면화(L4).
 - **result 모드 CSS = 이전 증분 이연분** — 이번에 채움. 동결 CSS·WCAG-AA·인라인 style 0 유지.
-- before/after 동일 채점기(doc-health)라 등급 비교 공정 — doc-health 분리 취지 실현.
+- before/after 동일 채점기(doc-health)라 차원 비교 공정 — doc-health 분리 취지 실현.
 
 ## 7. 테스트 & 롤아웃 (RED-first)
 

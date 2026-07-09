@@ -2,6 +2,224 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
+- **✅ 결정 A 해소(2026-07-09) — (가) 채택: `gate.py --hook` 삭제.** 근거는 아래 "결정 A의 진짜
+  트레이드오프"가 이미 적어둔 그대로 — 이 프로젝트의 병이 "메커니즘 과잉 생산"이므로 새 메커니즘 없이
+  먼저 닫는다. `gate.py`(−57줄)·`test_gate_hook.py`(−162줄) 제거. **회귀 주의:** 삭제된 테스트가 유일하게
+  덮던 `_rel()`의 root-밖 경로(`except ValueError`) 분기를 `test_gate_analyze.py`의
+  `test_main_reports_broken_link_outside_root`로 복원했다(코드리뷰 Angle B 소견).
+  <details><summary>당시 트레이드오프 기록(보존)</summary>
+
+  초대 안 한 레포에서 훅 비용 = **44ms**(그중 36ms는 python 기동, 우리 코드는 8ms) + **출력 침묵**.
+  즉 "무겁다"는 논거는 죽었다. 진짜 차이는 **ADR 0007**: *커밋된* 훅은 diff에 보이고 워크스페이스마다
+  사용자 승인 게이트를 타지만, **플러그인 훅은 설치 때 한 번 승인하면 모든 레포에서 보이지 않게 돈다.**
+  "보조"의 실체 = 코드 줄 수가 아니라 **사용자가 보고 승인할 수 있느냐.**
+  **(가)를 권한 이유:** doc-reconcile §6이 이미 "끝에 broken=0 · orphan=0 확인"이라 **시키는데
+  검사기를 어디서 어떻게 부르는지 안 알려준다** — 명령은 있고 도구가 없다. 산문 몇 줄로 닫힌다.
+  </details>
+- **⛔ 대기 중인 사용자 결정 1개:** 결정 B) PR 열까? (브랜치 main 대비 38+커밋, 최종리뷰 READY TO MERGE,
+  사용자가 "보류" 지시 중)
+- **🧨 전략 재정렬(2026-07-09, opus+`/codex` 교차검증 + 사용자 합의) — ADR 0019·0020·0021로 확정:**
+  프로토타입(원형 레포)과 나란히 측정한 결과 **핵심 가설이 220커밋 동안 한 번도 검증되지 않았다:**
+  *"기계가 생성한 라우터가 손으로 쓴 라우터만큼 doc-reconcile을 발동시킨다."*
+  실측 — 프로토타입 레포에 세르파 흔적 **0**(스탬프·마커·`_map.md` 없음). "독푸딩"은 **자기 자신에게만**
+  했고 그건 조작된 실험이다. 게다가 `scaffold.install_loop_files`는 기존 파일을 skip하므로 원본 레포에
+  설치해도 세르파의 doc-reconcile이 **안 깔린다** → 그 실험은 애초에 null이다.
+  **획득(한 번 정돈)에 220커밋, 유지(영원히 자라게)에 0커밋.** 사용자가 지불하는 이유는 유지 쪽이다.
+  → [ADR 0019](docs/decisions/0019-freeze-heavy-lane-and-renderer.md) 동결 ·
+  [ADR 0020](docs/decisions/0020-drop-letter-grade.md) 등급 폐기 ·
+  [ADR 0021](docs/decisions/0021-parity-experiment-control-group.md) **프로토타입 = 대조군, 스캐폴드 금지.**
+- **🧭 전략 정렬 진단(2026-07-09, 사용자와 합의) — 다음 세션은 이 렌즈로 판단하라:**
+  질문이었다: *"우리가 AI를 못 믿어 활동성을 제약하는가? 유명 스킬도 이렇게 복잡한가?"*
+  **측정 결과 전제가 틀렸다.** gstack = 코드 **176,657줄**(우리 2,310줄의 75배), `gstack/spec` SKILL.md는
+  **2,359줄**(우리 setup-docs 354줄). superpowers/brainstorming엔 723줄 node 서버가 있다.
+  → 유명 스킬이 "확률적으로 안 느껴지는" 건 산문 덕이 아니라 **코드 덕**이다. 확률성을 없애는 건 코드다.
+  **우리 코드 2,310줄의 성격:** 🛡️안전 불변식(오라클·게이트) 312줄(13%) · 🔧기계적 실행 1,200줄(52%) ·
+  🎨렌더러 562줄(24%) · ⚖️**판단을 코드로 박제**(scorecard 임계값·등급) 236줄(10%).
+  분류·feature명·topic·J1~J4는 **전부 AI 판단이고 코드가 안 건드린다** → "AI 제약" 진단은 틀렸다.
+  **문제는 복잡도가 아니라 복잡도의 위치다.** 정체성 3축 중 비파괴·내용소실0은 **완성·실전 증명**.
+  자가성장(doc-reconcile)은 **코드 0 · 테스트 0 · 산문 136줄로 방치**. 그런데 최근 40커밋의 에너지는
+  렌더러(263+155줄)와 타입 분류학(계획서 578줄)에 갔다. **렌더러+테스트 903줄 = 오라클 312줄의 3배**이고,
+  최근 세 세션의 버그(D4·D6·C1/C2·DF5)가 **전부 거기서** 나왔다.
+  **우리는 이 교훈을 이미 적어놓고 어겼다** — 갭1: *"anchor_signals.py를 지었다가 삭제함… 판단 작업을
+  코드로 박제하지 말 것."* 그런데 scorecard.py는 임계값 4개를 박고 주석에 스스로 "🔴 열린질문"이라 썼다.
+  DF4(legacy가 등급 상한 D)가 그 대가다. **복잡도는 약속의 함수다** — 우리는 "파일을 옮기고 하나도 안
+  잃겠다"고 약속했으니 오라클이 필요하고, 312줄로 싸게 샀다. 그 위에 올린 것들이 문제다.
+- **▶️ 순서(갱신 — ADR 0019~0021 이후):**
+  ```
+  1. ✅ 등급 폐기(DF4 근본)       — ADR 0020. scorecard.rollup·임계값 삭제, 9차원만 남김.
+  2. ✅ 히어로를 데이터에서 파생(DF5) — "9개 진단 차원" 리터럴 → counts 합계로 파생.
+  3. ✅ --hook 삭제(결정 A)        — ADR 0019 동결의 첫 집행.
+  4. ▶️ parity 실험(ADR 0021)     — worktree 처리군 + 원본 대조군. 가설을 반증하라.
+  5.    실험 결과가 다음 투자처를 정한다:
+         통과 → doc-reconcile 행동 fixture로 못 박고, 그때 writer→judge 역전을 논한다.
+         실패 → 라우터 생성 품질이 제품이다. 거기로 간다.
+  6.    PR + vd-front 랜딩 브랜치 검토(사용자, 결정 B)
+  ```
+  **이연 확정: writer→judge 역전.** 옳지만 지금이 아니다. codex 교차검증이 오라클의 세 구멍을 확증했다
+  (링크 정체성·중복내용 파일 소실·`.mdx`/에셋 미스캔). 순서를 지켜라: 오라클 하드닝 →
+  `verify_candidate(base, cand)` → 검증된 트리 랜딩 → **그 다음** mover 삭제. 역순은 불가침 불변식을 깬다.
+  상세는 [ADR 0019](docs/decisions/0019-freeze-heavy-lane-and-renderer.md) "결과" 절.
+  **DF7(깨진 링크 수정안)은 동결 대상이 아니지만 4번 뒤로 미룬다** — 실험이 우선순위를 다시 정한다.
+  **의도적으로 뺀 것(관측된 필요 없음):** 안전 이동 `docsherpa mv`(아무도 요청 안 함, 새 메커니즘) ·
+  DF6 절대경로 계약 정합(실사용 미관측) · ENTRY 대소문자(저확률 + 순진한 픽스는 악화) ·
+  troubleshooting 실전 재검증(그런 레포를 만나면. 찾아 나서지 않는다).
+  **완료 기준:** 새 레포에 돌렸을 때 **손편집 0**으로 계획이 나오고, 랜딩 후 깨진 링크가 **전부
+  preexisting**이며, 그 사실을 **아무도 결심하지 않아도** 알게 된다. 앞의 둘은 vd-front에서 달성. 셋째가 결정 A.
+- **🔗 링크 표기법 논쟁 — 종결(실측, 2026-07-09):** 사용자 직감 *"상대경로는 문서가 자주 바뀌니 쉽게 무너진다"*
+  → **무너지는 건 맞고, 원인 진단은 틀렸다.** 랜딩 트리 92문서·문서간 링크 128개 전수 계산:
+  링크 A→B 하나는 **A가 움직여도(절대경로가 막아줌) B가 움직여도(절대경로도 못 막음)** 깨진다 — 각 128건.
+  실제 시뮬레이션(문서 1개 손으로 mv): 깨진 10건이 **전부 incoming** → **절대경로였다면 0건 구했다.**
+  `rewrite_links`는 move_map을 알아 **양쪽 다** 고친다(vd-front 42건 이동, new_broken=0).
+  **절대경로를 안 쓰는 이유**는 취향이 아니다: 마크다운/CommonMark엔 repo 루트 개념이 없고, GitHub은 선행
+  `/`를 **사이트 루트**로, VSCode 프리뷰는 **FS 루트**로 읽어 사람이 클릭하는 모든 곳에서 깨진다. 게다가
+  우리 `gate.resolve`도 그걸 FS 절대경로로 읽어 broken 처리한다(DF6).
+  **진짜 구멍:** docsherpa **없이** 문서가 움직일 때 아무도 검사하지 않는다(손 mv 1회 → 링크 10개 침묵 파손).
+  → 그래서 결정 A. **깨진 링크를 굳이 재작성하는 이유(실증):** 정체성 보존을 안 하면 `src/a/note.md`의
+  `[x](README.md)`(깨짐)가 `docs/note.md`로 이사한 뒤 **실재하는 `docs/README.md`에 조용히 재결합**되고
+  gate는 broken=0이라 아무도 모른다. 못생긴 이중 경로는 그 안전성의 대가다.
+- **⏪ ADR 0005 위반과 되돌림(2026-07-09) — 같은 실수 반복 금지:**
+  자동 gate를 `hooks/hooks.json`(플러그인 루트 active 훅)으로 배선했다가 **되돌림(47b4f97)**.
+  ADR 0005(수락)는 이미 *"훅은 target repo에만 산다. 거부한 대안: user-scope 플러그인 훅 — 모든 repo에서
+  전역 발동한다"* 라고 정해놨다. **정확히 그 거부된 대안을 구현했다.** "남의 레포에 코드를 안 심으니 덜
+  침습적"이라 추론했으나 거꾸로였다 — 플러그인 훅은 사용자의 **모든 레포**에서 매 세션 실행되고, ADR 0007의
+  워크스페이스별 승인 게이트를 **우회**한다. 침묵 가드는 증상만 없앨 뿐 메커니즘은 남는다.
+  **교훈: 새 배선을 짓기 전에 `docs/decisions/`를 grep하라.**
+  **같이 고친 진짜 버그 2건(유지):** ⓐ `targets_in()`이 읽기 불가 파일에서 `PermissionError` → `analyze()`
+  크래시. `--hook`의 통째 except에 먹혀 **검사기가 조용히 아무 일도 안 함**(최악의 실패 모드). 비-hook CLI는
+  아예 크래시했다. ⓑ `_rel()`: 라우터가 `../`로 root 밖을 링크하면 `relative_to`가 `ValueError`(선재).
+  **⚠️ 구현자 서브에이전트가 "둘 다 고쳤다"고 보고했으나 ⓐ는 미수정이었다 — 재현 테스트로 잡음. 보고를 믿지 말고 재현하라.**
+
+- **🎯 ③④ vd-front 재실행 완료(2026-07-09) — ②가 실전 검증됨, 새 엔진 결함 DF4 발견:**
+  랜딩 브랜치 **`docsherpa/migrate-e43acbcf`**(vd-front, 커밋 `39f38b0f`, 검토·머지는 사용자).
+  **②는 실전 검증 성공 — 매니페스트 손편집 0건.** 직전 dogfood가 손으로 우회하던 4건을 엔진이 자동 처리:
+  `src/features/custom/CLAUDE.md`·`docs/CLAUDE.md`(DF2 어느 깊이든 router) · `shared/api/README.md`·
+  `src/mocks/README.md`(DF1 코드-인접). **DF1 정밀화도 실전에서 살았다** — `src/features/custom/shared/docs/README.md`가
+  stranded되지 않고 이주(리뷰가 안 잡았으면 이 레포에서 그대로 터졌다).
+  **결과:** 문서 65→92(스캐폴드 포함) · 이동 42 · **고아 18→0** · **순수 삭제(D) 0건**(git rename 회계로 내용소실0 증명) ·
+  unaccounted 0 · new_broken 0 · anchor_lost 0 · per_file 0 · markers_ok · 성장루프 설치(M2·M3·M4 pass).
+  **등급 F→D.** broken 6은 **전부 preexisting**(오라클이 `new_broken=0 ∧ unexplained_broken=0`으로 증명 — 눈으로 본 게 아님).
+  **작업트리·기존 브랜치 무영향 실측:** HEAD 불변 · 현재 브랜치 불변 · dirty 0 · worktree 잔재 0 · 브랜치 diff = 신규 1개뿐
+  (옛 `docsherpa/migrate-59f05e69` 보존 — 삭제 불필요했음).
+  **④ 도메인 결정(사용자, Phase 2 게이트에서):** 1)조직축=**타입 우선** 2)버전쌍=**둘 다 살림(동결 없음)**
+  3)dnd 토픽 승격=**안 함** 4)커스텀 인덱스=**개명 이동**(`docs/custom-docs-index.md` — 루트 인덱스 자리 회피).
+  **런타임에 안전장치 2개가 실제로 발동(설계 검증):** 분류 6분 사이 사용자가 vd-front에 커밋(`e43acbcf`) →
+  ① `inventory.unaccounted` 완결성 가드가 분모 64→65 변동을 잡아 **진행 거부**(잊힌 문서 0 불변식) ·
+  ② `land_migration` HEAD 핀이 스테일 계획 랜딩을 막음. 둘 다 **파괴 방지가 아니라 정직성 보장** 장치다
+  (워크트리 격리가 브랜치를 지키고, HEAD 핀이 "승인한 계획=랜딩된 결과"를 지킨다 — 서로 다른 축).
+  **🆕 DF4(신규 엔진 결함, 다음 배치 후보) — `legacy`가 등급 상한을 D로 못박는다:**
+  `plan_moves`는 `type=="legacy"`(동결역사)를 **제자리 skip**하는데, `scorecard.outside_content`는 **경로 기반
+  `disposition`만 보므로 `legacy`를 모른다** → docs/ 밖 legacy를 M5 위반으로 센다 → `rollup`의
+  `if m["M5"]=="fail": return "D"`로 **영구 D 상한**. 반증 시도로 확정: M1~M4 pass + J1~J4 전부 pass여도
+  legacy 6건 때문에 **D**, M5만 통과시키면 **A**. **ADR 0018의 논리와 모순** — 0018은 "M5의 파묻힘 0 =
+  *중앙집중 대상* 문서가 모두 docs/ 아래"라 정의했는데, legacy는 설계상 중앙집중 대상이 **아니다**(제자리 동결).
+  즉 0018이 명문화한 in-place 클래스(router·tooling, 경로 기반)에 **legacy(타입 기반)가 빠져 있다.**
+  후보: (a) `scorecard.assemble`이 이미 받는 `inventory` 매니페스트로 `type=="legacy"`를 M5 분모에서 제외 ·
+  (b) legacy를 `docs/legacy/`로 이주 · (c) 수용. **(a)가 0018 정신과 정합**(제자리 클래스 = 도달성·M5 면제).
+- **🎨 DF5 픽스 완료 + DF6·DF7 발견(2026-07-09, 사용자가 렌더된 아티팩트를 보고 잡음 — 리뷰어 3명 다 놓침):**
+  **DF5(픽스됨, 32d5ec7·9151d8e) — 타입색 `--fail-ink`가 `.stray`와 충돌해 범례가 거짓말했다.**
+  `.tree .stray`(before 트리 파일, 선재)와 `.tree .t-troubleshooting`(이번 배치 추가)이 **같은 토큰**.
+  result 모드는 after 트리를 안 그리는데(`t.get("after")` 없음) **타입색 범례는 무조건 렌더**돼,
+  사용자가 본 화면은 "빨강 파일 + 바로 아래 '빨강=문제 해결(troubleshooting)'" — 그 repo엔 트러블슈팅 0건.
+  intro의 "파일은 무색"도 자기 그림과 모순. **내 계획서가 스스로 경고했다가("stray와 토큰 공유하나 같은
+  pane에서 공존하지 않고 범례가 구분한다") 무시한 지점 — 둘 다 틀렸다.**
+  **픽스 방향(중요):** 동결 팔레트엔 트러블슈팅에 줄 새 색이 **없다**(AA on `--bg` 통과 + 미사용 =
+  `--muted`·`--ink` 무채색뿐. `--warn` 2.89 · `--pass` 3.28 · `--fail` 4.14 = 라이트 AA 미달).
+  그래서 "빨강을 stray에서 회수" — ⓐ `_nested_lines` 파일 클래스 `stray`→`None`(before 트리 무색).
+  이건 **기록된 설계 의도 D6①("before=회색투성이/after=타입별 컬러")의 복원**이고, before 트리는 정의상
+  전부 stray(`outside_content`만 나열)라 빨강이 **정보량 0**이었다. ⓑ after 트리 없으면 타입 범례 미렌더.
+  ⓒ result 모드 제목 `Before → After`→`잔여`, 2단 그리드 해제(빈 오른쪽 절반 제거). 동결 CSS 토큰 무변경.
+  **DF6(신규) — 절대(루트-상대) 링크에서 두 엔진의 계약이 어긋난다.**
+  `migrate._EXTERNAL`은 `"/"`를 skip(F6 결정: 재작성 안 함)하는데, `gate.resolve`는 `(base.parent / "/src/x.md")`로
+  **파일시스템 절대경로**로 해석 → 없는 파일 → **broken**. 즉 사용자가 절대경로를 쓰면 재작성은 안 되는데
+  gate가 깨졌다고 한다. (실증: 합성 fixture로 확인.) 애초에 절대경로를 정본으로 못 쓰는 이유 = 마크다운/
+  CommonMark엔 repo 루트 개념이 없고, GitHub은 선행 `/`를 사이트 루트로, VSCode 프리뷰는 FS 루트로 해석해
+  **사람이 클릭하는 모든 경로에서 깨진다.** doc-상대만 GitHub·IDE·에이전트 셋 다에서 산다. 대가는 이사 시
+  재작성 필요 → 그게 `rewrite_links` + 두 오라클의 존재 이유.
+  **DF7(신규, 진단 실행가능성) — "repo-상대로 쓴 링크"를 별도 카테고리로.**
+  vd-front preexisting_broken 8건은 전부 저자가 repo-상대로 쓴 것이고, 타겟 5개 중 **4개가 repo 루트 기준으론
+  실재**한다. 지금 gate는 그냥 "broken"이라 말할 뿐이다. `doc-상대로는 깨짐 ∧ repo-루트 기준 실재` →
+  "저자가 repo-상대로 씀" 힌트 + 정확한 수정안(`../../src/...`) 제시. **고치지 않고 제안만**(비파괴).
+  **왜 깨진 링크를 굳이 재작성하나(설계 근거, 실증됨):** `rewrite_links`가 타겟 정체성을 보존하지 않으면,
+  `src/a/note.md`의 `[x](README.md)`(깨짐)가 `docs/note.md`로 이사한 뒤 **실재하는 `docs/README.md`에 조용히
+  재결합**되고 gate는 `broken=0`이라 아무도 모른다. 정체성 보존은 틀린 걸 틀린 채로 시끄럽게 남긴다 —
+  이중 경로(`../../src/.../work-plans/src/.../c00-gate.md`)의 못생김은 그 안전성의 대가다.
+- **✅ ①②③④ 완료 기록(2026-07-09) — 다음 순서는 위 ▶️ 블록을 따르라(이 블록은 이력):**
+  아티팩트 자기설명 트랙 **완료**. 증분 4 land_migration 엔진 **origin/main 머지됨**(PR#10).
+  **①트러블슈팅 1급 + ②disposition 하드닝 + ③④ vd-front 재실행**까지 이번 배치로 완료.
+  현재 작업 브랜치 = `fix/artifact-preexisting-label-beforetree`
+  (**195 setup-docs + 34 doc-health green · self-gate PASS · main 대비 38커밋 · PR은 사용자 지시 대기**).
+  **① 트러블슈팅은 실전 미검증:** vd-front엔 troubleshooting 문서가 **0건**이라 1급 타입이 배치를 타지 않았다
+  (범례·CSS만 존재). 트러블슈팅 문서가 있는 레포에서 재검증 필요 — 숨기지 말 것.
+  **③ 재실행 기술 주의(2026-07-09 실측으로 정정):** land_migration은 브랜치명을 `docsherpa/migrate-<head_sha[:8]>`로
+  결정론 생성. ~~vd-front HEAD가 `59f05e69`라 재실행 시 브랜치 충돌 STOP → `git branch -D` 선행 필요~~ →
+  **틀림. vd-front HEAD가 `b6329632`로 이동함**(`59f05e69`는 그 조상). 새 브랜치명 = `docsherpa/migrate-b6329632`라
+  **충돌 없음** → 옛 브랜치 `docsherpa/migrate-59f05e69`는 **삭제하지 말고 비교 기준선으로 보존**(비파괴 원칙:
+  안 지워도 되는 걸 지우지 않는다). 재실행 전 확인할 것: 작업트리 clean(dirty=0) · gitignored `.md`=0 —
+  이 둘이 성립해야 Phase 1b 스크래치 복사본(`.git` 제외)과 Phase 3 워크트리(추적 파일만)의 트리가 같아
+  **1b가 3의 충실한 리허설**이 된다(어긋나면 3에서 `apply_moves` "src 부재" STOP).
+  **워크트리 격리는 엔진이 이미 한다:** `land_migration`이 이중 worktree(`tempfile.mkdtemp`)로 격리 —
+  `feat/VDS-892`·작업트리는 checkout조차 안 됨. Phase 0~2는 `build_and_verify`가 tempdir 복사만 쓰므로 **변형 0**.
+  **③에서 검증할 것(②가 갚은 빚):** 직전 dogfood는 DF1/DF2를 **매니페스트 손편집으로 우회**했다. 이제 disposition이
+  중첩 라우터·코드-인접 README를 자동 skip하므로 **손수정 0으로 계획이 나와야** 한다. 특히 vd-front의
+  `src/features/custom/shared/docs/**`는 그 폴더의 `README.md`(문서 인덱스)까지 **함께 이주**해야 한다(DF1 정밀화).
+- **🧭 ①트러블슈팅 1급 + ②disposition 하드닝 완료(2026-07-09, subagent-driven 8태스크 + 3자 교차검증):**
+  계획 [2026-07-09-troubleshooting-firstclass-and-disposition-hardening.md](docs/plans/2026-07-09-troubleshooting-firstclass-and-disposition-hardening.md).
+  **① troubleshooting 1급화:** 전용 홈 **`docs/troubleshooting/`**(사용자 확정 — how-to 하위 아님, 완전 독립 최상위)
+  · `migrate._TYPE_DEST` 배정 · **7번째 타입색**(동결 토큰 `--fail-ink` 재사용, AA on `--bg` light 6.48/dark 7.89
+  실측, AA 가드 페어 추가) · 집약뷰·트리·스캐폴딩·범례 전 렌더지점 배선 · doc-health 타입 어휘 +
+  **J1 절차성 가드**(symptom→link-only = troubleshooting 아님 = fail) · knowledge.md L17·L27·L30 **주석 supersede
+  (원문 삭제 0)** · **ADR [0017](docs/decisions/0017-troubleshooting-first-class-doc-type.md)**.
+  ⚠️ **리뷰가 잡은 갭:** 라우팅 룰 **정본은 `scaffold._MAP_DOC`**(사용자 프로젝트로 생성됨)인데 SKILL.md 미러만
+  고쳐 신규 스캐폴드는 옛 룰을 받을 뻔함 → `_MAP_DOC` + 자기 `docs/_map.md` 동기(f1ebddd). 템플릿엔 ADR 번호
+  미표기(**도메인 리터럴 0** — 누출 방지). troubleshooting/은 PRD·specs처럼 **온디맨드**(인덱스 선등록 안 함).
+  **② `contract.disposition` 하드닝(엔진 핵심 단일소스 — gate·scorecard·migrate 공유):**
+  (DF2) `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` = **어느 깊이든 `router`**(중첩 = 그 서브트리의 제자리 라우터).
+  (DF1) 부모 경로에 `docs` 세그먼트가 **없는** 중첩 `README.md` = `tooling`(제자리) → basename 충돌
+  `ValueError` STOP 원천 차단. 부모에 `docs`가 있으면(**대소문자 무시** — `Docs/`·`DOCS/`) `content` 유지 →
+  **파묻힌 문서 인덱스는 내용과 함께 이주**. 반환값 3종 불변. **ADR [0018](docs/decisions/0018-disposition-in-place-classes.md)**
+  = "router·tooling = 제자리 + 도달성 면제"를 **명시 계약**으로 기록(M5의 "파묻힘 0" = *중앙집중 대상* 문서가 모두
+  docs/ 아래라는 뜻이지, 레포의 모든 .md가 아님).
+  **🔍 3자 독립 교차검증(opus 리뷰어 · architect · codex 적대적) — [P1] 0건:**
+  내용소실0 확증 — `content_oracle.collect`·`per_file_accounting`은 disposition **무관** 전-트리 `rglob("*.md")`,
+  `apply_moves`는 skip 파일까지 링크 재작성, `gate.analyze`는 disposition을 **import하지 않음**(orphan 우주 = `docs/**`).
+  → 재분류는 삭제·덮어쓰기가 아니라 **이동 계획 제외**일 뿐(루트 README가 이미 받던 대우).
+  **리뷰가 잡은 실결함 2건(둘 다 수정):** (a) DF1이 `parts[0]!="docs"`라 **파묻힌 docs 트리의 README가
+  stranded**되고 M5가 그걸 안 세던 사각 → `"docs" not in parts[:-1]`로 정밀화(a45afc7, 사용자 승인).
+  (b) 그 부모 검사가 **대소문자 민감**이라 `Docs/`가 같은 결함을 재현 → 소문자 정규화(f2da2f1, codex 적발).
+  **의식적 수용:** 루트 라우터 없는 레포에서 posture가 GREENFIELD로 뒤집힐 수 있으나 `rollup()`의
+  `if not router_present: return "F"`로 **등급은 F로 정직 유지**(posture는 조언 힌트, scaffold는 append-only).
+  **최종 whole-branch 리뷰(opus): READY TO MERGE** — Critical·Important 0, 정체성 4불변식 전부 HOLD
+  (비파괴·내용소실0·자가성장·도메인리터럴0), 동결 CSS `:root` 토큰 무변경 확인.
+  **잔여 Minor 3건(전부 비블로킹 follow-up):**
+  - **(M1) `name in ENTRY_FILENAMES` 대소문자 민감** — 선재. macOS에서 루트 `Claude.md`면 content로 떨어져
+    이동 → 라우터 소실 → gate orphan → **거짓 STOP(시끄러움, 소실 아님)**. ⚠️ **순진한 소문자 픽스는 오히려
+    악화**: Linux repo의 정당한 문서 `docs/agents.md`(에이전트를 *다루는* 문서)가 `router`로 오분류돼
+    **조용히 이동 제외 + M5 면제**된다 — 정직한 진단이 정체성인 도구에서 "시끄러운 실패 → 조용한 오면제"는
+    나쁜 교환. **올바른 픽스는 비대칭**: 루트는 대소문자 무시(FS 현실), 중첩은 대소문자 민감(정확한
+    `CLAUDE.md`가 곧 라우터 계약). 설계 작업이므로 별도 처리. (architect·최종리뷰 둘 다 defer 동의.)
+  - **(M2) `_MAP_DOC` 정본 가드 테스트 없음** — 이번 드리프트가 부재의 실증. 단 유용한 불변식은
+    "SKILL.md와 byte-identical"이 **아니다**(정본=간결·리터럴0, SKILL.md=상세·ADR 주석 — 의도적 차이).
+    올바른 가드 = "정본이 라우팅 룰을 담고 있고 **ADR 리터럴 0**".
+  - **(M3) `posture_hint`가 GREENFIELD로 뒤집힐 수 있음** — `rollup()`의 `if not router_present: return "F"`로
+    **등급은 F 유지**, posture는 조언·scaffold는 append-only → 파괴적 동작 없음. ADR 0018에 수용 기록.
+  - **(M4, 최종리뷰 신규) DF1은 리터럴 `docs` 세그먼트만 인식** — `documentation/README.md`·`guides/README.md`
+    같은 다른 이름의 문서 인덱스는 제자리에 남고 형제 content만 이주. **소실 아님**(파일 잔존 + `apply_moves`가
+    링크 재작성 + 오라클 회계). 직전 대안(basename 충돌 STOP)보다 낫다 — 경계 있는 트레이드오프.
+- **✅ 아티팩트 자기설명 보정(A·라벨·C1) 완료(2026-07-09, subagent-driven 5태스크):**
+  vd-front dogfood·UX 피드백에서 드러난 진단서 아티팩트 결함 3건을 고침. **(A) 플랜 표면화** —
+  `build_and_verify`가 `preexisting_broken`을 반환 → `assemble_plan_data(..., preexisting_broken=...)`가
+  전달 → `render_report`가 plan·result 양 모드에서 기존 `_render_preexisting`으로 렌더(콜아웃/impact
+  아님 — 이동유발 위험은 이미 `new_broken=0` 게이트로 차단, preexisting은 별도 축). SKILL.md Phase 2
+  산문에 배선 명시. **(라벨) how-to 정직화** — tkey·`_TYPE_GROUP` 두 곳 모두 "가이드(how-to)"→"작업
+  절차·복구(how-to)"로 변경(트러블슈팅 은폐 방지, 위 트러블슈팅 1급 승격 결정과 정합). **(C1) before 트리
+  중첩** — `scorecard._before_tree`를 평면 나열에서 `_nested_lines` 기반 중첩 스캐폴딩으로(파묻힌 구조
+  가시화, `_after_tree`와 표현 일관). **B·C2 구현 완료(사용자 명시 요청으로 architect defer 해제):**
+  B는 orphan 데이터 배선(doc-health orphans 방출 → `assemble_plan_data(..., orphans_after=...)` →
+  `.mig-head` 규모 라인 "고아 N→0"), C2는 순수 render(기존 `.tree` CSS 재사용, 이동 src/dest에서 파생) —
+  정직성은 `orphans_after`=`build_and_verify` 검증값, 유실0은 `content_oracle` 불변식이 각각 담보.
+  트러블슈팅 1급 승격(doc-type 트랙, 아래 항목)은 이 작업 범위 밖 유지. 브랜치
+  `fix/artifact-preexisting-label-beforetree`, 계획
+  [2026-07-09-artifact-selfdescribe-fixes.md](docs/plans/2026-07-09-artifact-selfdescribe-fixes.md).
 - **✅ 증분 4 `land_migration` 완료 + vd-front 실 dogfood 성공(2026-07-09, subagent-driven 9태스크):**
   승인된 계획을 git worktree 격리로 실 브랜치에 랜딩 + 재진단. 신규 `land_migration`(이중 worktree·HEAD sha 핀·
   **검증트리=커밋트리**·통과 시에만 커밋·`finally` 흔적0) · `register_all`(도달성-구동·진행가드·live-link) ·
@@ -19,10 +237,29 @@
   unaccounted0·new_broken0·anchor_lost0·**preexisting_broken8(표면화)**·작업트리 무영향·worktree잔재0. Phase4 재진단:
   **orphan 67→0·markers_ok·docs 48**. broken 6은 전부 **preexisting 검증**(원본이 repo-상대를 doc-상대로 오작성한 부채가
   도달성 확보로 드러남=D2 실증) — 마이그레이션이 만들지·숨기지·고치지 않고 표면화만(L4/정체성 교과서 준수).
-  **dogfood 발견(이연):** DF1 코드-인접 nested README(mocks·api)는 중앙집중 대상 아님(basename 충돌 시 disposition 개선) ·
-  DF2 nested CLAUDE.md도 router-skip 확장(현재 root만) · DF3(수정됨) `rglob("*.md")` is_file() 가드(`.md`로 끝나는 디렉터리 크래시).
-  **남은 도메인 결정(결정 패널):** org(type-scatter vs 기능응집)·legacy 통합(`docs/legacy/`)·co-change topic(dnd·mobile-preview) — §8 별도 트랙.
-  **다음:** 증분 4 브랜치 PR(마지막 한 번에) · vd-front 브랜치는 사용자 검토·머지 · 이연 findings/도메인결정.
+  **증분 4 = origin/main 머지됨(PR#10, 9b84d51).**
+  **dogfood 발견 → ②로 승격(재실행 전 엔진 하드닝) — ✅ 전부 완료(위 🧭 블록·ADR 0018):** DF1 코드-인접 nested README(mocks·api)는
+  중앙집중 대상 아님 → `contract.disposition`이 in-place로 skip(basename 충돌 원천 차단). DF2 nested CLAUDE.md도 router-skip 확장.
+  DF3(수정됨, a0a9587) `rglob("*.md")` is_file() 가드(`.md`로 끝나는 디렉터리 크래시).
+  **도메인 결정(org type-scatter vs 기능응집 · legacy 통합 · co-change topic)은 §10 결정 표면화 = 재실행 Phase 2 승인에서**
+  (최상단 ▶️ 블록 ④ — 미리 정하지 말 것). vd-front 시험 브랜치 `docsherpa/migrate-59f05e69`는 ③에서 폐기 후 재실행.
+- **🩺 트러블슈팅 1급 승격 결정(B안, 2026-07-09 사용자 채택) — ✅ 구현 완료(위 🧭 블록·ADR 0017). 아래는 결정 근거 기록:**
+  **문제 실증(vd-front 진단서 리뷰):** 현재 분류 type 어휘 = `ADR·spec·how-to·reference·PRD·legacy` — **`troubleshooting`
+  타입 자체가 없다.** knowledge.md(§문서타입4종, L27·L30)가 Troubleshooting을 "반응적 복구 절차(명령·진단·복구) →
+  `how-to/`"로 **접어버려**, 트러블슈팅 문서가 how-to로 분류돼 **가이드와 식별 불가** + 전용 홈 없음. 아티팩트 범례
+  "가이드(how-to)"가 이 사실을 **은폐**(자기설명 실패, D4류) → 라벨은 "작업 절차·복구(how-to)"로 이미 선반영.
+  **결정 B(1급 승격):**
+  (1) **분류 type 어휘에 `troubleshooting` 추가** — doc-health 분류(inventory 병렬분류) + scorecard가 독립 type으로
+  식별(how-to 하위변종 아님). 질문어 = "깨졌을 때 무엇을·어떻게 복구".
+  (2) **전용 홈** — 권장 `docs/how-to/troubleshooting/`(Diátaxis how-to 계열 응집 유지 + 식별성 확보) vs 대안
+  `docs/troubleshooting/`(완전 독립). ← 둘 중 최종 폴더는 착수 시 확정(권장=how-to/troubleshooting/).
+  (3) migrate `plan_moves`에 troubleshooting→그 폴더 배정. render 타입색·범례·트리에 troubleshooting 추가(6→7색).
+  (4) **진단 차원** — 트러블슈팅 절차성(link-only 아님) 품질 차원 유지/강화.
+  **승계할 가드레일(설계 정신 보존):** 트러블슈팅은 **진짜 절차**여야(명령·진단·복구). `symptom→link`만인 링크-전용
+  트러블슈팅 금지(Status 복제·부패). 증상 alias는 주인 문서(한계·개념 함정)에. → B 승격 후에도 이 가드는 유지.
+  **supersede 대상:** knowledge.md L17(Diátaxis=폴더 아님 — troubleshooting은 예외로 식별 필요)·L27(타입표 how-to/
+  매핑)·L30(가드). **ADR 신설 필요**(현 stance 부분 supersede; 이연 [doc-type-templates](docs/specs/doc-type-templates/design.md)
+  트랙과 묶음). **착수 시점:** 증분 4 마무리 후 doc-type 개선 트랙.
 - **🆕 setup-docs 재설계 — 진단-주도 전체-repo 마이그레이션 (2026-07-08, 브레인스토밍→스펙→증분3 완료):**
   하드닝 루프 발견(G1~G4: docs/ 중심·밖 방치·전-계정팅 부재·설치≠완료)을 재설계로 확장. **미션 = 전 프로젝트
   문서를 `docs/`로 중앙집중 + 유실 0.** 6-Phase(전체-repo 병렬 탐색 → 9차원 등급 채점 → 시각 승인

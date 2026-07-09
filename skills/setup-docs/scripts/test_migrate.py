@@ -53,6 +53,34 @@ def test_plan_moves_collision_raises():
         migrate.plan_moves(inv)
 
 
+def test_plan_moves_skips_nested_router_and_readme_no_collision():
+    inv = [
+        {"path": "src/a/mocks/README.md", "type": "reference"},   # DF1 → skip
+        {"path": "src/b/api/README.md", "type": "reference"},     # DF1 → skip(둘 다면 예전엔 docs/README.md 충돌)
+        {"path": "src/a/CLAUDE.md", "type": "reference"},         # DF2 → skip
+        {"path": "guide.md", "type": "how-to"},                   # 정상 이동
+    ]
+    plan = migrate.plan_moves(inv)                                # 충돌 ValueError 안 남
+    dests = {p["src"]: p["dest"] for p in plan}
+    assert "src/a/mocks/README.md" not in dests
+    assert "src/b/api/README.md" not in dests
+    assert "src/a/CLAUDE.md" not in dests
+    assert dests["guide.md"] == "docs/how-to/guide.md"
+
+
+def test_plan_moves_moves_buried_docs_index_readme():
+    # 리뷰 픽스: 매몰된 docs 트리의 README(인덱스)는 content이므로 형제 문서(guide.md)와
+    # 함께 이동해야 한다 — tooling으로 남아 제자리 스트랜딩되면 링크가 끊긴다.
+    inv = [
+        {"path": "src/a/docs/README.md", "type": "reference"},    # 픽스 → content → 이동
+        {"path": "src/a/mocks/README.md", "type": "reference"},   # DF1 → skip
+    ]
+    plan = migrate.plan_moves(inv)
+    dests = {p["src"]: p["dest"] for p in plan}
+    assert dests["src/a/docs/README.md"] == "docs/README.md"
+    assert "src/a/mocks/README.md" not in dests
+
+
 def test_rewrite_links_updates_moved_target():
     mm = {"a.md": "docs/reference/a.md", "b.md": "docs/how-to/b.md"}
     out = migrate.rewrite_links("see [B](b.md)", "a.md", mm)
@@ -281,7 +309,6 @@ def test_build_and_verify_no_false_loss_on_preexisting_index(tmp_path):
 def _health_stub():
     return {
         "repo": {"name": "r", "docs_count": 3, "branch": "main"},
-        "grade": {"current": "F", "target": "A"},
         "counts": {"fail": 5, "warn": 0, "pass": 4},
         "scorecard": {"mechanical": [], "judgment": []},
         "trees": {"before": {"title": "지금", "tag": "지금", "sub": "", "lines": []}},
@@ -296,7 +323,8 @@ def test_assemble_plan_data_fills_after_and_migration():
     assert d["migration"] == [{"src": "help.md", "dest": "docs/how-to/help.md",
                                "ops": ["move"], "impact": "custom-sync grep 경로 깨짐"}]
     assert d["trees"]["after"]["tag"] == "목표"
-    assert any(cls == "new" for _, cls in d["trees"]["after"]["lines"])
+    # after 트리는 타입-색 폴더(파일 무색) 중첩 — how-to dest → t-howto 폴더 클래스(D3·D6①)
+    assert any(cls == "t-howto" for _, cls in d["trees"]["after"]["lines"])
     assert d["decisions"] == []
 
 
@@ -354,3 +382,51 @@ def test_register_all_ignores_fenced_example_link_in_home_file(tmp_path):
     _mk(tmp_path, "docs/decisions/moved.md", "# 이동된 ADR\n")
     migrate.register_all(tmp_path)                      # RuntimeError 없이 실제로 배선돼야
     assert not gate.analyze(tmp_path).orphans
+
+
+def test_build_and_verify_returns_preexisting_broken(tmp_path):
+    # 기존부터 깨진 링크(nowhere.md)가 있는 repo → build_and_verify가 preexisting_broken을 반환(드롭 안 함)
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n- [x](docs/x.md)\n")
+    _mk(tmp_path, "docs/x.md", "# X\n본문. [dead](nowhere.md)\n")   # nowhere.md 없음 = 기존 broken
+    (tmp_path / ".git").mkdir()
+    res = migrate.build_and_verify(tmp_path, [])
+    assert "preexisting_broken" in res
+    assert any("nowhere.md" in raw for _rel, raw in res["preexisting_broken"])
+
+
+def test_assemble_plan_data_threads_preexisting_broken():
+    pre = [("docs/x.md", "nowhere.md")]
+    d = migrate.assemble_plan_data(
+        _health_stub(),
+        [{"src": "a.md", "dest": "docs/a.md", "ops": ["move"], "impact": "이동시 grep 깨짐"}],
+        preexisting_broken=pre)
+    assert d["preexisting_broken"] == pre
+    # impact는 에이전트 소스 그대로(preexisting이 덮지 않음)
+    assert d["migration"][0]["impact"] == "이동시 grep 깨짐"
+
+
+def test_assemble_plan_data_carries_orphan_before_and_after():
+    from migrate import assemble_plan_data
+    health = {"trees": {}, "orphans": 12}
+    move_plan = [{"src": "a.md", "dest": "docs/reference/a.md", "ops": ["move"], "impact": None}]
+    data = assemble_plan_data(health, move_plan, orphans_after=0)
+    assert data["orphans_before"] == 12
+    assert data["orphans_after"] == 0
+
+
+def test_assemble_plan_data_orphan_defaults_when_absent():
+    from migrate import assemble_plan_data
+    data = assemble_plan_data({"trees": {}}, [])
+    assert data["orphans_before"] is None
+    assert data["orphans_after"] is None
+
+
+def test_plan_moves_troubleshooting_to_own_folder():
+    inv = [
+        {"path": "recover-db.md", "type": "troubleshooting"},
+        {"path": "fix-oom.md", "type": "troubleshooting"},
+    ]
+    dests = {p["src"]: p["dest"] for p in migrate.plan_moves(inv)}
+    assert dests["recover-db.md"] == "docs/troubleshooting/recover-db.md"
+    assert dests["fix-oom.md"] == "docs/troubleshooting/fix-oom.md"

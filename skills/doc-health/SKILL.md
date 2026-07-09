@@ -8,7 +8,7 @@ description: 문서 건강을 전체-repo 탐색+9차원 채점으로 진단(읽
 ## Overview
 
 **읽기전용 진단 생산자.** repo 전체를 탐색해 9차원(기계 M1~M5 + 판단 J1~J4)으로 채점하고,
-등급(F~A)·자세(GREENFIELD/HEALTHY/MESSY)를 매긴다. 산출물은 render_report 데이터 모델의
+자세(GREENFIELD/HEALTHY/MESSY)를 매긴다. 산출물은 render_report 데이터 모델의
 **부분집합**이다 — doc-health는 목표 트리를 그리지 않고, 마이그레이션을 계획하지 않고, 결정
 패널을 만들지 않는다. **아무것도 바꾸지 않는다.** 소비·변경(목표트리·마이그레이션·결정 패널)은
 setup-docs 몫이다.
@@ -26,7 +26,7 @@ setup-docs 몫이다.
 
 2. **병렬 분류 — 판단, 코드 아님.** 목록을 슬라이스로 나눠 서브에이전트를 동시에 띄워 각 문서를
    판정한다. 산출 매니페스트 형태: `[{path, type, role, coupling, summary}, ...]`.
-   - `type` ∈ ADR/spec/how-to/reference/PRD/legacy.
+   - `type` ∈ ADR/spec/how-to/troubleshooting/reference/PRD/legacy.
    - `coupling` = 코드참조·외부싱크·동결역사 같은 결합 신호.
    - **판단 휴리스틱의 단일 소스는 [`skills/setup-docs/reference/knowledge.md`](../setup-docs/reference/knowledge.md)** — 여기서 중복 서술하지 않는다.
    - disposition(router/tooling/content)은 `scorecard.py`가 경로 규칙으로 결정론 계산하므로,
@@ -45,8 +45,8 @@ setup-docs 몫이다.
    - 판단 기준(루브릭)은 [`reference/scoring.md`](reference/scoring.md)를 따른다.
 
 5. **채점.** `python3 skills/doc-health/scripts/scorecard.py <repo> --manifest manifest.json --judgment judgment.json`
-   → 기계 차원(M1~M5) + 앞서 만든 판단 차원(J1~J4) + 등급 rollup + 자세 힌트가 담긴 데이터 dict를
-   stdout에 JSON으로 낸다. **`--judgment`는 필수 인자다** — 9차원(M+J)을 전부 평가해야 등급이
+   → 기계 차원(M1~M5) + 앞서 만든 판단 차원(J1~J4) + 자세 힌트가 담긴 데이터 dict를
+   stdout에 JSON으로 낸다. **`--judgment`는 필수 인자다** — 9차원(M+J)을 전부 평가해야 점수표가
    정직해지므로, 판단을 건너뛰고 기계 차원만으로 채점을 시도할 수 없다. `--manifest`는 선택(주면
    결과 dict의 `inventory` 키로 그대로 들어간다).
 
@@ -72,7 +72,7 @@ setup-docs 몫이다.
 doc-health가 채우는 키(render_report 데이터 모델의 부분집합):
 
 ```
-repo(name·docs_count·branch) · grade(current·target) · counts(fail·warn·pass) ·
+repo(name·docs_count·branch) · counts(fail·warn·pass) ·
 scorecard(mechanical·judgment) · trees.before · posture · inventory(선택)
 ```
 
@@ -81,7 +81,7 @@ scorecard(mechanical·judgment) · trees.before · posture · inventory(선택)
 
 ## Common Mistakes
 
-- **unaccounted STOP을 무시하고 진행** — 잊힌 문서가 있는 채로 채점하면 등급이 거짓말이 된다.
+- **unaccounted STOP을 무시하고 진행** — 잊힌 문서가 있는 채로 채점하면 점수표가 거짓말이 된다.
 - **판단(J1~J4·타입분류·MESSY 하위자세)을 코드로 박제하려는 시도** — 이 스킬의 판단 차원은
   산문 절차다. 결정론화하면 §7.5 앵커 특화 교훈(코드가 아니라 에이전트가 실제 문서를 보고
   판정해야 한다)을 반복하게 된다.

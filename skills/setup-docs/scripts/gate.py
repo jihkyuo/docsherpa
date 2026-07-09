@@ -44,8 +44,13 @@ def index_of(directory: Path):
 def targets_in(path: Path):
     """파일 안의 모든 링크/임포트 타겟 문자열을 (raw) 리스트로 반환.
 
-    펜스 코드블록(``` … ```)은 예시라 live 링크가 아니므로 추출 전에 제거한다."""
-    text = path.read_text(encoding="utf-8", errors="ignore")
+    펜스 코드블록(``` … ```)은 예시라 live 링크가 아니므로 추출 전에 제거한다.
+    읽을 수 없는 파일(권한 등)은 링크 없음으로 본다 — 검사기가 크래시하면
+    (CLI) 또는 통째 except에 먹혀 침묵하면(훅) 그게 더 나쁘다."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return []
     text = FENCE_RE.sub("", text)
     out = [m.group(1) for m in IMPORT_RE.finditer(text)]
     out += [m.group(1) for m in LINK_RE.finditer(text)]
@@ -128,6 +133,15 @@ def analyze(root):
     return GateResult(root, router_present, broken, orphans, all_docs, visited, homes)
 
 
+def _rel(path, root):
+    """root 기준 상대경로. 라우터가 ../로 root 밖 문서를 링크하면 relative_to가
+    ValueError로 터진다 — 그땐 절대경로로라도 보고한다(크래시·침묵 금지)."""
+    try:
+        return path.relative_to(root)
+    except ValueError:
+        return path
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     require_markers = "--require-markers" in argv
@@ -149,7 +163,7 @@ def main(argv=None):
                           f"{contract.ROUTING_MARKER}·{contract.INDEX_MARKER}를 "
                           "헤딩줄에 함께 가진 파일이 필요하다.")
         elif len(res.homes) > 1:
-            rels = ", ".join(str(h.relative_to(root)) for h in res.homes)
+            rels = ", ".join(str(_rel(h, root)) for h in res.homes)
             marker_msg = f"마커 home 중복(정확히 1개여야): {rels}"
 
     ok = not res.broken and not res.orphans and markers_ok
@@ -160,11 +174,11 @@ def main(argv=None):
     if res.broken:
         print("\n깨진 링크:")
         for src, raw in res.broken:
-            print(f"  {src.relative_to(root)} -> {raw}")
+            print(f"  {_rel(src, root)} -> {raw}")
     if res.orphans:
         print("\n고아 문서(인덱스에서 도달 불가):")
         for d in res.orphans:
-            print(f"  {d.relative_to(root)}")
+            print(f"  {_rel(d, root)}")
     if require_markers and not markers_ok:
         print("\n" + marker_msg)
 
