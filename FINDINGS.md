@@ -2,22 +2,54 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
-- **▶️ 다음 작업 — 이 순서로 (2026-07-09 갱신: ①② 완료, ③부터):**
+- **🎯 ③④ vd-front 재실행 완료(2026-07-09) — ②가 실전 검증됨, 새 엔진 결함 DF4 발견:**
+  랜딩 브랜치 **`docsherpa/migrate-e43acbcf`**(vd-front, 커밋 `39f38b0f`, 검토·머지는 사용자).
+  **②는 실전 검증 성공 — 매니페스트 손편집 0건.** 직전 dogfood가 손으로 우회하던 4건을 엔진이 자동 처리:
+  `src/features/custom/CLAUDE.md`·`docs/CLAUDE.md`(DF2 어느 깊이든 router) · `shared/api/README.md`·
+  `src/mocks/README.md`(DF1 코드-인접). **DF1 정밀화도 실전에서 살았다** — `src/features/custom/shared/docs/README.md`가
+  stranded되지 않고 이주(리뷰가 안 잡았으면 이 레포에서 그대로 터졌다).
+  **결과:** 문서 65→92(스캐폴드 포함) · 이동 42 · **고아 18→0** · **순수 삭제(D) 0건**(git rename 회계로 내용소실0 증명) ·
+  unaccounted 0 · new_broken 0 · anchor_lost 0 · per_file 0 · markers_ok · 성장루프 설치(M2·M3·M4 pass).
+  **등급 F→D.** broken 6은 **전부 preexisting**(오라클이 `new_broken=0 ∧ unexplained_broken=0`으로 증명 — 눈으로 본 게 아님).
+  **작업트리·기존 브랜치 무영향 실측:** HEAD 불변 · 현재 브랜치 불변 · dirty 0 · worktree 잔재 0 · 브랜치 diff = 신규 1개뿐
+  (옛 `docsherpa/migrate-59f05e69` 보존 — 삭제 불필요했음).
+  **④ 도메인 결정(사용자, Phase 2 게이트에서):** 1)조직축=**타입 우선** 2)버전쌍=**둘 다 살림(동결 없음)**
+  3)dnd 토픽 승격=**안 함** 4)커스텀 인덱스=**개명 이동**(`docs/custom-docs-index.md` — 루트 인덱스 자리 회피).
+  **런타임에 안전장치 2개가 실제로 발동(설계 검증):** 분류 6분 사이 사용자가 vd-front에 커밋(`e43acbcf`) →
+  ① `inventory.unaccounted` 완결성 가드가 분모 64→65 변동을 잡아 **진행 거부**(잊힌 문서 0 불변식) ·
+  ② `land_migration` HEAD 핀이 스테일 계획 랜딩을 막음. 둘 다 **파괴 방지가 아니라 정직성 보장** 장치다
+  (워크트리 격리가 브랜치를 지키고, HEAD 핀이 "승인한 계획=랜딩된 결과"를 지킨다 — 서로 다른 축).
+  **🆕 DF4(신규 엔진 결함, 다음 배치 후보) — `legacy`가 등급 상한을 D로 못박는다:**
+  `plan_moves`는 `type=="legacy"`(동결역사)를 **제자리 skip**하는데, `scorecard.outside_content`는 **경로 기반
+  `disposition`만 보므로 `legacy`를 모른다** → docs/ 밖 legacy를 M5 위반으로 센다 → `rollup`의
+  `if m["M5"]=="fail": return "D"`로 **영구 D 상한**. 반증 시도로 확정: M1~M4 pass + J1~J4 전부 pass여도
+  legacy 6건 때문에 **D**, M5만 통과시키면 **A**. **ADR 0018의 논리와 모순** — 0018은 "M5의 파묻힘 0 =
+  *중앙집중 대상* 문서가 모두 docs/ 아래"라 정의했는데, legacy는 설계상 중앙집중 대상이 **아니다**(제자리 동결).
+  즉 0018이 명문화한 in-place 클래스(router·tooling, 경로 기반)에 **legacy(타입 기반)가 빠져 있다.**
+  후보: (a) `scorecard.assemble`이 이미 받는 `inventory` 매니페스트로 `type=="legacy"`를 M5 분모에서 제외 ·
+  (b) legacy를 `docs/legacy/`로 이주 · (c) 수용. **(a)가 0018 정신과 정합**(제자리 클래스 = 도달성·M5 면제).
+- **▶️ 다음 작업 — 이 순서로 (2026-07-09 갱신: ①②③④ 완료):**
   아티팩트 자기설명 트랙은 **완료**. 증분 4 land_migration 엔진은 **origin/main 머지됨**(PR#10).
   **①트러블슈팅 1급 + ②disposition 하드닝도 이번 배치로 완료**(아래 🧭 블록). 현재 작업 브랜치 =
   `fix/artifact-preexisting-label-beforetree`(**179 setup-docs + 34 doc-health green, self-gate PASS**,
-  **PR은 사용자 지시 전까지 보류**). **다음은 이 2단계:**
+  **PR은 사용자 지시 전까지 보류**). **①②③④ 전부 완료 — 다음 후보:**
   ```
-  ③ vd-front 시험 브랜치 폐기 + dogfood 재실행   ← 여기부터
-  ④ 재실행이 낸 Phase 2 진단·"당신의 결정" 아티팩트에서 → 도메인 결정을 그 자리에서
+  A. DF4 픽스 (legacy가 M5 등급 상한 D로 못박음 — 위 🎯 블록, ADR 0018 정합성 문제)
+  B. docsherpa PR (브랜치 15+커밋 누적, 최종리뷰 READY TO MERGE — 사용자 지시 대기)
+  C. vd-front 랜딩 브랜치 docsherpa/migrate-e43acbcf 검토·머지 (사용자 몫)
+  D. 잔여 Minor: ENTRY_FILENAMES 비대칭 대소문자 픽스 · _MAP_DOC 리터럴0 가드 테스트
   ```
-  **핵심 원칙(꼭 지킬 것):** 도메인 결정(org 타입-흩뿌림 vs 기능응집 · legacy 통합 · co-change topic)은 **미리 정하지
-  말 것.** 파이프라인이 Phase 2 승인 게이트에서 표면화하는 산출물이다(설계 §10 결정 표면화). ①②가 분류·계획을 바꿨으므로
-  **재실행하면 진단이 달라진다** → stale 입력으로 선결하면 낭비·오류. §10대로 재실행 산출물 보고 그 자리(④)에서 결정.
-  **③ 재실행 기술 주의(중요):** land_migration은 브랜치명을 `docsherpa/migrate-<head_sha[:8]>`로 결정론 생성. vd-front
-  HEAD(`59f05e69`, feat/VDS-892)가 미머지로 그대로라 같은 sha 재실행 시 **"이미 브랜치 있음" RuntimeError STOP**
-  (증분4 Critical 픽스=재호출 브랜치 보호). 그러니 재실행 전 `git -C /Users/jiohyeon/Desktop/projects/vd-front branch -D
-  docsherpa/migrate-59f05e69` 먼저(검토용·작업트리 무영향, 손실0).
+  **① 트러블슈팅은 실전 미검증:** vd-front엔 troubleshooting 문서가 **0건**이라 1급 타입이 배치를 타지 않았다
+  (범례·CSS만 존재). 트러블슈팅 문서가 있는 레포에서 재검증 필요 — 숨기지 말 것.
+  **③ 재실행 기술 주의(2026-07-09 실측으로 정정):** land_migration은 브랜치명을 `docsherpa/migrate-<head_sha[:8]>`로
+  결정론 생성. ~~vd-front HEAD가 `59f05e69`라 재실행 시 브랜치 충돌 STOP → `git branch -D` 선행 필요~~ →
+  **틀림. vd-front HEAD가 `b6329632`로 이동함**(`59f05e69`는 그 조상). 새 브랜치명 = `docsherpa/migrate-b6329632`라
+  **충돌 없음** → 옛 브랜치 `docsherpa/migrate-59f05e69`는 **삭제하지 말고 비교 기준선으로 보존**(비파괴 원칙:
+  안 지워도 되는 걸 지우지 않는다). 재실행 전 확인할 것: 작업트리 clean(dirty=0) · gitignored `.md`=0 —
+  이 둘이 성립해야 Phase 1b 스크래치 복사본(`.git` 제외)과 Phase 3 워크트리(추적 파일만)의 트리가 같아
+  **1b가 3의 충실한 리허설**이 된다(어긋나면 3에서 `apply_moves` "src 부재" STOP).
+  **워크트리 격리는 엔진이 이미 한다:** `land_migration`이 이중 worktree(`tempfile.mkdtemp`)로 격리 —
+  `feat/VDS-892`·작업트리는 checkout조차 안 됨. Phase 0~2는 `build_and_verify`가 tempdir 복사만 쓰므로 **변형 0**.
   **③에서 검증할 것(②가 갚은 빚):** 직전 dogfood는 DF1/DF2를 **매니페스트 손편집으로 우회**했다. 이제 disposition이
   중첩 라우터·코드-인접 README를 자동 skip하므로 **손수정 0으로 계획이 나와야** 한다. 특히 vd-front의
   `src/features/custom/shared/docs/**`는 그 폴더의 `README.md`(문서 인덱스)까지 **함께 이주**해야 한다(DF1 정밀화).
