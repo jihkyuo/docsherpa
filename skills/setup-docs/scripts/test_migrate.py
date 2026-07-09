@@ -377,3 +377,19 @@ def test_assemble_plan_data_threads_preexisting_broken():
     assert d["preexisting_broken"] == pre
     # impact는 에이전트 소스 그대로(preexisting이 덮지 않음)
     assert d["migration"][0]["impact"] == "이동시 grep 깨짐"
+
+
+def test_assemble_plan_data_carries_orphan_before_and_after():
+    from migrate import assemble_plan_data
+    health = {"trees": {}, "orphans": 12}
+    move_plan = [{"src": "a.md", "dest": "docs/reference/a.md", "ops": ["move"], "impact": None}]
+    data = assemble_plan_data(health, move_plan, orphans_after=0)
+    assert data["orphans_before"] == 12
+    assert data["orphans_after"] == 0
+
+
+def test_assemble_plan_data_orphan_defaults_when_absent():
+    from migrate import assemble_plan_data
+    data = assemble_plan_data({"trees": {}}, [])
+    assert data["orphans_before"] is None
+    assert data["orphans_after"] is None

@@ -536,16 +536,19 @@ def per_file_accounting(base_root, cur_root, move_plan):
     return viol
 
 
-def assemble_plan_data(health, move_plan, decisions=None, preexisting_broken=None):
-    """doc-health 부분 dict → render_report plan 계약(trees.after·migration·decisions·preexisting_broken 추가).
+def assemble_plan_data(health, move_plan, decisions=None, preexisting_broken=None, orphans_after=None):
+    """doc-health 부분 dict → render_report plan 계약(trees.after·migration·decisions·preexisting_broken·orphans 추가).
 
     preexisting_broken(엔진 검출 "이동 전부터 깨져 있던 링크", [(rel,raw)])은 impact(에이전트 저작
-    "이동-유발 위험")와 다른 축이라 별도 키로 둔다 — 콜아웃 아니라 _render_preexisting 섹션으로 렌더된다."""
+    "이동-유발 위험")와 다른 축이라 별도 키로 둔다 — 콜아웃 아니라 _render_preexisting 섹션으로 렌더된다.
+    orphans_before(health의 Phase 0 고아 수)·orphans_after(build_and_verify 검증값)는 규모 라인(.mig-head)용."""
     data = dict(health)
     data["trees"] = dict(data.get("trees", {}))
     data["trees"]["after"] = _after_tree(move_plan)
     data["migration"] = list(move_plan)
     data["decisions"] = list(decisions or [])
     data["preexisting_broken"] = list(preexisting_broken or [])
+    data["orphans_before"] = health.get("orphans")
+    data["orphans_after"] = orphans_after
     data.setdefault("summary", {})
     return data

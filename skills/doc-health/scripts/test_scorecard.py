@@ -271,3 +271,14 @@ def test_before_tree_is_nested_scaffolding_not_flat():
     assert any(cls is None for _txt, cls in t["lines"])
     # 들여쓰기(중첩) 존재
     assert any(s.startswith("  ") for s in texts)
+
+
+def test_assemble_emits_structured_orphan_count(tmp_path):
+    # 고아 문서(라우터에서 도달 불가)가 있는 repo → orphans 정수 방출
+    (tmp_path / "AGENTS.md").write_text("# router\n", encoding="utf-8")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "orphan.md").write_text("# not linked\n", encoding="utf-8")
+    files = ["AGENTS.md", "docs/orphan.md"]
+    d = scorecard.assemble(tmp_path, files, _judg("fail", "pass", "pass", "pass"))
+    assert isinstance(d["orphans"], int)
+    assert d["orphans"] == 1

@@ -202,6 +202,7 @@ def assemble(root, files, judgment, inventory=None):
         "scorecard": {"mechanical": mech, "judgment": judgment},
         "trees": {"before": _before_tree(files)},
         "posture": posture_hint(res, files, mech),
+        "orphans": len(res.orphans),
     }
     if inventory is not None:
         out["inventory"] = inventory
