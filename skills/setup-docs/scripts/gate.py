@@ -30,6 +30,10 @@ import contract
 LINK_RE = re.compile(r"\]\(([^)]+)\)")           # 마크다운 링크 ](target)
 IMPORT_RE = re.compile(r"(?m)^[ \t]*@([^\s)]+\.md)")  # 줄-선두 @path.md import(산문 속 @언급 제외)
 FENCE_RE = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)  # 펜스 코드블록(예시, live 링크 아님)
+# 인라인 코드스팬(예시, live 링크 아님). CommonMark §6.3: 여는/닫는 백틱 런의 **길이가 같아야**
+# 스팬이 성립한다. 런 길이를 강제하지 않으면(`` `+…`+ ``) 짝 없는 런이 뒤따르는 **live 링크를
+# 삼켜** 거짓 음성이 된다 — 오라클에선 거짓 양성보다 나쁘다.
+CODE_SPAN_RE = re.compile(r"(?<!`)(`+)[^`\n]*?\1(?!`)")
 
 
 def index_of(directory: Path):
@@ -44,14 +48,18 @@ def index_of(directory: Path):
 def targets_in(path: Path):
     """파일 안의 모든 링크/임포트 타겟 문자열을 (raw) 리스트로 반환.
 
-    펜스 코드블록(``` … ```)은 예시라 live 링크가 아니므로 추출 전에 제거한다.
+    코드(펜스 블록 ``` … ``` 과 인라인 코드스팬 `…`)는 예시라 live 링크가 아니므로 추출 전에
+    제거한다 — 마크다운 렌더러도 이들을 링크로 만들지 않는다. 인라인까지 지워야 링크 문법을
+    *논하는* 문서(게이트 스펙·재작성 표·마이그레이션 계획)가 거짓 broken으로 잡히지 않고,
+    SKILL.md가 처방하는 de-link(백틱화)가 실제로 동작한다. 코드스팬이 링크 *텍스트* 안에
+    있는 흔한 형태(`` [`x.py`](x.md) ``)는 `](…)` 토큰이 스팬 밖이라 그대로 살아남는다.
     읽을 수 없는 파일(권한 등)은 링크 없음으로 본다 — 검사기가 크래시하면
     (CLI) 또는 통째 except에 먹혀 침묵하면(훅) 그게 더 나쁘다."""
     try:
         text = path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return []
-    text = FENCE_RE.sub("", text)
+    text = CODE_SPAN_RE.sub("", FENCE_RE.sub("", text))
     out = [m.group(1) for m in IMPORT_RE.finditer(text)]
     out += [m.group(1) for m in LINK_RE.finditer(text)]
     return out
