@@ -18,6 +18,7 @@
 1. 구조적 결정(왜) → docs/decisions/NNNN-*.md (_template 복사) + README 로그 추가
 2. 제품 요구(왜 만드나·누구에게·성공/수용 기준) → docs/product/*.md (여러 개면 _README 인덱스화)
 3. 절차/복구(어떻게) → docs/how-to/*.md (3개↑면 _README 인덱스화)
+3t. 장애 복구(깨졌을 때 무엇을·어떻게) → docs/troubleshooting/*.md — 실제 절차(명령·진단·복구)일 때만
 4. 기능 스펙(무엇을) → docs/specs/<feature>/ + plans/
 5. 함께 읽혀야 할 문서 ≥2개(co-change) → docs/<topic>/ 승격, 리드 문서가 인덱스
 6. 그 외 단일 reference/explanation → docs/ 평면 [디폴트]
