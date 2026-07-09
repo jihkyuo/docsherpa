@@ -91,3 +91,15 @@ def test_disposition_buried_docs_index_readme_is_content():
     # 코드-인접(부모에 docs 없음)은 여전히 tooling
     assert contract.disposition("src/a/mocks/README.md") == "tooling"
     assert contract.disposition("src/apis/readme.md") == "tooling"
+
+
+def test_disposition_buried_docs_index_readme_parent_case_insensitive():
+    # 어드버서리얼 codex 리뷰 픽스: 부모 세그먼트 "docs" 검사가 대소문자 구분이라
+    # Docs/README.md 같은 대문자 docs 트리의 인덱스가 tooling으로 잘못 분류됐다.
+    assert contract.disposition("Docs/README.md") == "content"
+    assert contract.disposition("src/Docs/README.md") == "content"
+    assert contract.disposition("src/a/DOCS/README.md") == "content"
+    # 회귀 가드: 기존 케이스는 그대로 유지
+    assert contract.disposition("src/a/mocks/README.md") == "tooling"
+    assert contract.disposition("src/a/docs/README.md") == "content"
+    assert contract.disposition("README.md") == "tooling"

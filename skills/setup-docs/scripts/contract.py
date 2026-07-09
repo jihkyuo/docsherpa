@@ -36,7 +36,7 @@ def disposition(rel_path):
         return "tooling"
     if len(parts) == 1 and name.lower() in _ROOT_CONVENTION:
         return "tooling"
-    if name.lower() == "readme.md" and "docs" not in parts[:-1]:   # DF1: 코드-인접 README만 제자리(docs 트리의 인덱스는 문서로 이동)
+    if name.lower() == "readme.md" and "docs" not in [p.lower() for p in parts[:-1]]:   # DF1: 코드-인접 README만 제자리(docs 트리의 인덱스는 문서로 이동, 부모 세그먼트 검사도 대소문자 무시)
         return "tooling"
     return "content"
 
