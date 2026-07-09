@@ -5,6 +5,8 @@ docsherpa-managed 아니면) 침묵. 문제 없으면 침묵. 문제 있으면 �
 항상 return 0.
 """
 import json
+import os
+import tempfile
 from pathlib import Path
 
 import gate
@@ -101,6 +103,46 @@ def test_truncates_long_broken_link_list(tmp_path, capsys):
     assert rc == 0
     assert "외 " in out
     assert len(out) < 2000
+
+
+def test_broken_link_outside_root_still_reports(tmp_path, capsys):
+    # 회귀 가드: 라우터가 root 바깥(../)을 가리키고, 그 바깥 문서에 깨진 링크가 있으면
+    # src.relative_to(root)가 ValueError를 던진다. _hook_main의 포괄 except가 그걸
+    # 삼켜 진짜 문제를 침묵시키면 안 된다.
+    with tempfile.TemporaryDirectory() as outside_dir:
+        outside = Path(outside_dir)
+        (outside / "outside.md").write_text(
+            "# outside\n- [죽음](./ghost.md)\n", encoding="utf-8"
+        )
+        rel = os.path.relpath(outside, tmp_path)
+        (tmp_path / "AGENTS.md").write_text(
+            f"# repo\n- [문서 지도](docs/_map.md)\n- [외부]({rel}/outside.md)\n",
+            encoding="utf-8",
+        )
+        _map_with_markers(tmp_path)
+        rc = gate.main(["--hook", str(tmp_path)])
+        out = capsys.readouterr().out
+    assert rc == 0
+    assert "깨진 링크" in out
+    assert "ghost.md" in out
+
+
+def test_hook_skips_analyze_when_no_router(tmp_path, monkeypatch):
+    # 라우터가 아예 없으면 analyze()의 무조건적 docs/ rglob조차 돌리면 안 된다
+    # (플러그인만 설치되고 docsherpa를 안 쓰는 레포에서 매 세션 비용을 물리는 회귀 가드).
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "a.md").write_text("# a\n", encoding="utf-8")
+    calls = []
+    orig_analyze = gate.analyze
+
+    def spy(root):
+        calls.append(root)
+        return orig_analyze(root)
+
+    monkeypatch.setattr(gate, "analyze", spy)
+    rc = gate.main(["--hook", str(tmp_path)])
+    assert rc == 0
+    assert calls == []
 
 
 def test_hooks_json_wires_session_start():

@@ -133,7 +133,11 @@ def _hook_report(root, res):
     lines = [f"docsherpa: 문서 링크 검사 — 깨진 링크 {len(res.broken)}건 · 고아 {len(res.orphans)}건"]
     if res.broken:
         for src, raw in res.broken[:10]:
-            lines.append(f"  {src.relative_to(root)} -> {raw}")
+            try:
+                shown = src.relative_to(root)
+            except ValueError:
+                shown = src  # root 바깥(../ 등)으로 나간 경로 — 절대경로로라도 보고한다.
+            lines.append(f"  {shown} -> {raw}")
         if len(res.broken) > 10:
             lines.append(f"  ... 외 {len(res.broken) - 10}건")
     if res.orphans:
@@ -149,9 +153,11 @@ def _hook_report(root, res):
 def _hook_main(root):
     """SessionStart 훅용: 침묵이 기본, docsherpa-managed 레포에 문제가 있을 때만 보고. 절대 막지 않는다(항상 0)."""
     try:
-        res = analyze(root)
-        if not res.router_present:
+        # 라우터 자체가 없으면 analyze()의 무조건적 docs/ rglob(비쌀 수 있다)까지 갈 필요 없다 —
+        # 플러그인만 설치되고 docsherpa를 안 쓰는 레포에서 매 세션 비용을 무는 걸 막는다.
+        if not any((root / n).is_file() for n in contract.ENTRY_FILENAMES):
             return 0
+        res = analyze(root)
         # homes는 도달 가능 문서 기준이라 라우터 링크가 깨지면 0이 되어버린다(가장 필요할 때 침묵하는 버그).
         # docsherpa-managed 여부는 도달성과 무관하게 디스크에서 직접 판정한다.
         candidates = [root / "docs" / "_map.md"] + [root / n for n in contract.ENTRY_FILENAMES]
