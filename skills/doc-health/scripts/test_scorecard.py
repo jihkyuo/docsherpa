@@ -255,3 +255,19 @@ def test_disposition_root_convention_case_insensitive():
     assert scorecard.disposition("readme.md") == "tooling"
     assert scorecard.disposition("README.md") == "tooling"
     assert scorecard.disposition("Changelog.MD") == "tooling"
+
+
+def test_before_tree_is_nested_scaffolding_not_flat():
+    files = ["src/features/custom/shared/docs/a.md",
+             "src/features/custom/shared/docs/b.md",
+             "api-help.md"]
+    t = scorecard._before_tree(files)
+    texts = [line[0] for line in t["lines"]]
+    # 중첩: 상위 폴더 라인(src/·features/ 등)이 개수와 함께 존재(평면이면 없음)
+    assert any(s.strip().startswith("src/") and "(" in s for s in texts)
+    assert any(s.strip().startswith("docs/") and "(" in s for s in texts)
+    # 파일은 stray 클래스, 폴더는 무색
+    assert any(cls == "stray" for _txt, cls in t["lines"])
+    assert any(cls is None for _txt, cls in t["lines"])
+    # 들여쓰기(중첩) 존재
+    assert any(s.startswith("  ") for s in texts)

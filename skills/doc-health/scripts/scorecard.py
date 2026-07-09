@@ -145,13 +145,39 @@ def _git_branch(root):
     return txt[len(prefix):] if txt.startswith(prefix) else txt[:8]
 
 
+def _nested_lines(paths):
+    """repo-상대 경로들 → 중첩 폴더 트리 lines. 폴더=[text(개수),None]·파일=[text,'stray']."""
+    root = {}
+    for p in sorted(paths):
+        parts = p.split("/")
+        node = root
+        for seg in parts[:-1]:
+            node = node.setdefault(seg, {})
+        node.setdefault("__f__", []).append(parts[-1])
+
+    def count(n):
+        c = len(n.get("__f__", []))
+        for k, v in n.items():
+            if k != "__f__":
+                c += count(v)
+        return c
+
+    lines = []
+
+    def walk(node, pre):
+        for d in sorted(k for k in node if k != "__f__"):
+            lines.append([f"{pre}{d}/  ({count(node[d])})", None])
+            walk(node[d], pre + "  ")
+        for fn in sorted(node.get("__f__", [])):
+            lines.append([f"{pre}{fn}", "stray"])
+
+    walk(root, "")
+    return lines
+
+
 def _before_tree(files):
     outside = outside_content(files)
-    lines = []
-    if any(Path(f).parts[0] == "docs" for f in files):
-        lines.append(["docs/", None])
-    for f in outside[:12]:
-        lines.append([f, "stray"])
+    lines = _nested_lines(outside)
     sub = (f"docs/ 밖 흩어짐 · content {len(outside)}건" if outside
            else "docs/ 중심")
     return {"title": "현재 구조", "tag": "지금", "sub": sub, "lines": lines}
