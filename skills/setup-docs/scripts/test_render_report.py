@@ -261,3 +261,20 @@ def test_migration_howto_group_label_aligned():
          "migration": [{"src": "g.md", "dest": "docs/how-to/g.md", "ops": ["move"], "impact": None}]}
     html = render_report(d, "plan")
     assert "작업 절차·복구 (how-to)" in html      # mig-agg 그룹명
+
+
+def test_trees_have_collapsible_full_scaffold():
+    d = {**MIN, "migration": [
+            {"src": "guides/setup.md", "dest": "docs/how-to/setup.md", "ops": ["move"], "impact": None},
+            {"src": "old/adr-1.md", "dest": "docs/decisions/adr-1.md", "ops": ["move"], "impact": None}]}
+    html = render_report(d, "plan")
+    assert 'class="full scaffold"' in html
+    assert "<details" in html and "전체 파일 스캐폴딩" in html
+    # before(원본 경로)·after(dest 경로) 둘 다 등장 — 트리는 폴더별 들여쓰기 라인이라
+    # "docs/how-to/" 연속이 아니라 "docs/"·"how-to/"가 별도 라인으로 나온다.
+    assert "guides/" in html and "setup.md" in html      # before 원본 위치
+    assert "how-to/" in html                             # after 타입 폴더
+    # after 타입색 클래스 재사용(how-to→t-howto)
+    assert 't-howto"' in html
+    assert html.count("<div") == html.count("</div>")
+    assert html.count("<details") == html.count("</details>")

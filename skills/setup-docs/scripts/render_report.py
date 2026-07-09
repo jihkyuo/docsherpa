@@ -238,7 +238,15 @@ TEMPLATE_CSS = r"""
   .tkey .k-howto { color:var(--pass-ink); } .tkey .k-prd { color:var(--accent); }
   .tkey .k-legacy { color:var(--faint); }
 
+  details.scaffold { margin:var(--s4) 0 0; }
+  details.scaffold summary { cursor:pointer; font-size:12px; color:var(--muted); }
+  details.scaffold .sc-cols { display:grid; grid-template-columns:1fr 1fr; gap:var(--s3); padding:var(--s3) 0 0; }
+  details.scaffold .sc-col { border:1px solid var(--line); border-radius:var(--r-sm); }
+  details.scaffold .sc-col h4 { font-size:12px; font-weight:600; margin:0 0 var(--s2); color:var(--ink); }
+  details.scaffold .sc-col pre { max-height:56vh; }
+
   @media (max-width:680px) {
+    details.scaffold .sc-cols { grid-template-columns:1fr; }
     .hero { padding:var(--s4); }
     .trees { grid-template-columns:1fr; }
     .tree.a { border-right:none; border-bottom:1px solid var(--line); }
@@ -305,7 +313,7 @@ def _render_scorecard(data: dict) -> str:
             '<span class="n">현재 상태</span></h2>'
             '<p class="sec-intro"><b>필수</b> = 도구와 무관한 실제 문서 건강(도달성·커버리지). '
             '<b>채택도</b> = docsherpa 특정 장치(라우터 마커·맵 척추·자동 갱신) 설치 여부 — '
-            '자체 등가물이 있으면 “미달”이라도 실제 결함이 아닐 수 있습니다.</p>'
+            '자체 등가물이 있으면 "미달"이라도 실제 결함이 아닐 수 있습니다.</p>'
             f'<p class="grp">기계 채점</p><div class="grid">{m}</div>'
             f'<p class="grp">판단 채점</p><div class="grid">{j}</div></section>')
 
@@ -316,6 +324,32 @@ def _tree_pre(lines) -> str:
         out.append(f'<span class="{cls}">{esc(text)}</span>' if cls else esc(text))
     return "\n".join(out)
 
+_SCAFFOLD_TYPECLS = {"product": "t-prd", "specs": "t-spec",
+                     "decisions": "t-adr", "how-to": "t-howto"}
+def _scaffold_lines(paths, colored):
+    """flat 경로 리스트 → 중첩 트리 lines([[text, cls], ...]), 절단 없음(전체 파일).
+    colored=True면 docs/<type>/ 폴더를 타입색 클래스로(after 측). 파일·기타 폴더는 무색."""
+    tree = {}
+    for p in paths:
+        parts = p.split("/")
+        node = tree
+        for d in parts[:-1]:
+            node = node.setdefault(d, {})
+        node.setdefault("__f__", []).append(parts[-1])
+    lines = []
+    def walk(node, prefix, pathparts):
+        for d in sorted(k for k in node if k != "__f__"):
+            full = pathparts + [d]
+            cls = None
+            if colored and len(full) >= 2 and full[0] == "docs":
+                cls = _SCAFFOLD_TYPECLS.get(full[1])
+            lines.append([prefix + d + "/", cls])
+            walk(node[d], prefix + "  ", full)
+        for fn in sorted(node.get("__f__", [])):
+            lines.append([prefix + fn, None])
+    walk(tree, "", [])
+    return lines
+
 def _tree(side: dict, which: str) -> str:
     tagcls = "now" if which == "before" else "tgt"
     return (f'<div class="tree {"a" if which=="before" else "b"}">'
@@ -325,17 +359,31 @@ def _tree(side: dict, which: str) -> str:
 
 def _render_trees(data: dict) -> str:
     t = data["trees"]
+    mig = data.get("migration") or []
+    scaffold = ""
+    if mig:
+        before_lines = _scaffold_lines([r["src"] for r in mig], False)
+        after_lines = _scaffold_lines([r["dest"] for r in mig], True)
+        scaffold = (
+            '<details class="full scaffold"><summary>전체 파일 스캐폴딩 펼치기 '
+            '(Before → After · 타입색)</summary><div class="sc-cols">'
+            '<div class="tree sc-col"><h4>현재 (원본 위치 — 파묻힘)</h4>'
+            f'<pre>{_tree_pre(before_lines)}</pre></div>'
+            '<div class="tree sc-col"><h4>정리 후 (타입별)</h4>'
+            f'<pre>{_tree_pre(after_lines)}</pre></div>'
+            '</div></details>')
     after = f'{_tree(t["after"],"after")}' if t.get("after") else ""
     return ('<section aria-labelledby="tr"><h2 class="sec" id="tr">문서 구조 '
             '<span class="n">Before → After</span></h2>'
             '<p class="sec-intro">왼쪽 = 지금(산재·빨강), 오른쪽 = 정리 후. '
-            '오른쪽 폴더 색 = 문서 타입(아래 범례). 파일은 무색 — 색은 “어느 타입 폴더에 모였나”를 뜻합니다.</p>'
+            '오른쪽 폴더 색 = 문서 타입(아래 범례). 파일은 무색 — 색은 "어느 타입 폴더에 모였나"를 뜻합니다.</p>'
             f'<div class="card trees">{_tree(t["before"],"before")}{after}</div>'
             '<div class="tkey"><span><b class="k-prd">■</b> 제품요구(PRD)</span>'
             '<span><b class="k-spec">■</b> 명세(spec)</span>'
             '<span><b class="k-adr">■</b> 결정(ADR)</span>'
             '<span><b class="k-howto">■</b> 작업 절차·복구(how-to)</span>'
-            '<span><b class="k-legacy">■</b> 동결(legacy)</span></div></section>')
+            '<span><b class="k-legacy">■</b> 동결(legacy)</span></div>'
+            f'{scaffold}</section>')
 
 
 _BADGE = {"move": '<span class="badge move">move</span>',
@@ -404,7 +452,7 @@ def _render_migration(data: dict) -> str:
             f'<span class="n">타입별 {len(groups)}묶음 · {len(mig)}개 문서 · 유실 0</span></h2>'
             '<p class="sec-intro">문서를 타입별로 어디로 모으는지 요약입니다. '
             '막대 = 문서 수(상대), 오른쪽 = 목적지 폴더. ▲는 옮기기 전에 당신이 정해야 할 것. '
-            '문서별 전체 목록은 아래 “전체 펼치기”.</p>'
+            '문서별 전체 목록은 아래 "전체 펼치기".</p>'
             f'<div class="card">{mig_head}<div class="mig-agg">{"".join(rows)}</div>{callout}'
             '<details class="full"><summary>문서별 전체 이동 목록 펼치기</summary>'
             '<div class="tbl-scroll"><table><caption class="vh">문서별 이동 계획</caption>'
