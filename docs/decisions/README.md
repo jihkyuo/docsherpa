@@ -23,3 +23,4 @@
 | [0015](0015-doc-health-module-extraction.md) | doc-health 독립 스킬 추출 — 전용 scripts·gate.analyze 재사용·판단은 산문(H1~H3) | 수락 | 2026-07-08 |
 | [0016](0016-inventory-respect-gitignore.md) | 탐색 분모는 .gitignore 존중(레포 선언 위임·git-optional) — 외부 플러그인 스크래치 자동 제외 | 수락 | 2026-07-08 |
 | [0017](0017-troubleshooting-first-class-doc-type.md) | Troubleshooting 1급 문서 타입 승격(전용 홈 `docs/troubleshooting/`·knowledge.md 부분 supersede) | 수락 | 2026-07-09 |
+| [0018](0018-disposition-in-place-classes.md) | 코드-인접 README·중첩 라우터 = "제자리(in-place)" 클래스 — 문서-건강 우주 밖(M5·orphan 면제 명문화) | 수락 | 2026-07-09 |
