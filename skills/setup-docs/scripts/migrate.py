@@ -22,6 +22,7 @@ from contract import ENTRY_FILENAMES, INDEX_MARKER
 _TYPE_DEST = {
     "ADR": "docs/decisions",
     "how-to": "docs/how-to",
+    "troubleshooting": "docs/troubleshooting",
     "PRD": "docs/product",
     "reference": "docs",
     "explanation": "docs",

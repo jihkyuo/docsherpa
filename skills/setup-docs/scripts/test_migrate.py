@@ -393,3 +393,13 @@ def test_assemble_plan_data_orphan_defaults_when_absent():
     data = assemble_plan_data({"trees": {}}, [])
     assert data["orphans_before"] is None
     assert data["orphans_after"] is None
+
+
+def test_plan_moves_troubleshooting_to_own_folder():
+    inv = [
+        {"path": "recover-db.md", "type": "troubleshooting"},
+        {"path": "fix-oom.md", "type": "troubleshooting"},
+    ]
+    dests = {p["src"]: p["dest"] for p in migrate.plan_moves(inv)}
+    assert dests["recover-db.md"] == "docs/troubleshooting/recover-db.md"
+    assert dests["fix-oom.md"] == "docs/troubleshooting/fix-oom.md"
