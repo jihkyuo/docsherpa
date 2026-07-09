@@ -331,7 +331,7 @@ def _render_trees(data: dict) -> str:
             '<div class="tkey"><span><b class="k-prd">■</b> 제품요구(PRD)</span>'
             '<span><b class="k-spec">■</b> 명세(spec)</span>'
             '<span><b class="k-adr">■</b> 결정(ADR)</span>'
-            '<span><b class="k-howto">■</b> 가이드(how-to)</span>'
+            '<span><b class="k-howto">■</b> 작업 절차·복구(how-to)</span>'
             '<span><b class="k-legacy">■</b> 동결(legacy)</span></div></section>')
 
 
@@ -350,7 +350,7 @@ def _mig_row(r: dict) -> str:
 _TYPE_GROUP = {   # docs/ 아래 1단계 폴더 → (표시명, tc-클래스)
     "decisions": ("결정 기록 (ADR)", "tc-adr"),
     "specs": ("명세 (spec)", "tc-spec"),
-    "how-to": ("가이드·절차 (how-to)", "tc-howto"),
+    "how-to": ("작업 절차·복구 (how-to)", "tc-howto"),
     "product": ("제품 요구 (PRD)", "tc-prd"),
 }
 def _mig_group_key(dest: str):

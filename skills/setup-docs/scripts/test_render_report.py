@@ -227,3 +227,16 @@ def test_plan_mode_no_preexisting_section_when_empty():
     d = {**MIN, "migration": [], "decisions": [], "preexisting_broken": []}
     html = render_report(d, "plan")
     assert "기존에 깨져 있던 링크" not in html      # 빈 리스트면 섹션 없음
+
+
+def test_howto_label_is_procedure_recovery_not_just_guide():
+    html = render_report(MIN, "plan")
+    assert "작업 절차·복구(how-to)" in html      # 트리 tkey 범례
+    assert "가이드(how-to)" not in html          # 좁은 오역 제거
+
+
+def test_migration_howto_group_label_aligned():
+    d = {**MIN, "decisions": [],
+         "migration": [{"src": "g.md", "dest": "docs/how-to/g.md", "ops": ["move"], "impact": None}]}
+    html = render_report(d, "plan")
+    assert "작업 절차·복구 (how-to)" in html      # mig-agg 그룹명
