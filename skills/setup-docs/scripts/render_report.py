@@ -479,8 +479,8 @@ def _render_main(data: dict, mode: str) -> str:
         s = data.get("summary") or {}
         if "grade_before" in s and "grade_after" in s:
             parts.append(_render_grade_compare(s["grade_before"], s["grade_after"]))
-        pre = data.get("preexisting_broken")
-        if pre:
-            parts.append(_render_preexisting(pre))
+    pre = data.get("preexisting_broken")
+    if pre:
+        parts.append(_render_preexisting(pre))
     parts.append('<p class="foot">docsherpa · setup-docs</p>')
     return "<main>" + "".join(parts) + "</main>"

@@ -209,3 +209,21 @@ def test_d3_after_tree_type_colored():
                               {"src":"p.md","dest":"docs/product/prd.md","ops":["move"],"impact":None}])
     classes={c for _,c in tree["lines"]}
     assert "t-spec" in classes and "t-prd" in classes  # 폴더=타입색(D3·D6①)
+
+
+def test_plan_mode_surfaces_preexisting_broken():
+    d = {**MIN,
+         "migration": [{"src": "a.md", "dest": "docs/a.md", "ops": ["move"], "impact": None}],
+         "decisions": [],
+         "preexisting_broken": [("docs/x.md", "nowhere.md")]}
+    html = render_report(d, "plan")
+    assert "기존에 깨져 있던 링크" in html and "머지 전" in html   # _render_preexisting 헤더
+    assert "docs/x.md" in html and "nowhere.md" in html
+    assert 'style="' not in html
+    assert html.count("<div") == html.count("</div>")
+
+
+def test_plan_mode_no_preexisting_section_when_empty():
+    d = {**MIN, "migration": [], "decisions": [], "preexisting_broken": []}
+    html = render_report(d, "plan")
+    assert "기존에 깨져 있던 링크" not in html      # 빈 리스트면 섹션 없음
