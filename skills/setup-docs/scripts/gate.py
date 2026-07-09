@@ -17,7 +17,11 @@
 사용:
   python3 gate.py [REPO_ROOT]                     # 기본: 현재 디렉터리
   python3 gate.py [REPO_ROOT] --require-markers   # 스캐폴드 검증 시 마커 계약(D8)까지 강제
-종료코드: 0 = PASS, 1 = FAIL.
+  python3 gate.py --hook [REPO_ROOT]              # 훅용: 침묵이 기본, 항상 exit 0(막지 않음)
+종료코드: 0 = PASS, 1 = FAIL. (--hook 은 언제나 0 — 검사기는 아무것도 막지 않는다.)
+
+⚠️ --hook 모드는 현재 **아무도 부르지 않는다**(플러그인 훅 배선을 ADR 0005 위반으로 되돌림).
+   배선하거나(커밋된 SessionStart 훅 + gate.py를 target에 복사) 지워야 한다 — FINDINGS 참조.
 """
 import re
 import sys
@@ -44,8 +48,13 @@ def index_of(directory: Path):
 def targets_in(path: Path):
     """파일 안의 모든 링크/임포트 타겟 문자열을 (raw) 리스트로 반환.
 
-    펜스 코드블록(``` … ```)은 예시라 live 링크가 아니므로 추출 전에 제거한다."""
-    text = path.read_text(encoding="utf-8", errors="ignore")
+    펜스 코드블록(``` … ```)은 예시라 live 링크가 아니므로 추출 전에 제거한다.
+    읽을 수 없는 파일(권한 등)은 링크 없음으로 본다 — 검사기가 크래시하면
+    (CLI) 또는 통째 except에 먹혀 침묵하면(훅) 그게 더 나쁘다."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return []
     text = FENCE_RE.sub("", text)
     out = [m.group(1) for m in IMPORT_RE.finditer(text)]
     out += [m.group(1) for m in LINK_RE.finditer(text)]
@@ -128,22 +137,27 @@ def analyze(root):
     return GateResult(root, router_present, broken, orphans, all_docs, visited, homes)
 
 
+def _rel(path, root):
+    """root 기준 상대경로. 라우터가 ../로 root 밖 문서를 링크하면 relative_to가
+    ValueError로 터진다 — 그땐 절대경로로라도 보고한다(크래시·침묵 금지)."""
+    try:
+        return path.relative_to(root)
+    except ValueError:
+        return path
+
+
 def _hook_report(root, res):
     """--hook 모드 보고 텍스트 생성(broken/orphans 각 최대 10줄, 전체 2000자 미만 목표)."""
     lines = [f"docsherpa: 문서 링크 검사 — 깨진 링크 {len(res.broken)}건 · 고아 {len(res.orphans)}건"]
     if res.broken:
         for src, raw in res.broken[:10]:
-            try:
-                shown = src.relative_to(root)
-            except ValueError:
-                shown = src  # root 바깥(../ 등)으로 나간 경로 — 절대경로로라도 보고한다.
-            lines.append(f"  {shown} -> {raw}")
+            lines.append(f"  {_rel(src, root)} -> {raw}")
         if len(res.broken) > 10:
             lines.append(f"  ... 외 {len(res.broken) - 10}건")
     if res.orphans:
         lines.append("고아(인덱스에서 도달 불가):")
         for d in res.orphans[:10]:
-            lines.append(f"  {d.relative_to(root)}")
+            lines.append(f"  {_rel(d, root)}")
         if len(res.orphans) > 10:
             lines.append(f"  ... 외 {len(res.orphans) - 10}건")
     lines.append("고치려면 /docsherpa:doc-reconcile 를 실행하라. (이 검사는 아무것도 막지 않는다.)")
@@ -161,7 +175,13 @@ def _hook_main(root):
         # homes는 도달 가능 문서 기준이라 라우터 링크가 깨지면 0이 되어버린다(가장 필요할 때 침묵하는 버그).
         # docsherpa-managed 여부는 도달성과 무관하게 디스크에서 직접 판정한다.
         candidates = [root / "docs" / "_map.md"] + [root / n for n in contract.ENTRY_FILENAMES]
-        files = [(p, p.read_text(encoding="utf-8", errors="ignore")) for p in candidates if p.is_file()]
+        files = []
+        for p in candidates:
+            try:                                  # 후보 하나를 못 읽는다고(권한 등) 검사기 전체가
+                if p.is_file():                   # 침묵해선 안 된다 — 그 파일만 건너뛴다.
+                    files.append((p, p.read_text(encoding="utf-8", errors="ignore")))
+            except OSError:
+                continue
         if not contract.find_marker_home(files):
             return 0
         if not res.broken and not res.orphans:
@@ -198,7 +218,7 @@ def main(argv=None):
                           f"{contract.ROUTING_MARKER}·{contract.INDEX_MARKER}를 "
                           "헤딩줄에 함께 가진 파일이 필요하다.")
         elif len(res.homes) > 1:
-            rels = ", ".join(str(h.relative_to(root)) for h in res.homes)
+            rels = ", ".join(str(_rel(h, root)) for h in res.homes)
             marker_msg = f"마커 home 중복(정확히 1개여야): {rels}"
 
     ok = not res.broken and not res.orphans and markers_ok
@@ -209,11 +229,11 @@ def main(argv=None):
     if res.broken:
         print("\n깨진 링크:")
         for src, raw in res.broken:
-            print(f"  {src.relative_to(root)} -> {raw}")
+            print(f"  {_rel(src, root)} -> {raw}")
     if res.orphans:
         print("\n고아 문서(인덱스에서 도달 불가):")
         for d in res.orphans:
-            print(f"  {d.relative_to(root)}")
+            print(f"  {_rel(d, root)}")
     if require_markers and not markers_ok:
         print("\n" + marker_msg)
 
