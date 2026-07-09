@@ -296,7 +296,8 @@ def test_assemble_plan_data_fills_after_and_migration():
     assert d["migration"] == [{"src": "help.md", "dest": "docs/how-to/help.md",
                                "ops": ["move"], "impact": "custom-sync grep 경로 깨짐"}]
     assert d["trees"]["after"]["tag"] == "목표"
-    assert any(cls == "new" for _, cls in d["trees"]["after"]["lines"])
+    # after 트리는 타입-색 폴더(파일 무색) 중첩 — how-to dest → t-howto 폴더 클래스(D3·D6①)
+    assert any(cls == "t-howto" for _, cls in d["trees"]["after"]["lines"])
     assert d["decisions"] == []
 
 
