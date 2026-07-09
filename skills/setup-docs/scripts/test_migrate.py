@@ -68,6 +68,19 @@ def test_plan_moves_skips_nested_router_and_readme_no_collision():
     assert dests["guide.md"] == "docs/how-to/guide.md"
 
 
+def test_plan_moves_moves_buried_docs_index_readme():
+    # 리뷰 픽스: 매몰된 docs 트리의 README(인덱스)는 content이므로 형제 문서(guide.md)와
+    # 함께 이동해야 한다 — tooling으로 남아 제자리 스트랜딩되면 링크가 끊긴다.
+    inv = [
+        {"path": "src/a/docs/README.md", "type": "reference"},    # 픽스 → content → 이동
+        {"path": "src/a/mocks/README.md", "type": "reference"},   # DF1 → skip
+    ]
+    plan = migrate.plan_moves(inv)
+    dests = {p["src"]: p["dest"] for p in plan}
+    assert dests["src/a/docs/README.md"] == "docs/README.md"
+    assert "src/a/mocks/README.md" not in dests
+
+
 def test_rewrite_links_updates_moved_target():
     mm = {"a.md": "docs/reference/a.md", "b.md": "docs/how-to/b.md"}
     out = migrate.rewrite_links("see [B](b.md)", "a.md", mm)

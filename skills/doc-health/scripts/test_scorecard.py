@@ -263,6 +263,14 @@ def test_disposition_nested_readme_is_inplace_tooling():
     assert scorecard.outside_content(["src/x/mocks/README.md", "notes.md"]) == ["notes.md"]
 
 
+def test_outside_content_counts_buried_docs_index_readme():
+    # 리뷰 픽스: 매몰된 docs 트리의 README(인덱스)는 content이므로 M5(outside_content)가
+    # 진단상 정직하게 잡아야 한다 — tooling으로 숨어서 안 세는 건 소실 신호를 죽인다.
+    assert scorecard.outside_content(
+        ["src/a/docs/README.md", "src/a/mocks/README.md"]
+    ) == ["src/a/docs/README.md"]
+
+
 def test_before_tree_is_nested_scaffolding_not_flat():
     files = ["src/features/custom/shared/docs/a.md",
              "src/features/custom/shared/docs/b.md",
