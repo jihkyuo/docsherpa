@@ -23,5 +23,6 @@
 5. 함께 읽혀야 할 문서 ≥2개(co-change) → docs/<topic>/ 승격, 리드 문서가 인덱스
 6. 그 외 단일 reference/explanation → docs/ 평면 [디폴트]
 ※ PRD(제품의 왜)와 ADR(기술선택의 왜)는 다른 도달성 트리 — 구조적 결정은 PRD가 있어도 ADR 병렬 신설.
+※ 링크-전용(symptom→link) 증상 목록은 troubleshooting/ 문서로 만들지 말고 주인 문서(한계·개념)에 넣는다. troubleshooting/은 실제 복구 절차(명령·진단·복구)가 있을 때만.
 
 불변식: 새 문서는 반드시 위 인덱스에 등록(고아 방지) → broken=0·orphan=0 확인

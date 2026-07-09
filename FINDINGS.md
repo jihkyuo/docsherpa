@@ -47,8 +47,23 @@
   (b) 그 부모 검사가 **대소문자 민감**이라 `Docs/`가 같은 결함을 재현 → 소문자 정규화(f2da2f1, codex 적발).
   **의식적 수용:** 루트 라우터 없는 레포에서 posture가 GREENFIELD로 뒤집힐 수 있으나 `rollup()`의
   `if not router_present: return "F"`로 **등급은 F로 정직 유지**(posture는 조언 힌트, scaffold는 append-only).
-  **잔여 Minor(비블로킹):** `name in ENTRY_FILENAMES`는 여전히 대소문자 민감(선재, 비-소실·거짓STOP 수준) ·
-  `_MAP_DOC` ↔ SKILL.md 미러 동기를 강제하는 **회귀 가드 테스트 없음**(이번 드리프트가 그 부재의 실증).
+  **최종 whole-branch 리뷰(opus): READY TO MERGE** — Critical·Important 0, 정체성 4불변식 전부 HOLD
+  (비파괴·내용소실0·자가성장·도메인리터럴0), 동결 CSS `:root` 토큰 무변경 확인.
+  **잔여 Minor 3건(전부 비블로킹 follow-up):**
+  - **(M1) `name in ENTRY_FILENAMES` 대소문자 민감** — 선재. macOS에서 루트 `Claude.md`면 content로 떨어져
+    이동 → 라우터 소실 → gate orphan → **거짓 STOP(시끄러움, 소실 아님)**. ⚠️ **순진한 소문자 픽스는 오히려
+    악화**: Linux repo의 정당한 문서 `docs/agents.md`(에이전트를 *다루는* 문서)가 `router`로 오분류돼
+    **조용히 이동 제외 + M5 면제**된다 — 정직한 진단이 정체성인 도구에서 "시끄러운 실패 → 조용한 오면제"는
+    나쁜 교환. **올바른 픽스는 비대칭**: 루트는 대소문자 무시(FS 현실), 중첩은 대소문자 민감(정확한
+    `CLAUDE.md`가 곧 라우터 계약). 설계 작업이므로 별도 처리. (architect·최종리뷰 둘 다 defer 동의.)
+  - **(M2) `_MAP_DOC` 정본 가드 테스트 없음** — 이번 드리프트가 부재의 실증. 단 유용한 불변식은
+    "SKILL.md와 byte-identical"이 **아니다**(정본=간결·리터럴0, SKILL.md=상세·ADR 주석 — 의도적 차이).
+    올바른 가드 = "정본이 라우팅 룰을 담고 있고 **ADR 리터럴 0**".
+  - **(M3) `posture_hint`가 GREENFIELD로 뒤집힐 수 있음** — `rollup()`의 `if not router_present: return "F"`로
+    **등급은 F 유지**, posture는 조언·scaffold는 append-only → 파괴적 동작 없음. ADR 0018에 수용 기록.
+  - **(M4, 최종리뷰 신규) DF1은 리터럴 `docs` 세그먼트만 인식** — `documentation/README.md`·`guides/README.md`
+    같은 다른 이름의 문서 인덱스는 제자리에 남고 형제 content만 이주. **소실 아님**(파일 잔존 + `apply_moves`가
+    링크 재작성 + 오라클 회계). 직전 대안(basename 충돌 STOP)보다 낫다 — 경계 있는 트레이드오프.
 - **✅ 아티팩트 자기설명 보정(A·라벨·C1) 완료(2026-07-09, subagent-driven 5태스크):**
   vd-front dogfood·UX 피드백에서 드러난 진단서 아티팩트 결함 3건을 고침. **(A) 플랜 표면화** —
   `build_and_verify`가 `preexisting_broken`을 반환 → `assemble_plan_data(..., preexisting_broken=...)`가
