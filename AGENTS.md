@@ -20,13 +20,14 @@ docsherpa는 **비파괴적 보조 도구**다. 아래 셋이 정체성이고, �
 
 ## 항시 룰
 
-- 플러그인 = Claude Code. 스킬은 `skills/`(setup-docs·doc-reconcile), 테스트는 `skills/setup-docs/scripts/`.
-- 정본 doc-reconcile은 프로젝트 리터럴 0(가드 `test_doc_reconcile_portable.py`가 강제).
+- 플러그인 = Claude Code. 스킬은 `skills/`(setup-docs·doc-health·doc-reconcile), 테스트는 각 스킬의 `scripts/`(doc-reconcile은 `parity/`).
+- 정본 doc-reconcile은 프로젝트 리터럴 0(가드 `test_doc_reconcile_portable.py`가 강제). parity 하네스도 합성 fixture만 쓴다.
 - 커밋마다 push(origin/main). 위험·핵심 설계는 `/codex` + `architect` 교차검증.
+- 루프 산문을 고치면 [parity 실험](docs/how-to/run-parity-experiment.md)으로 재측정한다 — 재고 나서 고친다.
 
 ## 명령어
 
-- 테스트: `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` · `cd skills/doc-health/scripts && uv run --with pytest pytest -q`
+- 테스트: `cd skills/setup-docs/scripts && uv run --with pytest pytest -q` · `cd skills/doc-health/scripts && uv run --with pytest pytest -q` · `cd skills/doc-reconcile/parity && uv run --with pytest pytest -q`
 
 ## 문서 지도 <!-- docsherpa:map -->
 - 라우팅·인덱스 → [문서 지도](docs/_map.md)
