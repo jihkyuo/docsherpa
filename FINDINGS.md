@@ -23,6 +23,23 @@
   DF2 nested CLAUDE.md도 router-skip 확장(현재 root만) · DF3(수정됨) `rglob("*.md")` is_file() 가드(`.md`로 끝나는 디렉터리 크래시).
   **남은 도메인 결정(결정 패널):** org(type-scatter vs 기능응집)·legacy 통합(`docs/legacy/`)·co-change topic(dnd·mobile-preview) — §8 별도 트랙.
   **다음:** 증분 4 브랜치 PR(마지막 한 번에) · vd-front 브랜치는 사용자 검토·머지 · 이연 findings/도메인결정.
+- **🩺 트러블슈팅 1급 승격 결정(B안, 2026-07-09 사용자 채택) — 자세한 기록:**
+  **문제 실증(vd-front 진단서 리뷰):** 현재 분류 type 어휘 = `ADR·spec·how-to·reference·PRD·legacy` — **`troubleshooting`
+  타입 자체가 없다.** knowledge.md(§문서타입4종, L27·L30)가 Troubleshooting을 "반응적 복구 절차(명령·진단·복구) →
+  `how-to/`"로 **접어버려**, 트러블슈팅 문서가 how-to로 분류돼 **가이드와 식별 불가** + 전용 홈 없음. 아티팩트 범례
+  "가이드(how-to)"가 이 사실을 **은폐**(자기설명 실패, D4류) → 라벨은 "작업 절차·복구(how-to)"로 이미 선반영.
+  **결정 B(1급 승격):**
+  (1) **분류 type 어휘에 `troubleshooting` 추가** — doc-health 분류(inventory 병렬분류) + scorecard가 독립 type으로
+  식별(how-to 하위변종 아님). 질문어 = "깨졌을 때 무엇을·어떻게 복구".
+  (2) **전용 홈** — 권장 `docs/how-to/troubleshooting/`(Diátaxis how-to 계열 응집 유지 + 식별성 확보) vs 대안
+  `docs/troubleshooting/`(완전 독립). ← 둘 중 최종 폴더는 착수 시 확정(권장=how-to/troubleshooting/).
+  (3) migrate `plan_moves`에 troubleshooting→그 폴더 배정. render 타입색·범례·트리에 troubleshooting 추가(6→7색).
+  (4) **진단 차원** — 트러블슈팅 절차성(link-only 아님) 품질 차원 유지/강화.
+  **승계할 가드레일(설계 정신 보존):** 트러블슈팅은 **진짜 절차**여야(명령·진단·복구). `symptom→link`만인 링크-전용
+  트러블슈팅 금지(Status 복제·부패). 증상 alias는 주인 문서(한계·개념 함정)에. → B 승격 후에도 이 가드는 유지.
+  **supersede 대상:** knowledge.md L17(Diátaxis=폴더 아님 — troubleshooting은 예외로 식별 필요)·L27(타입표 how-to/
+  매핑)·L30(가드). **ADR 신설 필요**(현 stance 부분 supersede; 이연 [doc-type-templates](docs/specs/doc-type-templates/design.md)
+  트랙과 묶음). **착수 시점:** 증분 4 마무리 후 doc-type 개선 트랙.
 - **🆕 setup-docs 재설계 — 진단-주도 전체-repo 마이그레이션 (2026-07-08, 브레인스토밍→스펙→증분3 완료):**
   하드닝 루프 발견(G1~G4: docs/ 중심·밖 방치·전-계정팅 부재·설치≠완료)을 재설계로 확장. **미션 = 전 프로젝트
   문서를 `docs/`로 중앙집중 + 유실 0.** 6-Phase(전체-repo 병렬 탐색 → 9차원 등급 채점 → 시각 승인
