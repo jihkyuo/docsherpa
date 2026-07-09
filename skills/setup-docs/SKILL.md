@@ -301,13 +301,15 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
    **STOP 판정:** `unaccounted`·`new_broken`·`anchor_lost`·`per_file` 중 하나라도 비어 있지 않거나
    `orphan`이 0이 아니면 아티팩트를 내지 않는다 — 사유를 보고하고 자동수정 재시도(목적지 개명·배정 조정)
    또는 사용자 에스컬레이션. 통과하면 스크래치 결과에 doc-health를 재실행해 기계등급을 확인한다.
-4. **Phase 2(계획 아티팩트)** — `migrate.assemble_plan_data(health, move_plan, decisions,
-   preexisting_broken=Phase 1b build_and_verify 결과의 preexisting_broken)` → `render_report(data,
-   "plan")`. `decisions`는 라우터 결정(예: 리치 CLAUDE.md인데 AGENTS.md 없음)·내용모순(doc-health
-   J4)에서 조립한다. `preexisting_broken`을 넘기면 계획 아티팩트가 **승인 전에** "기존에 깨져 있던
-   링크"를 표면화한다(콜아웃이 아니다 — 이동-유발 위험은 이미 `new_broken=0` 게이트로 차단돼 있고,
-   이건 마이그레이션과 무관하게 원래 있던 문제를 사용자가 미리 인지하게 하는 것). 이 아티팩트를
-   **사용자 승인** 게이트로 낸다.
+4. **Phase 2(계획 아티팩트)** — `migrate.assemble_plan_data(health, move_plan, decisions=...,
+   preexisting_broken=<Phase 1b 결과>, orphans_after=<Phase 1b build_and_verify 결과>["orphan"])`로
+   조립한다 → `render_report(data, "plan")`. `decisions`는 라우터 결정(예: 리치 CLAUDE.md인데 AGENTS.md
+   없음)·내용모순(doc-health J4)에서 조립한다. `preexisting_broken`을 넘기면 계획 아티팩트가 **승인 전에**
+   "기존에 깨져 있던 링크"를 표면화한다(콜아웃이 아니다 — 이동-유발 위험은 이미 `new_broken=0` 게이트로
+   차단돼 있고, 이건 마이그레이션과 무관하게 원래 있던 문제를 사용자가 미리 인지하게 하는 것).
+   `orphans_after`는 스크래치 검증된 이동 후 고아 수(정상 계획이면 0)로, health의 orphans_before(Phase 0
+   진단)와 함께 규모 라인에 "고아 N→0"으로 표시된다 — 이동-유발 위험 콜아웃이 아니라 도달성 개선의
+   실측 표시다. 이 아티팩트를 **사용자 승인** 게이트로 낸다.
 5. **정직성** — 아티팩트는 "기계 차원(A-트랙) + 내용보존 증명(`unaccounted=0`)"만 표시한다. J(판단
    평가)는 별도로 낸다. 증명 못 하면(Phase 1b STOP) 계획을 제시하지 않는다.
 6. **증분 3 경계 — 여기(승인)까지였다.** 실제 이동 실행(배치화·필요 시 worktree·

@@ -10,8 +10,10 @@
   산문에 배선 명시. **(라벨) how-to 정직화** — tkey·`_TYPE_GROUP` 두 곳 모두 "가이드(how-to)"→"작업
   절차·복구(how-to)"로 변경(트러블슈팅 은폐 방지, 위 트러블슈팅 1급 승격 결정과 정합). **(C1) before 트리
   중첩** — `scorecard._before_tree`를 평면 나열에서 `_nested_lines` 기반 중첩 스캐폴딩으로(파묻힌 구조
-  가시화, `_after_tree`와 표현 일관). **architect 교차검증으로 defer:** B(before/after 규모 라인)·
-  C2(after 트리 접이식)는 중복/저부가로 미구현(§2 단순함 우선) — 필요해지면 별도 요청 시 재검토.
+  가시화, `_after_tree`와 표현 일관). **B·C2 구현 완료(사용자 명시 요청으로 architect defer 해제):**
+  B는 orphan 데이터 배선(doc-health orphans 방출 → `assemble_plan_data(..., orphans_after=...)` →
+  `.mig-head` 규모 라인 "고아 N→0"), C2는 순수 render(기존 `.tree` CSS 재사용, 이동 src/dest에서 파생) —
+  정직성은 `orphans_after`=`build_and_verify` 검증값, 유실0은 `content_oracle` 불변식이 각각 담보.
   트러블슈팅 1급 승격(doc-type 트랙, 아래 항목)은 이 작업 범위 밖 유지. 브랜치
   `fix/artifact-preexisting-label-beforetree`, 계획
   [2026-07-09-artifact-selfdescribe-fixes.md](docs/plans/2026-07-09-artifact-selfdescribe-fixes.md).
