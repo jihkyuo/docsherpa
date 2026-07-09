@@ -22,6 +22,19 @@ def test_div_balance():
     html = render_report(MIN, "plan")
     assert html.count("<div") == html.count("</div>")
 
+def test_troubleshooting_type_color_in_migration_and_tree():
+    d = {**MIN, "migration": [
+        {"src": "recover.md", "dest": "docs/troubleshooting/recover.md", "ops": ["move"], "impact": None},
+    ]}
+    html = render_report(d, "plan")
+    assert "tc-troubleshooting" in html      # 집약뷰 그룹 타입색
+    assert "t-troubleshooting" in html       # 접이식 스캐폴딩(after) 폴더색
+    assert "문제 해결" in html                # 그룹/범례 표시명
+    assert "k-troubleshooting" in html        # Before→After 범례 스와치
+
+def test_troubleshooting_aa_pair_registered():
+    assert ("--fail-ink", "--bg", 4.5) in AA_PAIRS
+
 
 def _lin(c): c/=255; return c/12.92 if c<=0.03928 else ((c+0.055)/1.055)**2.4
 def _L(hexs):
@@ -41,6 +54,8 @@ AA_PAIRS = [
     ("--pass-ink", "--panel", 4.5),
     # 접이식 스캐폴딩(C2)이 --bg 위에 새로 노출하는 타입색(t-adr/t-howto/t-prd; t-spec=accent-ink는 위에 이미 있음)
     ("--warn-ink", "--bg", 4.5), ("--pass-ink", "--bg", 4.5), ("--accent", "--bg", 4.5),
+    # 트러블슈팅 1급 타입색(t-troubleshooting = fail-ink)이 --bg 위에 노출 → AA 강제
+    ("--fail-ink", "--bg", 4.5),
 ]
 
 def _tokens_for(theme: str) -> dict:

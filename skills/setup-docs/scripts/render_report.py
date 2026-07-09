@@ -205,6 +205,7 @@ TEMPLATE_CSS = r"""
   .mig-grp.tc-howto { border-left-color:var(--pass); }
   .mig-grp.tc-prd { border-left-color:var(--accent-ink); }
   .mig-grp.tc-flat { border-left-color:var(--line-strong); }
+  .mig-grp.tc-troubleshooting { border-left-color:var(--fail-ink); }
   .mig-grp .gname { font-size:12.5px; font-weight:600; color:var(--ink); min-width:0; }
   .mig-grp .gname .gsub { font-family:var(--mono); font-size:10px; color:var(--faint); display:block; margin-top:1px; }
   .mig-grp .gbar { font-family:var(--mono); font-size:11px; letter-spacing:-1px; white-space:nowrap; color:var(--accent); }
@@ -224,6 +225,7 @@ TEMPLATE_CSS = r"""
   .tree .t-spec { color:var(--accent-ink); font-weight:600; }
   .tree .t-howto { color:var(--pass-ink); font-weight:600; }
   .tree .t-prd { color:var(--accent); font-weight:600; }
+  .tree .t-troubleshooting { color:var(--fail-ink); font-weight:600; }
   .tree .t-legacy { color:var(--faint); }
   .tree .t-dir { color:var(--ink); font-weight:600; }
   details.full { margin:var(--s3) var(--s4) 0; border-top:1px solid var(--line); padding-top:var(--s3); }
@@ -236,6 +238,7 @@ TEMPLATE_CSS = r"""
   .tkey b { font-family:var(--mono); font-weight:700; }
   .tkey .k-adr { color:var(--warn-ink); } .tkey .k-spec { color:var(--accent-ink); }
   .tkey .k-howto { color:var(--pass-ink); } .tkey .k-prd { color:var(--accent); }
+  .tkey .k-troubleshooting { color:var(--fail-ink); }
   .tkey .k-legacy { color:var(--faint); }
 
   details.scaffold { margin:var(--s4) 0 0; }
@@ -325,7 +328,8 @@ def _tree_pre(lines) -> str:
     return "\n".join(out)
 
 _SCAFFOLD_TYPECLS = {"product": "t-prd", "specs": "t-spec",
-                     "decisions": "t-adr", "how-to": "t-howto"}
+                     "decisions": "t-adr", "how-to": "t-howto",
+                     "troubleshooting": "t-troubleshooting"}
 def _scaffold_lines(paths, colored):
     """flat 경로 리스트 → 중첩 트리 lines([[text, cls], ...]), 절단 없음(전체 파일).
     colored=True면 docs/<type>/ 폴더를 타입색 클래스로(after 측). 파일·기타 폴더는 무색."""
@@ -382,6 +386,7 @@ def _render_trees(data: dict) -> str:
             '<span><b class="k-spec">■</b> 명세(spec)</span>'
             '<span><b class="k-adr">■</b> 결정(ADR)</span>'
             '<span><b class="k-howto">■</b> 작업 절차·복구(how-to)</span>'
+            '<span><b class="k-troubleshooting">■</b> 문제 해결(troubleshooting)</span>'
             '<span><b class="k-legacy">■</b> 동결(legacy)</span></div>'
             f'{scaffold}</section>')
 
@@ -402,6 +407,7 @@ _TYPE_GROUP = {   # docs/ 아래 1단계 폴더 → (표시명, tc-클래스)
     "decisions": ("결정 기록 (ADR)", "tc-adr"),
     "specs": ("명세 (spec)", "tc-spec"),
     "how-to": ("작업 절차·복구 (how-to)", "tc-howto"),
+    "troubleshooting": ("문제 해결 (troubleshooting)", "tc-troubleshooting"),
     "product": ("제품 요구 (PRD)", "tc-prd"),
 }
 def _mig_group_key(dest: str):
@@ -420,7 +426,7 @@ def _render_migration(data: dict) -> str:
     for r in mig:
         groups.setdefault(_mig_group_key(r["dest"]), []).append(r)
     mx = max((len(v) for v in groups.values()), default=1)
-    order = ["product", "specs", "decisions", "how-to", "_flat"]
+    order = ["product", "specs", "decisions", "how-to", "troubleshooting", "_flat"]
     rows = []
     for key in sorted(groups, key=lambda k: (order.index(k) if k in order else 99, k)):
         items = groups[key]

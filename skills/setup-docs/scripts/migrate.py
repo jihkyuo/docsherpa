@@ -409,8 +409,9 @@ def land_migration(repo, move_plan, head_sha, decisions=None, *, plugin_root=Non
 
 
 _AFTER_TYPECLS = {"product": "t-prd", "specs": "t-spec",
-                  "decisions": "t-adr", "how-to": "t-howto"}
-_AFTER_ORDER = ["product", "specs", "decisions", "how-to", "_flat"]
+                  "decisions": "t-adr", "how-to": "t-howto",
+                  "troubleshooting": "t-troubleshooting"}
+_AFTER_ORDER = ["product", "specs", "decisions", "how-to", "troubleshooting", "_flat"]
 def _after_tree(move_plan):
     """move_plan → "후" 트리 dict — docs/ 아래 타입별 폴더(타입색)·파일(무색) 중첩 트리(D3·D6①)."""
     groups = {}
