@@ -355,3 +355,25 @@ def test_register_all_ignores_fenced_example_link_in_home_file(tmp_path):
     _mk(tmp_path, "docs/decisions/moved.md", "# 이동된 ADR\n")
     migrate.register_all(tmp_path)                      # RuntimeError 없이 실제로 배선돼야
     assert not gate.analyze(tmp_path).orphans
+
+
+def test_build_and_verify_returns_preexisting_broken(tmp_path):
+    # 기존부터 깨진 링크(nowhere.md)가 있는 repo → build_and_verify가 preexisting_broken을 반환(드롭 안 함)
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n- [x](docs/x.md)\n")
+    _mk(tmp_path, "docs/x.md", "# X\n본문. [dead](nowhere.md)\n")   # nowhere.md 없음 = 기존 broken
+    (tmp_path / ".git").mkdir()
+    res = migrate.build_and_verify(tmp_path, [])
+    assert "preexisting_broken" in res
+    assert any("nowhere.md" in raw for _rel, raw in res["preexisting_broken"])
+
+
+def test_assemble_plan_data_threads_preexisting_broken():
+    pre = [("docs/x.md", "nowhere.md")]
+    d = migrate.assemble_plan_data(
+        _health_stub(),
+        [{"src": "a.md", "dest": "docs/a.md", "ops": ["move"], "impact": "이동시 grep 깨짐"}],
+        preexisting_broken=pre)
+    assert d["preexisting_broken"] == pre
+    # impact는 에이전트 소스 그대로(preexisting이 덮지 않음)
+    assert d["migration"][0]["impact"] == "이동시 grep 깨짐"
