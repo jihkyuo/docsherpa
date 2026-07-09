@@ -2,26 +2,53 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
-- **▶️ 다음 작업 — 이 순서로 (2026-07-09 확정, vd-front 재실행 준비):**
-  아티팩트 자기설명 트랙(D3/D4/D6 + A/라벨/C1 + B/C2)은 **완료**. 증분 4 land_migration 엔진은 **origin/main 머지됨**
-  (PR#10). 현재 작업 브랜치 = `fix/artifact-preexisting-label-beforetree`(엔진 위에 아티팩트 개선 누적, 171 setup-docs
-  + 32 doc-health green, self-gate PASS, **PR은 사용자 지시 전까지 보류**). **다음은 이 4단계:**
+- **▶️ 다음 작업 — 이 순서로 (2026-07-09 갱신: ①② 완료, ③부터):**
+  아티팩트 자기설명 트랙은 **완료**. 증분 4 land_migration 엔진은 **origin/main 머지됨**(PR#10).
+  **①트러블슈팅 1급 + ②disposition 하드닝도 이번 배치로 완료**(아래 🧭 블록). 현재 작업 브랜치 =
+  `fix/artifact-preexisting-label-beforetree`(**179 setup-docs + 34 doc-health green, self-gate PASS**,
+  **PR은 사용자 지시 전까지 보류**). **다음은 이 2단계:**
   ```
-  ① 트러블슈팅 1급 승격 (B안, 아래 🩺 블록에 상세)  ← 순수 엔진 정확성(사람 취향 불필요)
-  ② DF1·DF2 disposition 하드닝 (증분4 블록에 상세)   ← 같은 배치
-  ③ vd-front 시험 브랜치 폐기 + dogfood 재실행
+  ③ vd-front 시험 브랜치 폐기 + dogfood 재실행   ← 여기부터
   ④ 재실행이 낸 Phase 2 진단·"당신의 결정" 아티팩트에서 → 도메인 결정을 그 자리에서
   ```
   **핵심 원칙(꼭 지킬 것):** 도메인 결정(org 타입-흩뿌림 vs 기능응집 · legacy 통합 · co-change topic)은 **미리 정하지
-  말 것.** 파이프라인이 Phase 2 승인 게이트에서 표면화하는 산출물이다(설계 §10 결정 표면화). ①②가 분류·계획을 바꾸므로
+  말 것.** 파이프라인이 Phase 2 승인 게이트에서 표면화하는 산출물이다(설계 §10 결정 표면화). ①②가 분류·계획을 바꿨으므로
   **재실행하면 진단이 달라진다** → stale 입력으로 선결하면 낭비·오류. §10대로 재실행 산출물 보고 그 자리(④)에서 결정.
-  **①②를 "재실행 전"에 하는 이유:** 둘 다 목적지를 바꾸는 **엔진 정확성**(정답 있음, 취향 무관). 재실행 때 손수정 없이
-  옳은 계획이 나오게 먼저 고침. 진행 = writing-plans로 ①②를 한 계획으로 → subagent-driven-development RED-first.
   **③ 재실행 기술 주의(중요):** land_migration은 브랜치명을 `docsherpa/migrate-<head_sha[:8]>`로 결정론 생성. vd-front
   HEAD(`59f05e69`, feat/VDS-892)가 미머지로 그대로라 같은 sha 재실행 시 **"이미 브랜치 있음" RuntimeError STOP**
   (증분4 Critical 픽스=재호출 브랜치 보호). 그러니 재실행 전 `git -C /Users/jiohyeon/Desktop/projects/vd-front branch -D
-  docsherpa/migrate-59f05e69` 먼저(검토용·작업트리 무영향, 손실0). ⚠️ 이번 dogfood는 DF1/DF2를 **매니페스트 손편집으로
-  우회**했음 — ②가 disposition에 반영되면 손수정 없이 자동 처리돼야(재실행이 그걸 검증).
+  docsherpa/migrate-59f05e69` 먼저(검토용·작업트리 무영향, 손실0).
+  **③에서 검증할 것(②가 갚은 빚):** 직전 dogfood는 DF1/DF2를 **매니페스트 손편집으로 우회**했다. 이제 disposition이
+  중첩 라우터·코드-인접 README를 자동 skip하므로 **손수정 0으로 계획이 나와야** 한다. 특히 vd-front의
+  `src/features/custom/shared/docs/**`는 그 폴더의 `README.md`(문서 인덱스)까지 **함께 이주**해야 한다(DF1 정밀화).
+- **🧭 ①트러블슈팅 1급 + ②disposition 하드닝 완료(2026-07-09, subagent-driven 8태스크 + 3자 교차검증):**
+  계획 [2026-07-09-troubleshooting-firstclass-and-disposition-hardening.md](docs/plans/2026-07-09-troubleshooting-firstclass-and-disposition-hardening.md).
+  **① troubleshooting 1급화:** 전용 홈 **`docs/troubleshooting/`**(사용자 확정 — how-to 하위 아님, 완전 독립 최상위)
+  · `migrate._TYPE_DEST` 배정 · **7번째 타입색**(동결 토큰 `--fail-ink` 재사용, AA on `--bg` light 6.48/dark 7.89
+  실측, AA 가드 페어 추가) · 집약뷰·트리·스캐폴딩·범례 전 렌더지점 배선 · doc-health 타입 어휘 +
+  **J1 절차성 가드**(symptom→link-only = troubleshooting 아님 = fail) · knowledge.md L17·L27·L30 **주석 supersede
+  (원문 삭제 0)** · **ADR [0017](docs/decisions/0017-troubleshooting-first-class-doc-type.md)**.
+  ⚠️ **리뷰가 잡은 갭:** 라우팅 룰 **정본은 `scaffold._MAP_DOC`**(사용자 프로젝트로 생성됨)인데 SKILL.md 미러만
+  고쳐 신규 스캐폴드는 옛 룰을 받을 뻔함 → `_MAP_DOC` + 자기 `docs/_map.md` 동기(f1ebddd). 템플릿엔 ADR 번호
+  미표기(**도메인 리터럴 0** — 누출 방지). troubleshooting/은 PRD·specs처럼 **온디맨드**(인덱스 선등록 안 함).
+  **② `contract.disposition` 하드닝(엔진 핵심 단일소스 — gate·scorecard·migrate 공유):**
+  (DF2) `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` = **어느 깊이든 `router`**(중첩 = 그 서브트리의 제자리 라우터).
+  (DF1) 부모 경로에 `docs` 세그먼트가 **없는** 중첩 `README.md` = `tooling`(제자리) → basename 충돌
+  `ValueError` STOP 원천 차단. 부모에 `docs`가 있으면(**대소문자 무시** — `Docs/`·`DOCS/`) `content` 유지 →
+  **파묻힌 문서 인덱스는 내용과 함께 이주**. 반환값 3종 불변. **ADR [0018](docs/decisions/0018-disposition-in-place-classes.md)**
+  = "router·tooling = 제자리 + 도달성 면제"를 **명시 계약**으로 기록(M5의 "파묻힘 0" = *중앙집중 대상* 문서가 모두
+  docs/ 아래라는 뜻이지, 레포의 모든 .md가 아님).
+  **🔍 3자 독립 교차검증(opus 리뷰어 · architect · codex 적대적) — [P1] 0건:**
+  내용소실0 확증 — `content_oracle.collect`·`per_file_accounting`은 disposition **무관** 전-트리 `rglob("*.md")`,
+  `apply_moves`는 skip 파일까지 링크 재작성, `gate.analyze`는 disposition을 **import하지 않음**(orphan 우주 = `docs/**`).
+  → 재분류는 삭제·덮어쓰기가 아니라 **이동 계획 제외**일 뿐(루트 README가 이미 받던 대우).
+  **리뷰가 잡은 실결함 2건(둘 다 수정):** (a) DF1이 `parts[0]!="docs"`라 **파묻힌 docs 트리의 README가
+  stranded**되고 M5가 그걸 안 세던 사각 → `"docs" not in parts[:-1]`로 정밀화(a45afc7, 사용자 승인).
+  (b) 그 부모 검사가 **대소문자 민감**이라 `Docs/`가 같은 결함을 재현 → 소문자 정규화(f2da2f1, codex 적발).
+  **의식적 수용:** 루트 라우터 없는 레포에서 posture가 GREENFIELD로 뒤집힐 수 있으나 `rollup()`의
+  `if not router_present: return "F"`로 **등급은 F로 정직 유지**(posture는 조언 힌트, scaffold는 append-only).
+  **잔여 Minor(비블로킹):** `name in ENTRY_FILENAMES`는 여전히 대소문자 민감(선재, 비-소실·거짓STOP 수준) ·
+  `_MAP_DOC` ↔ SKILL.md 미러 동기를 강제하는 **회귀 가드 테스트 없음**(이번 드리프트가 그 부재의 실증).
 - **✅ 아티팩트 자기설명 보정(A·라벨·C1) 완료(2026-07-09, subagent-driven 5태스크):**
   vd-front dogfood·UX 피드백에서 드러난 진단서 아티팩트 결함 3건을 고침. **(A) 플랜 표면화** —
   `build_and_verify`가 `preexisting_broken`을 반환 → `assemble_plan_data(..., preexisting_broken=...)`가
@@ -55,12 +82,12 @@
   **orphan 67→0·markers_ok·docs 48**. broken 6은 전부 **preexisting 검증**(원본이 repo-상대를 doc-상대로 오작성한 부채가
   도달성 확보로 드러남=D2 실증) — 마이그레이션이 만들지·숨기지·고치지 않고 표면화만(L4/정체성 교과서 준수).
   **증분 4 = origin/main 머지됨(PR#10, 9b84d51).**
-  **dogfood 발견 → ②로 승격(재실행 전 엔진 하드닝):** DF1 코드-인접 nested README(mocks·api)는 중앙집중 대상 아님 →
-  `contract.disposition`이 in-place로 skip(basename 충돌 원천 차단). DF2 nested CLAUDE.md도 router-skip 확장(현재 root만).
-  DF3(수정됨, a0a9587) `rglob("*.md")` is_file() 가드(`.md`로 끝나는 디렉터리 크래시). → RED-first(합성 fixture: nested README·CLAUDE.md).
+  **dogfood 발견 → ②로 승격(재실행 전 엔진 하드닝) — ✅ 전부 완료(위 🧭 블록·ADR 0018):** DF1 코드-인접 nested README(mocks·api)는
+  중앙집중 대상 아님 → `contract.disposition`이 in-place로 skip(basename 충돌 원천 차단). DF2 nested CLAUDE.md도 router-skip 확장.
+  DF3(수정됨, a0a9587) `rglob("*.md")` is_file() 가드(`.md`로 끝나는 디렉터리 크래시).
   **도메인 결정(org type-scatter vs 기능응집 · legacy 통합 · co-change topic)은 §10 결정 표면화 = 재실행 Phase 2 승인에서**
   (최상단 ▶️ 블록 ④ — 미리 정하지 말 것). vd-front 시험 브랜치 `docsherpa/migrate-59f05e69`는 ③에서 폐기 후 재실행.
-- **🩺 트러블슈팅 1급 승격 결정(B안, 2026-07-09 사용자 채택) — 자세한 기록:**
+- **🩺 트러블슈팅 1급 승격 결정(B안, 2026-07-09 사용자 채택) — ✅ 구현 완료(위 🧭 블록·ADR 0017). 아래는 결정 근거 기록:**
   **문제 실증(vd-front 진단서 리뷰):** 현재 분류 type 어휘 = `ADR·spec·how-to·reference·PRD·legacy` — **`troubleshooting`
   타입 자체가 없다.** knowledge.md(§문서타입4종, L27·L30)가 Troubleshooting을 "반응적 복구 절차(명령·진단·복구) →
   `how-to/`"로 **접어버려**, 트러블슈팅 문서가 how-to로 분류돼 **가이드와 식별 불가** + 전용 홈 없음. 아티팩트 범례
