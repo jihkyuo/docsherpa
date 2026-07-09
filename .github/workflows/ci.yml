@@ -15,5 +15,11 @@ jobs:
           python-version: "3.12"
       - name: Install uv
         run: pip install uv
-      - name: Run tests
+      - name: setup-docs
         run: cd skills/setup-docs/scripts && uv run --with pytest pytest -q
+      - name: doc-health
+        run: cd skills/doc-health/scripts && uv run --with pytest pytest -q
+      - name: doc-reconcile parity harness
+        run: cd skills/doc-reconcile/parity && uv run --with pytest pytest -q
+      - name: 도달성 게이트 (자기 dogfood)
+        run: python3 skills/setup-docs/scripts/gate.py . --require-markers
