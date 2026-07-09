@@ -128,11 +128,54 @@ def analyze(root):
     return GateResult(root, router_present, broken, orphans, all_docs, visited, homes)
 
 
+def _hook_report(root, res):
+    """--hook 모드 보고 텍스트 생성(broken/orphans 각 최대 10줄, 전체 2000자 미만 목표)."""
+    lines = [f"docsherpa: 문서 링크 검사 — 깨진 링크 {len(res.broken)}건 · 고아 {len(res.orphans)}건"]
+    if res.broken:
+        for src, raw in res.broken[:10]:
+            lines.append(f"  {src.relative_to(root)} -> {raw}")
+        if len(res.broken) > 10:
+            lines.append(f"  ... 외 {len(res.broken) - 10}건")
+    if res.orphans:
+        lines.append("고아(인덱스에서 도달 불가):")
+        for d in res.orphans[:10]:
+            lines.append(f"  {d.relative_to(root)}")
+        if len(res.orphans) > 10:
+            lines.append(f"  ... 외 {len(res.orphans) - 10}건")
+    lines.append("고치려면 /docsherpa:doc-reconcile 를 실행하라. (이 검사는 아무것도 막지 않는다.)")
+    return "\n".join(lines)
+
+
+def _hook_main(root):
+    """SessionStart 훅용: 침묵이 기본, docsherpa-managed 레포에 문제가 있을 때만 보고. 절대 막지 않는다(항상 0)."""
+    try:
+        res = analyze(root)
+        if not res.router_present:
+            return 0
+        # homes는 도달 가능 문서 기준이라 라우터 링크가 깨지면 0이 되어버린다(가장 필요할 때 침묵하는 버그).
+        # docsherpa-managed 여부는 도달성과 무관하게 디스크에서 직접 판정한다.
+        candidates = [root / "docs" / "_map.md"] + [root / n for n in contract.ENTRY_FILENAMES]
+        files = [(p, p.read_text(encoding="utf-8", errors="ignore")) for p in candidates if p.is_file()]
+        if not contract.find_marker_home(files):
+            return 0
+        if not res.broken and not res.orphans:
+            return 0
+        print(_hook_report(root, res))
+        return 0
+    except Exception:
+        return 0
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    hook = "--hook" in argv
+    argv = [a for a in argv if a != "--hook"]
     require_markers = "--require-markers" in argv
     argv = [a for a in argv if a != "--require-markers"]
     root = Path(argv[0] if argv else ".").resolve()
+
+    if hook:
+        return _hook_main(root)
 
     res = analyze(root)
     if not res.router_present:
