@@ -354,9 +354,13 @@ def _scaffold_lines(paths, colored):
     walk(tree, "", [])
     return lines
 
-def _tree(side: dict, which: str) -> str:
+def _tree(side: dict, which: str, side_cls: str = None) -> str:
+    """side_cls=""면 2단 그리드용 열 클래스(a=좌·구분선/b=우)를 붙이지 않는다(단독 pane)."""
     tagcls = "now" if which == "before" else "tgt"
-    return (f'<div class="tree {"a" if which=="before" else "b"}">'
+    if side_cls is None:
+        side_cls = "a" if which == "before" else "b"
+    cls = f"tree {side_cls}".rstrip()
+    return (f'<div class="{cls}">'
             f'<h3>{esc(side["title"])} <span class="htag {tagcls}">{esc(side["tag"])}</span></h3>'
             f'<div class="st">{esc(side["sub"])}</div>'
             f'<pre>{_tree_pre(side["lines"])}</pre></div>')
@@ -389,10 +393,15 @@ def _render_trees(data: dict) -> str:
         '<span><b class="k-troubleshooting">■</b> 문제 해결(troubleshooting)</span>'
         '<span><b class="k-legacy">■</b> 동결(legacy)</span></div>'
     ) if has_after else ""
-    return ('<section aria-labelledby="tr"><h2 class="sec" id="tr">문서 구조 '
-            '<span class="n">Before → After</span></h2>'
+    # after 트리가 없으면(result 모드) 2단 그리드를 쓰지 않는다 — 빈 오른쪽 절반과
+    # "Before → After" 제목은 있지도 않은 pane을 약속하는 자기설명 결함이다.
+    kicker = "Before → After" if has_after else "잔여"
+    card_cls = "card trees" if has_after else "card"
+    before = _tree(t["before"], "before", None if has_after else "")
+    return (f'<section aria-labelledby="tr"><h2 class="sec" id="tr">문서 구조 '
+            f'<span class="n">{kicker}</span></h2>'
             f'<p class="sec-intro">{intro}</p>'
-            f'<div class="card trees">{_tree(t["before"],"before")}{after}</div>'
+            f'<div class="{card_cls}">{before}{after}</div>'
             f'{tkey}{scaffold}</section>')
 
 

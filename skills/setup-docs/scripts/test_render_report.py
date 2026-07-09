@@ -317,3 +317,25 @@ def test_trees_have_collapsible_full_scaffold():
     assert 't-howto"' in html
     assert html.count("<div") == html.count("</div>")
     assert html.count("<details") == html.count("</details>")
+
+
+def test_result_mode_tree_section_does_not_promise_an_after_pane():
+    """after 트리가 없으면 제목이 'Before → After'라 약속하면 안 되고,
+    2단 그리드(.trees)로 빈 오른쪽 절반을 남겨서도 안 된다(자기설명 결함)."""
+    d = {**MIN, "trees": {"before": {"title": "현재 구조", "tag": "지금",
+                                     "sub": "docs/ 밖 6건", "lines": [["a.md", None]]}},
+         "migration": [], "summary": {}}
+    body = render_report(d, "result").split("</style>", 1)[1]
+    assert "Before → After" not in body        # after 없는데 약속하지 않는다
+    assert '<div class="card trees">' not in body   # 빈 오른쪽 pane 만들지 않는다
+    assert '<div class="tree a">' not in body       # 좌측 구분선(2단 전제) 없음
+
+
+def test_plan_mode_tree_section_keeps_before_after_grid():
+    d = {**MIN, "trees": {"before": {"title": "현재", "tag": "지금", "sub": "s", "lines": [["a.md", None]]},
+                          "after": {"title": "정리 후", "tag": "목표", "sub": "s", "lines": [["docs/", "t-dir"]]}},
+         "migration": [], "decisions": []}
+    body = render_report(d, "plan").split("</style>", 1)[1]
+    assert "Before → After" in body
+    assert '<div class="card trees">' in body
+    assert '<div class="tree a">' in body
