@@ -53,6 +53,21 @@ def test_plan_moves_collision_raises():
         migrate.plan_moves(inv)
 
 
+def test_plan_moves_skips_nested_router_and_readme_no_collision():
+    inv = [
+        {"path": "src/a/mocks/README.md", "type": "reference"},   # DF1 → skip
+        {"path": "src/b/api/README.md", "type": "reference"},     # DF1 → skip(둘 다면 예전엔 docs/README.md 충돌)
+        {"path": "src/a/CLAUDE.md", "type": "reference"},         # DF2 → skip
+        {"path": "guide.md", "type": "how-to"},                   # 정상 이동
+    ]
+    plan = migrate.plan_moves(inv)                                # 충돌 ValueError 안 남
+    dests = {p["src"]: p["dest"] for p in plan}
+    assert "src/a/mocks/README.md" not in dests
+    assert "src/b/api/README.md" not in dests
+    assert "src/a/CLAUDE.md" not in dests
+    assert dests["guide.md"] == "docs/how-to/guide.md"
+
+
 def test_rewrite_links_updates_moved_target():
     mm = {"a.md": "docs/reference/a.md", "b.md": "docs/how-to/b.md"}
     out = migrate.rewrite_links("see [B](b.md)", "a.md", mm)

@@ -67,3 +67,16 @@ def test_disposition_router_tooling_content():
     assert contract.disposition("readme.md") == "tooling"
     assert contract.disposition("docs/how-to/help.md") == "content"
     assert contract.disposition("notes.md") == "content"
+
+
+def test_disposition_nested_router_and_code_adjacent_readme():
+    # DF2: 중첩 라우터(스코프 CLAUDE.md/AGENTS.md)는 어느 깊이든 라우터 → 제자리 skip
+    assert contract.disposition("src/features/x/CLAUDE.md") == "router"
+    assert contract.disposition("sub/AGENTS.md") == "router"
+    # DF1: 코드-인접 중첩 README(mocks·api)는 중앙집중 대상 아님 → tooling(제자리 skip)
+    assert contract.disposition("src/features/x/mocks/README.md") == "tooling"
+    assert contract.disposition("src/apis/readme.md") == "tooling"
+    # docs/ 아래 README(폴더 인덱스)는 content 유지 — DF1이 과확장 안 함
+    assert contract.disposition("docs/how-to/README.md") == "content"
+    # 루트 관례 README는 기존대로 tooling
+    assert contract.disposition("README.md") == "tooling"

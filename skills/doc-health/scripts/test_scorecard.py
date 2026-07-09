@@ -24,8 +24,8 @@ def test_disposition_paths():
     assert scorecard.disposition("CHANGELOG.md") == "tooling"
     assert scorecard.disposition("docs/x.md") == "content"
     assert scorecard.disposition("src/a/docs/guide.md") == "content"
-    # 하위 폴더의 AGENTS.md는 router 아님(루트만)
-    assert scorecard.disposition("sub/AGENTS.md") == "content"
+    # 하위 폴더의 AGENTS.md도 router(DF2: 중첩 스코프 라우터, 제자리 skip)
+    assert scorecard.disposition("sub/AGENTS.md") == "router"   # DF2: 중첩 라우터 제자리 skip
 
 
 def test_outside_content_ignores_router_and_tooling():
@@ -255,6 +255,12 @@ def test_disposition_root_convention_case_insensitive():
     assert scorecard.disposition("readme.md") == "tooling"
     assert scorecard.disposition("README.md") == "tooling"
     assert scorecard.disposition("Changelog.MD") == "tooling"
+
+
+def test_disposition_nested_readme_is_inplace_tooling():
+    # DF1: 코드-인접 README는 outside_content(M5)에도 안 잡힌다(중앙집중 대상 아님)
+    assert scorecard.disposition("src/x/mocks/README.md") == "tooling"
+    assert scorecard.outside_content(["src/x/mocks/README.md", "notes.md"]) == ["notes.md"]
 
 
 def test_before_tree_is_nested_scaffolding_not_flat():
