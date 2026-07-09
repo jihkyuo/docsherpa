@@ -42,7 +42,7 @@ inventory 매니페스트에는 accounted로 들어간다.)
 
 | 차원 | 이름 | 무엇을 보는가 |
 |---|---|---|
-| **J1** | 타입분류 정확성 | 분류 매니페스트의 `type`(ADR/spec/how-to/reference/PRD/legacy)이 문서 실제 내용과 맞는가. 예: "왜" 문서인데 how-to로 분류됐다면 fail. |
+| **J1** | 타입분류 정확성 | 분류 매니페스트의 `type`(ADR/spec/how-to/troubleshooting/reference/PRD/legacy)이 문서 실제 내용과 맞는가. 예: "왜" 문서인데 how-to로 분류됐다면 fail. **트러블슈팅은 실제 절차(명령·진단·복구)여야 — symptom→link뿐인 링크-전용이면 troubleshooting 아님(Status로 붕괴, fail).** |
 | **J2** | 폴더승격 적정성 | 폴더로 묶인 문서들이 실제로 함께 읽혀야 할 결합(co-change locality)인가, 아니면 같은 주제라는 이유만으로 억지로 묶였거나(타입 폴더로 결합 흩기) 반대로 흩어져야 할 게 억지로 묶였는가. |
 | **J3** | hollow·중복·bloat | 내용 없이 자리만 차지하는 placeholder(명시 안 된 hollow), 같은 내용이 여러 문서에 중복, 진입 파일이나 개별 문서가 과도하게 비대해진 경우(README 비대 포함). |
 | **J4** | 정합성 플래그 | 문서 간 서로 모순되는 서술, 코드와 어긋난 오래된 설명, 깨진 게 아니라 "틀린" 링크 라벨(대상은 맞지만 이름이 옛 파일명인 경우 등). |

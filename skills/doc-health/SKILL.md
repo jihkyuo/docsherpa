@@ -26,7 +26,7 @@ setup-docs 몫이다.
 
 2. **병렬 분류 — 판단, 코드 아님.** 목록을 슬라이스로 나눠 서브에이전트를 동시에 띄워 각 문서를
    판정한다. 산출 매니페스트 형태: `[{path, type, role, coupling, summary}, ...]`.
-   - `type` ∈ ADR/spec/how-to/reference/PRD/legacy.
+   - `type` ∈ ADR/spec/how-to/troubleshooting/reference/PRD/legacy.
    - `coupling` = 코드참조·외부싱크·동결역사 같은 결합 신호.
    - **판단 휴리스틱의 단일 소스는 [`skills/setup-docs/reference/knowledge.md`](../setup-docs/reference/knowledge.md)** — 여기서 중복 서술하지 않는다.
    - disposition(router/tooling/content)은 `scorecard.py`가 경로 규칙으로 결정론 계산하므로,
