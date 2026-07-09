@@ -76,23 +76,11 @@ TEMPLATE_CSS = r"""
   h2.sec::after { content:""; flex:1; height:1px; background:var(--line); }
   .sec-intro { font-size:12.5px; color:var(--muted); margin:0 2px var(--s3); }
 
-  /* grade header */
+  /* hero */
   .hero { padding:var(--s5) var(--s5) var(--s4); }
   .hero-title { font-size:11px; font-family:var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 var(--s5); text-align:center; }
-  .scale { display:flex; align-items:center; justify-content:center; max-width:500px; margin:0 auto; padding-bottom:22px; }
-  .scale .seg { flex:1; min-width:10px; height:2px; background:var(--line-strong); }
-  .tick { font-family:var(--mono); font-weight:700; display:grid; place-items:center; flex:none; }
-  .tick.mid { width:28px; height:28px; font-size:13px; color:var(--faint); }
-  .tick.cur, .tick.tgt { width:54px; height:54px; font-size:28px; border-radius:12px; position:relative; }
-  .tick.cur { color:var(--fail-ink); background:var(--fail-soft); border:2px solid var(--fail); }
-  .tick.tgt { color:var(--pass-ink); background:var(--pass-soft); border:2px solid var(--pass); }
-  .tick .cap { position:absolute; bottom:-20px; left:-12px; right:-12px; text-align:center; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.03em; }
-  .tick.cur .cap { color:var(--fail-ink); }
-  .tick.tgt .cap { color:var(--pass-ink); }
   .explain { max-width:660px; margin:0 auto var(--s5); text-align:center; font-size:14px; line-height:1.65; color:var(--muted); text-wrap:pretty; }
   .explain b { color:var(--ink); }
-  .explain b.f { color:var(--fail-ink); }
-  .explain b.a { color:var(--pass-ink); }
   .legend { display:flex; justify-content:center; flex-wrap:wrap; gap:var(--s5); border-top:1px solid var(--line); padding-top:var(--s4); }
   .lg { display:flex; align-items:center; gap:7px; font-size:12.5px; }
   .lg .cnt { font-family:var(--mono); font-weight:700; font-size:14px; }
@@ -276,18 +264,11 @@ def _render_masthead(data: dict) -> str:
 
 
 def _render_hero(data: dict) -> str:
-    g = data["grade"]; c = data["counts"]
+    c = data["counts"]
     return (
       '<div class="card hero">'
-      '<p class="hero-title">문서 아키텍처 건강 등급</p>'
-      '<div class="scale" role="img" aria-label="등급 스케일 F부터 A까지. 현재/목표 표시.">'
-      f'<span class="tick cur">{esc(g["current"])}<span class="cap">현재</span></span>'
-      '<span class="seg"></span><span class="tick mid">D</span>'
-      '<span class="seg"></span><span class="tick mid">C</span>'
-      '<span class="seg"></span><span class="tick mid">B</span>'
-      f'<span class="seg"></span><span class="tick tgt">{esc(g["target"])}<span class="cap">목표</span></span>'
-      '</div>'
-      f'<p class="explain">9개 진단 차원 중 <b>{c["pass"]}개</b>만 충족 → 목표 <b class="a">{esc(g["target"])}등급</b>.</p>'
+      '<p class="hero-title">문서 아키텍처 건강</p>'
+      f'<p class="explain">{c["fail"] + c["warn"] + c["pass"]}개 진단 차원 중 <b>{c["pass"]}개</b> 충족.</p>'
       '<div class="legend">'
       f'<div class="lg on-fail"><span class="chip fail">미달</span><span class="cnt">{c["fail"]}</span><span class="gl">기준 미충족</span></div>'
       f'<div class="lg on-warn"><span class="chip warn">부분</span><span class="cnt">{c["warn"]}</span><span class="gl">일부만 충족</span></div>'
@@ -521,18 +502,6 @@ def _render_summary(data: dict) -> str:
             f'성장 루프 {"설치" if s.get("loop_installed") else "미설치"}</div>'
             '</div></div></div></section>')
 
-def _render_grade_compare(before: str, after: str) -> str:
-    return (
-      '<div class="card hero">'
-      '<p class="hero-title">재진단 등급 변화 <span class="n">Phase 0 → Phase 4</span></p>'
-      '<div class="scale" role="img" aria-label="마이그레이션 전후 등급 대비.">'
-      f'<span class="tick cur">{esc(before)}<span class="cap">이전</span></span>'
-      '<span class="seg"></span>'
-      f'<span class="tick tgt">{esc(after)}<span class="cap">이후</span></span>'
-      '</div></div>'
-    )
-
-
 def _render_preexisting(items) -> str:
     rows = "".join(
         f'<li><span class="path">{esc(rel)}</span> → <span class="fnt">{esc(raw)}</span></li>'
@@ -552,9 +521,6 @@ def _render_main(data: dict, mode: str) -> str:
         parts += [_render_migration(data), _render_decisions(data)]
     else:
         parts.append(_render_summary(data))
-        s = data.get("summary") or {}
-        if "grade_before" in s and "grade_after" in s:
-            parts.append(_render_grade_compare(s["grade_before"], s["grade_after"]))
     pre = data.get("preexisting_broken")
     if pre:
         parts.append(_render_preexisting(pre))

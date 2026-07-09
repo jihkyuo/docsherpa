@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""문서 건강 점수표 — doc-health 채점(기계 차원 M1~M5 + 등급 rollup).
+"""문서 건강 점수표 — doc-health 채점(기계 차원 M1~M5).
 
 도달성은 gate.analyze 재사용(단일 엔진 = 정합성). disposition(H1)으로 M5 분모 결정.
 J1~J4 판단·분류·자세 하위는 SKILL.md 절차(코드 아님).
@@ -16,10 +16,8 @@ if str(_SHARED) not in sys.path:
 import gate                        # noqa: E402
 from contract import disposition   # noqa: E402
 
-# --- 임계값 (🔴 열린질문 — 하드닝 루프 튜닝, spec §3c) -------------------------
+# --- 임계값 -------------------------------------------------------------------
 M5_WARN_MAX = 3       # docs/ 밖 content 1~3 = warn, 초과 = fail
-ORPHAN_MOST = 0.5     # orphan_ratio >= 이 값이면 "대부분 미도달"(F)
-J_WARN_MAX = 2        # J warn 1~2 = B 유지, 초과 = C
 GREENFIELD_MAX = 2    # content 문서 이하 + 라우터 없음 = GREENFIELD
 
 
@@ -85,35 +83,6 @@ def machine_dims(res, files):
          "sub": (f"docs/ 밖에 흩어진 content {len(outside)}건" if outside
                  else "docs/ 밖 content 0")},
     ]
-
-
-# --- 등급 rollup (결정론, 임계값 🔴 튜닝) --------------------------------------
-def rollup(mech, judg, orphan_ratio, router_present):
-    """9차원 상태 + 신호 → 등급 'A'..'F' (spec §3c 산식)."""
-    m = {d["code"]: d["status"] for d in mech}
-    if not router_present:
-        return "F"
-    if m["M1"] == "fail" and orphan_ratio >= ORPHAN_MOST:
-        return "F"
-    if m["M1"] == "fail":
-        return "D"
-    if m["M5"] == "fail":
-        return "D"
-    # 여기서 M1 == pass
-    m_nonpass = sum(1 for c in ("M2", "M3", "M4", "M5") if m[c] != "pass")
-    if m_nonpass >= 3:
-        return "D"
-    if m_nonpass >= 1:
-        return "C"
-    # M1~M5 전부 pass
-    js = [d["status"] for d in judg]
-    j_fail = sum(1 for s in js if s == "fail")
-    j_warn = sum(1 for s in js if s == "warn")
-    if j_fail or j_warn > J_WARN_MAX:
-        return "C"
-    if 1 <= j_warn <= J_WARN_MAX:
-        return "B"
-    return "A"
 
 
 def counts(mech, judg):
@@ -192,13 +161,10 @@ def assemble(root, files, judgment, inventory=None):
             f"judgment must assess all 4 dims (J1-J4); got codes {sorted(j_codes)}")
     res = gate.analyze(root)
     mech = machine_dims(res, files)
-    orphan_ratio = (len(res.orphans) / len(res.all_docs)) if res.all_docs else 0.0
-    grade = rollup(mech, judgment, orphan_ratio, res.router_present)
     out = {
         "repo": {"name": Path(root).resolve().name,
                  "docs_count": len(files),
                  "branch": _git_branch(root)},
-        "grade": {"current": grade, "target": "A"},
         "counts": counts(mech, judgment),
         "scorecard": {"mechanical": mech, "judgment": judgment},
         "trees": {"before": _before_tree(files)},
@@ -218,7 +184,7 @@ def main(argv=None):
     ap.add_argument("--manifest", help="분류 매니페스트 JSON([{path,type,...}])")
     ap.add_argument("--judgment", required=True,
                      help="J1~J4 판단 차원 JSON([{code,name,sub,status}]) — "
-                          "9차원(M1~M5+J1~J4) 전부 평가해야 정직한 등급이므로 필수")
+                          "9차원(M1~M5+J1~J4)을 전부 평가해야 점수표가 정직하므로 필수")
     args = ap.parse_args(argv)
 
     import inventory as _inv

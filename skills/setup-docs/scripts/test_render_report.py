@@ -2,7 +2,7 @@ import re
 from render_report import render_report, esc
 
 MIN = {"repo": {"name": "r", "docs_count": 0, "branch": "b"},
-       "grade": {"current": "F", "target": "A"}, "counts": {"fail": 0, "warn": 0, "pass": 0},
+       "counts": {"fail": 0, "warn": 0, "pass": 0},
        "scorecard": {"mechanical": [], "judgment": []},
        "trees": {"before": {"title": "", "tag": "지금", "sub": "", "lines": []},
                  "after": {"title": "", "tag": "목표", "sub": "", "lines": []}},
@@ -119,11 +119,10 @@ def test_masthead_shows_repo_fields_escaped():
     assert "r&amp;&lt;x&gt;" in html and "<x>" not in html
 
 
-def test_hero_shows_current_and_target_grade():
-    html = render_report({**MIN, "grade": {"current": "F", "target": "A"},
-                          "counts": {"fail": 7, "warn": 2, "pass": 0}}, "plan")
-    assert 'class="tick cur">F' in html and '현재' in html
-    assert 'class="tick tgt">A' in html and '목표' in html
+def test_hero_shows_dimension_count_and_legend():
+    html = render_report({**MIN, "counts": {"fail": 7, "warn": 2, "pass": 0}}, "plan")
+    assert "9개 진단 차원 중" in html          # 등급 스케일 없이 차원 충족 수만
+    assert 'class="tick' not in html          # ADR 0020: 등급 눈금 제거
     assert "미달" in html and "7" in html   # 범례 개수
 
 
@@ -182,15 +181,14 @@ def test_plan_mode_has_migration_and_decisions_but_result_does_not():
     assert "이동 계획" not in result and "당신의 결정" not in result
     assert "완료" in result and "12" in result and "0" in result   # 요약 수치
 
-def test_result_mode_shows_grade_before_after_and_preexisting_broken():
-    d = {**MIN, "grade": {"current": "C", "target": "B"},
-         "summary": {"grade_before": "F", "grade_after": "A", "moved": 3,
+def test_result_mode_shows_preexisting_broken():
+    d = {**MIN,
+         "summary": {"moved": 3,
                      "orphans_before": 12, "orphans_after": 0,
                      "outside_before": 45, "outside_after": 0,
                      "loop_installed": True, "residual": []},
          "preexisting_broken": [("docs/api.md", "src/x/")]}
     html = render_report(d, "result")
-    assert "F" in html and "A" in html                      # before→after 등급 대비
     assert 'style="' not in html                             # 인라인 style 0(동결 품질)
     assert "머지 전" in html                                  # 기존 broken 표면화
     assert "docs/api.md" in html and "src/x/" in html
@@ -205,7 +203,7 @@ def test_result_mode_preexisting_broken_escapes_hostile_content():
     assert html.count("<div") == html.count("</div>")
 
 
-def test_result_mode_without_grade_or_preexisting_still_renders():
+def test_result_mode_without_preexisting_still_renders():
     d = {**MIN, "summary": {"moved": 1, "orphans_before": 1, "orphans_after": 0,
                             "outside_before": 1, "outside_after": 0,
                             "loop_installed": False, "residual": []}}

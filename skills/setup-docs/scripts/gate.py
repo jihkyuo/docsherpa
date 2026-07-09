@@ -17,11 +17,7 @@
 사용:
   python3 gate.py [REPO_ROOT]                     # 기본: 현재 디렉터리
   python3 gate.py [REPO_ROOT] --require-markers   # 스캐폴드 검증 시 마커 계약(D8)까지 강제
-  python3 gate.py --hook [REPO_ROOT]              # 훅용: 침묵이 기본, 항상 exit 0(막지 않음)
-종료코드: 0 = PASS, 1 = FAIL. (--hook 은 언제나 0 — 검사기는 아무것도 막지 않는다.)
-
-⚠️ --hook 모드는 현재 **아무도 부르지 않는다**(플러그인 훅 배선을 ADR 0005 위반으로 되돌림).
-   배선하거나(커밋된 SessionStart 훅 + gate.py를 target에 복사) 지워야 한다 — FINDINGS 참조.
+종료코드: 0 = PASS, 1 = FAIL.
 """
 import re
 import sys
@@ -146,62 +142,11 @@ def _rel(path, root):
         return path
 
 
-def _hook_report(root, res):
-    """--hook 모드 보고 텍스트 생성(broken/orphans 각 최대 10줄, 전체 2000자 미만 목표)."""
-    lines = [f"docsherpa: 문서 링크 검사 — 깨진 링크 {len(res.broken)}건 · 고아 {len(res.orphans)}건"]
-    if res.broken:
-        for src, raw in res.broken[:10]:
-            lines.append(f"  {_rel(src, root)} -> {raw}")
-        if len(res.broken) > 10:
-            lines.append(f"  ... 외 {len(res.broken) - 10}건")
-    if res.orphans:
-        lines.append("고아(인덱스에서 도달 불가):")
-        for d in res.orphans[:10]:
-            lines.append(f"  {_rel(d, root)}")
-        if len(res.orphans) > 10:
-            lines.append(f"  ... 외 {len(res.orphans) - 10}건")
-    lines.append("고치려면 /docsherpa:doc-reconcile 를 실행하라. (이 검사는 아무것도 막지 않는다.)")
-    return "\n".join(lines)
-
-
-def _hook_main(root):
-    """SessionStart 훅용: 침묵이 기본, docsherpa-managed 레포에 문제가 있을 때만 보고. 절대 막지 않는다(항상 0)."""
-    try:
-        # 라우터 자체가 없으면 analyze()의 무조건적 docs/ rglob(비쌀 수 있다)까지 갈 필요 없다 —
-        # 플러그인만 설치되고 docsherpa를 안 쓰는 레포에서 매 세션 비용을 무는 걸 막는다.
-        if not any((root / n).is_file() for n in contract.ENTRY_FILENAMES):
-            return 0
-        res = analyze(root)
-        # homes는 도달 가능 문서 기준이라 라우터 링크가 깨지면 0이 되어버린다(가장 필요할 때 침묵하는 버그).
-        # docsherpa-managed 여부는 도달성과 무관하게 디스크에서 직접 판정한다.
-        candidates = [root / "docs" / "_map.md"] + [root / n for n in contract.ENTRY_FILENAMES]
-        files = []
-        for p in candidates:
-            try:                                  # 후보 하나를 못 읽는다고(권한 등) 검사기 전체가
-                if p.is_file():                   # 침묵해선 안 된다 — 그 파일만 건너뛴다.
-                    files.append((p, p.read_text(encoding="utf-8", errors="ignore")))
-            except OSError:
-                continue
-        if not contract.find_marker_home(files):
-            return 0
-        if not res.broken and not res.orphans:
-            return 0
-        print(_hook_report(root, res))
-        return 0
-    except Exception:
-        return 0
-
-
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
-    hook = "--hook" in argv
-    argv = [a for a in argv if a != "--hook"]
     require_markers = "--require-markers" in argv
     argv = [a for a in argv if a != "--require-markers"]
     root = Path(argv[0] if argv else ".").resolve()
-
-    if hook:
-        return _hook_main(root)
 
     res = analyze(root)
     if not res.router_present:

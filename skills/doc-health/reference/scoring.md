@@ -59,35 +59,9 @@ J1~J4의 판정 기준·안티패턴 목록·"자체 루프가 드리프트된 �
 
 ---
 
-## 등급 rollup (F ~ A)
-
-`scorecard.py`가 M1~M5 상태 + J1~J4 상태 + 신호(`orphan_ratio`, `docs/` 밖 content 개수,
-라우터 존재 여부)로 등급을 결정론 계산한다. 순서대로 첫 번째로 맞는 조건이 등급이 된다:
-
-```
-1. 라우터 없음                              → F
-2. M1 fail 이고 orphan_ratio >= 임계치       → F   (대부분 미도달)
-3. M1 fail                                  → D   (다수 고아, 절반 미만)
-4. M5 fail                                  → D   (대량 밖 content)
-   ── 여기부터는 M1 pass 확정 ──
-5. M2~M5 중 non-pass 3개 이상               → D   (도달은 되나 구조 취약)
-6. M2~M5 중 non-pass 1~2개                  → C
-   ── 여기부터는 M1~M5 전부 pass ──
-7. J 중 fail이 하나라도 있거나 warn이 임계치 초과 → C
-8. J warn이 1~임계치 개                      → B
-9. 그 외(전 9차원 pass)                      → A   (완료의 정의)
-```
-
-**구조(관문 순서·비-pass 카운트 로직)는 고정이다.** 각 단계에 쓰이는 구체 숫자 —
-orphan_ratio 임계치, M5 warn/fail 경계, J warn 허용 개수 — 는 **🔴 튜닝값**이다. 하드닝
-루프에서 실제 repo로 검증하며 조정될 수 있으므로, 이 문서에서 특정 숫자를 "정답"처럼 인용하지
-않는다. 정확한 현재값은 `skills/doc-health/scripts/scorecard.py` 상단 상수를 직접 확인한다.
-
----
-
 ## 자세 (posture)
 
-등급과 별개로, repo가 지금 어떤 상태인지를 3가지로 요약한다. `scorecard.py`가 결정론으로 힌트를
+repo가 지금 어떤 상태인지를 3가지로 요약한다. `scorecard.py`가 결정론으로 힌트를
 낸다:
 
 - **GREENFIELD** — 라우터가 없고 content 문서도 거의 없다. 아직 문서 체계가 서기 전이다.

@@ -309,7 +309,6 @@ def test_build_and_verify_no_false_loss_on_preexisting_index(tmp_path):
 def _health_stub():
     return {
         "repo": {"name": "r", "docs_count": 3, "branch": "main"},
-        "grade": {"current": "F", "target": "A"},
         "counts": {"fail": 5, "warn": 0, "pass": 4},
         "scorecard": {"mechanical": [], "judgment": []},
         "trees": {"before": {"title": "지금", "tag": "지금", "sub": "", "lines": []}},

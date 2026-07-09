@@ -113,42 +113,6 @@ def _judg(j1, j2, j3, j4):
     return _dims({"J1": j1, "J2": j2, "J3": j3, "J4": j4})
 
 
-def test_rollup_grade_A_all_pass():
-    m = _mech("pass", "pass", "pass", "pass", "pass")
-    j = _judg("pass", "pass", "pass", "pass")
-    assert scorecard.rollup(m, j, 0.0, True) == "A"
-
-
-def test_rollup_grade_B_one_j_warn():
-    m = _mech("pass", "pass", "pass", "pass", "pass")
-    j = _judg("warn", "pass", "pass", "pass")
-    assert scorecard.rollup(m, j, 0.0, True) == "B"
-
-
-def test_rollup_grade_C_j_fail_or_one_m_nonpass():
-    m = _mech("pass", "pass", "pass", "pass", "pass")
-    assert scorecard.rollup(m, _judg("fail", "pass", "pass", "pass"), 0.0, True) == "C"
-    m2 = _mech("pass", "warn", "pass", "pass", "pass")   # M2~M5 중 1개 비-pass
-    assert scorecard.rollup(m2, _judg("pass", "pass", "pass", "pass"), 0.0, True) == "C"
-
-
-def test_rollup_grade_D_many_m_nonpass_or_m5_fail():
-    m = _mech("pass", "fail", "fail", "fail", "pass")    # M2~M5 중 3개 비-pass
-    assert scorecard.rollup(m, _judg("pass", "pass", "pass", "pass"), 0.0, True) == "D"
-    m5f = _mech("pass", "pass", "pass", "pass", "fail")  # 대량 밖
-    assert scorecard.rollup(m5f, _judg("pass", "pass", "pass", "pass"), 0.0, True) == "D"
-
-
-def test_rollup_grade_D_and_F_on_reachability():
-    m = _mech("fail", "fail", "fail", "fail", "fail")
-    # 라우터 있으나 소수 고아 → D
-    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.2, True) == "D"
-    # 대부분 미도달 → F
-    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.7, True) == "F"
-    # 라우터 없음 → F
-    assert scorecard.rollup(m, _judg("fail", "fail", "fail", "fail"), 0.0, False) == "F"
-
-
 def test_counts_tally():
     m = _mech("pass", "fail", "warn", "pass", "pass")
     j = _judg("warn", "pass", "pass", "fail")
@@ -175,10 +139,10 @@ def test_assemble_shape_and_keys(tmp_path):
     files = ["AGENTS.md", "docs/_map.md", "docs/a.md"]
     j = _judg("pass", "pass", "pass", "pass")
     d = scorecard.assemble(tmp_path, files, j)
-    assert set(d) >= {"repo", "grade", "counts", "scorecard", "trees", "posture"}
+    assert set(d) >= {"repo", "counts", "scorecard", "trees", "posture"}
+    assert "grade" not in d          # ADR 0020: 등급 폐기 — 승인 아티팩트에 거짓말 금지
     assert set(d["repo"]) == {"name", "docs_count", "branch"}
     assert d["repo"]["docs_count"] == 3
-    assert d["grade"] == {"current": "A", "target": "A"}
     assert d["scorecard"]["mechanical"] and d["scorecard"]["judgment"]
     assert "before" in d["trees"]
     assert d["posture"] == "HEALTHY"
@@ -211,7 +175,7 @@ def test_assemble_feeds_render_report_without_keyerror(tmp_path):
     assert d["repo"]["name"] in html
 
 
-def test_main_with_judgment_and_manifest_returns_grade_json(tmp_path, capsys):
+def test_main_with_judgment_and_manifest_returns_json(tmp_path, capsys):
     _healthy_repo(tmp_path)
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps([]), encoding="utf-8")
@@ -225,8 +189,8 @@ def test_main_with_judgment_and_manifest_returns_grade_json(tmp_path, capsys):
 
     assert rc == 0
     data = json.loads(capsys.readouterr().out)
-    assert set(data) >= {"repo", "grade", "scorecard"}
-    assert data["grade"]["target"] == "A"
+    assert set(data) >= {"repo", "scorecard"}
+    assert "grade" not in data
     j_codes = {d["code"] for d in data["scorecard"]["judgment"]}
     assert j_codes == {"J1", "J2", "J3", "J4"}
 

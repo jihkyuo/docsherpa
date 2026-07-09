@@ -33,6 +33,21 @@ def test_analyze_no_router(tmp_path):
     assert res.router_present is False
 
 
+def test_main_reports_broken_link_outside_root(tmp_path, capsys):
+    # 회귀 가드(test_gate_hook.py 삭제로 유실된 커버리지 복원): 라우터가 `../`로 root 밖 문서를
+    # 링크하고 그 문서에 깨진 링크가 있으면 `_rel`의 relative_to가 ValueError를 던진다.
+    # 크래시·침묵 없이 절대경로로라도 보고해야 한다(gate.py `_rel` 계약).
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "o.md").write_text("# o\n- [죽음](./ghost.md)\n", encoding="utf-8")
+    repo = tmp_path / "repo"
+    _mk(repo, "AGENTS.md", "# R\n- [외부](../outside/o.md)\n")
+    rc = gate.main([str(repo)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "ghost.md" in out
+
+
 def test_analyze_finds_marker_home(tmp_path):
     _mk(tmp_path, "AGENTS.md", "# R\n- [m](docs/_map.md)\n")
     _mk(tmp_path, "docs/_map.md",

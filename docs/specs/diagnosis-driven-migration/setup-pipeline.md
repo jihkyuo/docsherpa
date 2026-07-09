@@ -12,7 +12,7 @@
 
 | # | 결정 | 근거 |
 |---|---|---|
-| P1 | **검증된 계획** — Phase 1b 자체검증(스크래치에 목표트리 빌드 → 두 오라클 통과 → 등급 증명)을 증분 3에 포함. 사용자에 보여주는 계획은 "이대로 하면 진짜 A" 증명된 것. | design §7 "증명 후 제시". 거짓 계획 금지 |
+| P1 | **검증된 계획** — Phase 1b 자체검증(스크래치에 목표트리 빌드 → 두 오라클 통과 → 차원 충족 증명)을 증분 3에 포함. 사용자에 보여주는 계획은 "이대로 하면 진짜 전 차원 충족" 증명된 것. | design §7 "증명 후 제시". 거짓 계획 금지 |
 | P2 | **최소 코어** — 순수 이동/개명(verbatim) + 링크리라이트 + 두 오라클. **git 전제.** 정규화 transformed·비-git clone·동결역사 깊은 처리는 이연. | 유실 0 불변식 집중, 스코프 부풀림 방지(D8 opt-in) |
 
 ## 0a. 계획검증 개정 (2026-07-08 — /codex + 실측 재현)
@@ -53,7 +53,7 @@
 
 ```
 Phase 0 (before 진단)
-  SKILL → doc-health → { grade, scorecard, trees.before, inventory:[{path,type,disposition,coupling}], J4모순 }
+  SKILL → doc-health → { scorecard, trees.before, inventory:[{path,type,disposition,coupling}], J4모순 }
 
 Phase 1a (배정)
   migrate.plan_moves(inventory) [결정론]:
@@ -68,11 +68,11 @@ Phase 1b (자체검증 = 엔진)   migrate.build_and_verify(repo, move_plan):
     ③ scaffold(스크래치: spine+성장루프)  ④ register_in_indexes(이동 문서를 폴더 _README·map에 등록)
     ⑤ gate → broken/orphan  ⑥ content_oracle(base=repo, current=스크래치) → unaccounted
     → {broken, orphan, unaccounted}
-  SKILL: 스크래치에 doc-health 재실행 → 기계등급 확인
+  SKILL: 스크래치에 doc-health 재실행 → 기계 차원(M1~M5) 확인
   ✋ STOP(§3): broken>0·orphan>0·unaccounted>0·목적지충돌 → 아티팩트 안 냄
 
 Phase 2 (계획 아티팩트 + 승인)   계획 데이터 조립:
-    repo·grade(현재/목표A)·scorecard·trees.before  ← doc-health
+    repo·scorecard·trees.before  ← doc-health
     trees.after·migration                          ← move_plan
     decisions = 라우터결정(결정론 감지) + 내용모순(doc-health J4 재사용)
     → render_report(data,"plan") → HTML 아티팩트 → 사용자 승인
@@ -88,22 +88,22 @@ Phase 2 (계획 아티팩트 + 승인)   계획 데이터 조립:
 STOP 조건(1b):
 1. `content_oracle unaccounted > 0` → 유실 위험. 미분류 세그먼트 보고.
 2. gate broken≠0 또는 orphan≠0 → 도달성 미달. (**register_in_indexes 후에도** orphan≠0이면 배정/등록 결함.)
-3. 스크래치 재채점 후 기계등급 미달(M1~M5 not all pass) → 배정 부족(어느 차원인지).
+3. 스크래치 재채점 후 기계 차원 미달(M1~M5 not all pass) → 배정 부족(어느 차원인지).
 4. 목적지 충돌 — (a) 계획 내 둘이 같은 dest(`plan_moves` ValueError), (b) dest가 repo 기존 파일과 충돌(제자리 이동 아닌데 덮어씀 → `apply_moves` 사전 STOP).
 
 **엣지(design 계승):**
-- **자세별 차등:** GREENFIELD=조용히 설치(아티팩트 X) · HEALTHY=등급 카드만 · **MESSY만 풀 파이프라인.**
+- **자세별 차등:** GREENFIELD=조용히 설치(아티팩트 X) · HEALTHY=진단 카드만 · **MESSY만 풀 파이프라인.**
 - **동결 역사**(날짜박힌 specs/plans): 인덱스만·내용 verbatim·repoint 금지. 증분 3은 **legacy를 이동 대상서 제외**(제자리), 깊은 de-link는 증분 4.
 - **비-git repo:** 스코프 밖(P2). 감지 시 "git init 먼저" 안내(content_oracle 전제).
 - **`.mdx` 문서:** content_oracle 미지원(무손실 증명 불가) → 증분 3은 **이동 제외**(제자리), 증분 4 이연.
 - **이동할 content 0**: move_plan 빈 계획 → 1b는 spine/loop만 검증.
 
-## 4. 정직성 정밀화 — "등급 A 증명"의 엄밀한 의미
+## 4. 정직성 정밀화 — "전 차원 충족 증명"의 엄밀한 의미
 
 1b가 **결정론으로 증명**하는 것 = **M1~M5(기계 차원) pass + content_oracle unaccounted=0(무손실)**.
 **J1~J4는 판단**이라 스크래치로 증명 불가 — Phase 0에서 평가되고 계획이 개선하지만, gate-증명 대상 아님.
-→ 아티팩트는 **"기계 차원 A-트랙 + 내용 보존 증명"**을 정직하게 표시하고, J는 판단 평가로 별도 표기.
-design §7 "등급=A 증명"의 정직한 해석(J를 결정론으로 증명하는 척하지 않음).
+→ 아티팩트는 **"기계 차원 pass + 내용 보존 증명"**을 정직하게 표시하고, J는 판단 평가로 별도 표기.
+design §7 "완료=전 차원 pass 증명"의 정직한 해석(J를 결정론으로 증명하는 척하지 않음).
 
 ## 5. 테스트 계획 (RED-first — docsherpa 정책)
 

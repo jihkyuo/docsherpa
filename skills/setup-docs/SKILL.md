@@ -287,9 +287,9 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
 > `skills/setup-docs/scripts/migrate.py` 엔진이 담당한다. feature명·토픽폴더 승격·동결역사 태깅은
 > **에이전트 판단**이다(§7.5 교훈 — 대상을 지어내지 말고 실제 트리를 보고 정한다).
 
-1. **Phase 0(위 "진단" 재사용)** — `doc-health`가 이미 낸 데이터 dict(grade·scorecard·`trees.before`·
+1. **Phase 0(위 "진단" 재사용)** — `doc-health`가 이미 낸 데이터 dict(scorecard·`trees.before`·
    `inventory`·J4)를 그대로 쓴다. 이 무거운 차선은 자세=MESSY(중구난방 또는 이동이 필요한 자체구조)일
-   때만 진행 — GREENFIELD는 조용히 설치, HEALTHY는 등급 카드만 낸다(위 자세 분기 참고).
+   때만 진행 — GREENFIELD는 조용히 설치, HEALTHY는 진단 카드만 낸다(위 자세 분기 참고).
 2. **Phase 1a(배정)** — `inventory`를 **판단으로 enrich**한다: spec 문서는 `feature`명을 채우고,
    co-change≥2인 문서군은 `topic`(토픽폴더)을 매기고, 동결역사(날짜박힌 `specs/`·`plans/`)는
    `type: "legacy"`로 태깅한다. 그다음 `migrate.plan_moves(inventory)` → `move_plan`. **disposition
@@ -301,7 +301,7 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
    내용보존=content_oracle + 앵커 유실·파일별 계정)을 돌린다 — 실제 repo는 건드리지 않는다.
    **STOP 판정:** `unaccounted`·`new_broken`·`anchor_lost`·`per_file` 중 하나라도 비어 있지 않거나
    `orphan`이 0이 아니면 아티팩트를 내지 않는다 — 사유를 보고하고 자동수정 재시도(목적지 개명·배정 조정)
-   또는 사용자 에스컬레이션. 통과하면 스크래치 결과에 doc-health를 재실행해 기계등급을 확인한다.
+   또는 사용자 에스컬레이션. 통과하면 스크래치 결과에 doc-health를 재실행해 기계 차원(M1~M5)을 확인한다.
 4. **Phase 2(계획 아티팩트)** — `migrate.assemble_plan_data(health, move_plan, decisions=...,
    preexisting_broken=<Phase 1b 결과>, orphans_after=<Phase 1b build_and_verify 결과>["orphan"])`로
    조립한다 → `render_report(data, "plan")`. `decisions`는 라우터 결정(예: 리치 CLAUDE.md인데 AGENTS.md
@@ -331,11 +331,10 @@ python3 ~/.claude/skills/setup-docs/scripts/gate.py [REPO_ROOT]   # 기본: 현�
    `preexisting_broken`(마이그레이션 이전부터 있던 깨진 링크 — "머지 전 결정할 것")을 안내한다.
    **머지는 하지 않는다** — 브랜치 검토·머지는 항상 사용자 몫이다.
 8. **Phase 4(재진단·결과 리포트)** — Phase 3이 낸 랜딩 브랜치에서 doc-health를 재실행해 "after" 데이터를
-   얻고, Phase 0의 "before" 등급과 합쳐 `render_report(data, "result")` 아티팩트를 낸다. **조립 키를
-   정확히 맞춘다** — `data["summary"]["grade_before"]`·`data["summary"]["grade_after"]`(등급 비교
-   섹션)·`data["preexisting_broken"]`(머지 전 결정 섹션, Phase 3 결과에서 그대로 옮긴다). 이름이 다르거나
-   빠지면 렌더러는 `in`/`.get`으로 그 섹션을 조용히 스킵할 뿐 에러를 내지 않으니, 값을 채운 뒤 실제 dict를
-   눈으로 확인한다.
+   얻어 `render_report(data, "result")` 아티팩트를 낸다. 개선 증명은 규모 라인(고아 N→0·유실 0)과 after
+   차원표가 맡는다(ADR 0020: 등급 비교 폐기). **조립 키를 정확히 맞춘다** — `data["preexisting_broken"]`
+   (머지 전 결정 섹션, Phase 3 결과에서 그대로 옮긴다). 이름이 다르거나 빠지면 렌더러는 `in`/`.get`으로 그
+   섹션을 조용히 스킵할 뿐 에러를 내지 않으니, 값을 채운 뒤 실제 dict를 눈으로 확인한다.
 9. **범위 밖.** 배치(타입 vs 토픽) 판단·기존 legacy 문서군 통합·타입 우선 vs 기능응집 조직 선택은 이
    파이프라인이 하지 않는다 — 도메인 결정이라 별도 트랙(사용자와 상의)으로 다룬다. Phase 0~4는 기계
    계정(도달성·내용보존)과 승인/랜딩 게이트만 책임진다.
