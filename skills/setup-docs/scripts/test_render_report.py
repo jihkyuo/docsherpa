@@ -38,6 +38,7 @@ AA_PAIRS = [
     ("--warn-ink", "--warn-soft", 4.5),
     ("--fail-ink", "--fail-soft", 4.5), ("--fail-ink", "--panel", 4.5),
     ("--pass-ink", "--pass-soft", 4.5),
+    ("--pass-ink", "--panel", 4.5),
 ]
 
 def _tokens_for(theme: str) -> dict:
@@ -70,6 +71,26 @@ def test_hostile_path_does_not_break_output():
     html = render_report(d, "plan")
     assert "<script>x" not in html          # 원문 태그가 살아있으면 안 됨
     assert "&lt;script&gt;" in html
+    assert html.count("<div") == html.count("</div>")
+
+def test_migration_head_shows_scale_and_orphan_win():
+    d = {**MIN, "migration": [
+            {"src": "a.md", "dest": "docs/reference/a.md", "ops": ["move"], "impact": None},
+            {"src": "b.md", "dest": "docs/how-to/b.md", "ops": ["move"], "impact": None}],
+         "orphans_before": 12, "orphans_after": 0}
+    html = render_report(d, "plan")
+    assert 'class="mig-head"' in html
+    assert "2개" in html                      # 이동 규모 = len(migration)
+    assert "고아" in html and "12" in html and "0" in html   # 고아 12 → 0
+    assert "유실 0" in html
+    assert html.count("<div") == html.count("</div>")
+
+def test_migration_head_omits_orphan_segment_when_absent():
+    d = {**MIN, "migration": [
+            {"src": "a.md", "dest": "docs/reference/a.md", "ops": ["move"], "impact": None}]}
+    html = render_report(d, "plan")
+    assert 'class="mig-head"' in html         # 규모 라인 자체는 나옴(이동/유실)
+    assert "고아" not in html.split('class="mig-head"')[1].split("</div>")[0]  # orphan 세그먼트만 생략
     assert html.count("<div") == html.count("</div>")
 
 

@@ -210,6 +210,9 @@ TEMPLATE_CSS = r"""
   .mig-grp .gbar { font-family:var(--mono); font-size:11px; letter-spacing:-1px; white-space:nowrap; color:var(--accent); }
   .mig-grp .gbar .cnt { color:var(--ink); font-weight:700; letter-spacing:0; margin-left:6px; font-size:12px; }
   .mig-grp .gdest { font-family:var(--mono); font-size:11px; color:var(--muted); word-break:break-all; }
+  .mig-head { font-size:13px; margin:0 0 var(--s3); color:var(--ink); }
+  .mig-head .win { color:var(--pass-ink); }
+  .mig-head .ok { color:var(--muted); }
   .callout { margin:var(--s3) var(--s4) 0; padding:var(--s3) var(--s4); border:1px solid var(--fail); border-left:3px solid var(--fail); border-radius:var(--r-sm); background:var(--fail-soft); }
   .callout .ct { font-size:12px; font-weight:700; color:var(--fail-ink); margin:0 0 var(--s2); }
   .callout ul { margin:0; padding-left:18px; }
@@ -383,6 +386,11 @@ def _render_migration(data: dict) -> str:
             f'<div class="gbar" aria-hidden="true">{_bar(len(items), mx)}'
             f'<span class="cnt">{len(items)}건</span></div>'
             f'<div class="gdest">→ {esc(dest_disp)}/</div></div>')
+    ob, oa = data.get("orphans_before"), data.get("orphans_after")
+    orphan_seg = (f' · <b class="win">고아(미도달) {esc(ob)} → {esc(oa)}</b>'
+                  if ob is not None and oa is not None else "")
+    mig_head = (f'<div class="mig-head"><b>{len(mig)}개 옮김</b>{orphan_seg}'
+                f' · <span class="ok">전체 내용 그대로 보존(유실 0)</span></div>')
     impacts = [r for r in mig if r.get("impact")]
     callout = ""
     if impacts:
@@ -397,7 +405,7 @@ def _render_migration(data: dict) -> str:
             '<p class="sec-intro">문서를 타입별로 어디로 모으는지 요약입니다. '
             '막대 = 문서 수(상대), 오른쪽 = 목적지 폴더. ▲는 옮기기 전에 당신이 정해야 할 것. '
             '문서별 전체 목록은 아래 “전체 펼치기”.</p>'
-            f'<div class="card"><div class="mig-agg">{"".join(rows)}</div>{callout}'
+            f'<div class="card">{mig_head}<div class="mig-agg">{"".join(rows)}</div>{callout}'
             '<details class="full"><summary>문서별 전체 이동 목록 펼치기</summary>'
             '<div class="tbl-scroll"><table><caption class="vh">문서별 이동 계획</caption>'
             '<thead><tr><th scope="col">원본 → 목적지</th><th scope="col">연산</th>'
