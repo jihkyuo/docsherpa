@@ -144,6 +144,38 @@ def test_plan_mode_has_migration_and_decisions_but_result_does_not():
     assert "이동 계획" not in result and "당신의 결정" not in result
     assert "완료" in result and "12" in result and "0" in result   # 요약 수치
 
+def test_result_mode_shows_grade_before_after_and_preexisting_broken():
+    d = {**MIN, "grade": {"current": "C", "target": "B"},
+         "summary": {"grade_before": "F", "grade_after": "A", "moved": 3,
+                     "orphans_before": 12, "orphans_after": 0,
+                     "outside_before": 45, "outside_after": 0,
+                     "loop_installed": True, "residual": []},
+         "preexisting_broken": [("docs/api.md", "src/x/")]}
+    html = render_report(d, "result")
+    assert "F" in html and "A" in html                      # before→after 등급 대비
+    assert 'style="' not in html                             # 인라인 style 0(동결 품질)
+    assert "머지 전" in html                                  # 기존 broken 표면화
+    assert "docs/api.md" in html and "src/x/" in html
+    assert html.count("<div") == html.count("</div>")
+
+
+def test_result_mode_preexisting_broken_escapes_hostile_content():
+    d = {**MIN, "preexisting_broken": [("<script>x</script>", "docs/a&b.md")]}
+    html = render_report(d, "result")
+    assert "<script>x" not in html
+    assert "&lt;script&gt;" in html
+    assert html.count("<div") == html.count("</div>")
+
+
+def test_result_mode_without_grade_or_preexisting_still_renders():
+    d = {**MIN, "summary": {"moved": 1, "orphans_before": 1, "orphans_after": 0,
+                            "outside_before": 1, "outside_after": 0,
+                            "loop_installed": False, "residual": []}}
+    html = render_report(d, "result")
+    assert "머지 전" not in html
+    assert html.count("<div") == html.count("</div>")
+
+
 def test_edges_do_not_crash_or_unbalance():
     for d in (MIN,  # 0 docs
               {**MIN, "scorecard": {"mechanical": [{"code": f"M{i}", "name": "n"*40,

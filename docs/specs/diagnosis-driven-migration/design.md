@@ -65,7 +65,8 @@ setup-docs는 아키텍처를 "슥 설치하고 끝"이 아니다. **프로젝�
 
 자세별 차등: GREENFIELD=조용히 설치(아티팩트 없음). HEALTHY=등급 카드만. MESSY=풀 파이프라인.
 
-> **구현 spec:** [setup-pipeline.md](setup-pipeline.md) — 증분 3(Phase 0·1·2: 진단→목표트리→검증된 계획→승인). Phase 3·4는 증분 4로 이연.
+> **구현 spec:** [setup-pipeline.md](setup-pipeline.md) — 증분 3(Phase 0·1·2: 진단→목표트리→검증된 계획→승인).
+> [landing-migration.md](landing-migration.md) — 증분 4(Phase 3·4: 승인된 계획의 실제 랜딩→재진단, worktree 격리·D1 도달성-구동 등록·D2 new-vs-preexisting 링크).
 
 ## 6. 진단 상세 (`doc-health`)
 
@@ -126,11 +127,14 @@ GREENFIELD / HEALTHY / MESSY(중구난방·자체구조·드리프트된-docsher
 
 ## 8. 마이그레이션 실행 (`setup-docs` Phase 3)
 
-- **격리:** `git worktree add --detach <scratch> <기본브랜치>`. 타겟 브랜치·WIP 무해(비-git이면 별도 clone).
-- **배치:** writing-plans로 배치(=독립 doc-group)화. 배치마다 `이동 + 링크 리라이트 → 두 오라클 → 통과 시 다음`.
-- **두 오라클(유실0 핵심):**
-  - 도달성(`gate.py`): broken=0·orphan=0
-  - 내용보존(`content_oracle.py`): base 스냅샷 vs 현재를 세그먼트 계정팅 → unaccounted=0(매니페스트에 의도적 dropped/transformed만 허용)
+> **실행 상세는 [landing-migration.md](landing-migration.md)(증분 4)가 정본** — 아래는 개요. 특히 실행 단위·오라클은
+> 증분 4에서 **단일 원자 적용**(배치 아님, L2)·**세 판정 + 앵커/인스턴스**로 정련됨.
+
+- **격리:** 전용 worktree(current)+새 브랜치 & 두번째 worktree(base@핀HEAD). 타겟 작업트리·WIP 무해(비-git이면 STOP).
+- **실행 단위:** 검증된 전체 계획을 **한 번에 원자 적용**(chained-move·전역 relink는 함께 처리 — 배치로 쪼개면 깨짐). 검증한 트리를 그대로 커밋.
+- **오라클(유실0 핵심):**
+  - 도달성(`gate.py`): orphan=0 + **new_broken=0**(마이그레이션 자가유발 링크 파손 0, 기존 broken은 보존·표면화) + 앵커 보존
+  - 내용보존(`content_oracle.py`): unaccounted=0 + **per-file 목적지 회계**(문서-인스턴스 소실 차단)
 - **STOP 조건:** content_oracle unaccounted · gate 2회 픽스 후에도 0 실패 · 목적지 충돌 · 승인 계획 밖 발견.
 - **마무리:** 척추·성장루프 설치 → 최종 `gate --require-markers` → Phase 4 재진단.
 
@@ -161,7 +165,7 @@ GREENFIELD / HEALTHY / MESSY(중구난방·자체구조·드리프트된-docsher
 
 1. **탐색 완결성** — 기계 파일목록이 분모, 매니페스트가 전부 덮음(unaccounted=0).
 2. **이동 안전성** — 순수 이동(내용 verbatim), content_oracle 세그먼트 계정팅.
-3. **배치 게이트** — 배치마다 두 오라클 통과해야 전진, 실패 시 STOP.
+3. **랜딩 게이트** — 검증트리=커밋트리(worktree 그 자리 검증), 오라클 전부 통과 시에만 커밋, 실패/크래시 시 흔적 0(landing-migration.md).
 
 ## 12. 산출물 (구현 시)
 

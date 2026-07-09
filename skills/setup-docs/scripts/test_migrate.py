@@ -119,6 +119,53 @@ def test_apply_moves_chained_dest_equals_other_src_preserves_both(tmp_path):
     assert not (tmp_path / "notes/s.md").exists()
 
 
+def test_apply_moves_preserves_invalid_utf8_bytes(tmp_path):
+    # UTF-8로 디코드 안 되는 바이트(라틴1·깨진 인코딩 등)가 있어도 이동 후 소실 0
+    # (정체성 불변식). errors="ignore"면 읽을 때 조용히 버려지고 오라클도 못 잡음(G2).
+    raw = "# Doc\n".encode("utf-8") + b"\xff\xfe" + " tail 세그먼트.\n".encode("utf-8")
+    (tmp_path / "a.md").write_bytes(raw)
+    plan = [{"src": "a.md", "dest": "docs/a.md", "ops": ["move"], "impact": None}]
+    migrate.apply_moves(tmp_path, plan)
+    assert b"\xff\xfe" in (tmp_path / "docs/a.md").read_bytes()
+
+
+def test_apply_moves_asserts_src_exists(tmp_path):
+    _mk(tmp_path, "real.md", "# real\n")
+    plan = [{"src": "ghost.md", "dest": "docs/ghost.md", "ops": ["move"], "impact": None}]  # 없는 src
+    with pytest.raises(ValueError):
+        migrate.apply_moves(tmp_path, plan)
+
+
+def test_apply_moves_ignores_dir_named_dot_md(tmp_path):
+    # rglob("*.md")는 이름이 .md로 끝나는 디렉터리도 매칭한다(vd-front dogfood 노출).
+    # 그런 디렉터리를 read_text 하면 IsADirectoryError로 크래시 — is_file() 가드로 무시해야.
+    (tmp_path / "weird.md").mkdir()
+    _mk(tmp_path, "a.md", "# A\n")
+    plan = [{"src": "a.md", "dest": "docs/a.md", "ops": ["move"], "impact": None}]
+    migrate.apply_moves(tmp_path, plan)
+    assert (tmp_path / "docs/a.md").is_file()
+    assert (tmp_path / "weird.md").is_dir()
+
+
+def test_prune_empty_dirs_removes_emptied_folder(tmp_path):
+    _mk(tmp_path, "docs/keep.md", "# keep\n")          # docs는 비지 않음 → 보존돼야
+    _mk(tmp_path, "docs/old/x.md", "# X\n")
+    (tmp_path / "docs/old/x.md").unlink()              # 폴더만 빈 채 남음
+    migrate.prune_empty_dirs(tmp_path)
+    assert not (tmp_path / "docs/old").exists()
+    assert (tmp_path / "docs").exists()                # 비지 않은 상위는 보존
+
+
+def test_prune_empty_dirs_cascades_nested_emptied_folders(tmp_path):
+    _mk(tmp_path, "docs/keep.md", "# keep\n")          # docs는 비지 않음 → 보존돼야
+    _mk(tmp_path, "docs/old/sub/x.md", "# X\n")
+    (tmp_path / "docs/old/sub/x.md").unlink()          # docs/old·docs/old/sub 둘 다 빈 채 남음
+    migrate.prune_empty_dirs(tmp_path)
+    assert not (tmp_path / "docs/old/sub").exists()    # 깊은 빈 폴더 제거
+    assert not (tmp_path / "docs/old").exists()        # 자식 제거로 빈 부모까지 연쇄 제거(R4)
+    assert (tmp_path / "docs").exists()                # 비지 않은 상위는 보존
+
+
 def test_register_makes_moved_docs_reachable(tmp_path):
     import gate
     _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
@@ -186,6 +233,35 @@ def test_build_and_verify_empty_plan_verifies_spine(tmp_path):
     assert res["broken"] == 0            # scaffold spine 설치 후 링크 무결
 
 
+def test_verify_migration_clean_all_zero(tmp_path):
+    base = tmp_path / "base"; cur = tmp_path / "cur"
+    _mk(base, "CLAUDE.md", "# C\n@AGENTS.md\n"); _mk(base, "AGENTS.md", "# A\n")
+    _mk(base, "docs/a.md", "# A\n본문.\n")
+    _mk(cur, "CLAUDE.md", "# C\n@AGENTS.md\n"); _mk(cur, "AGENTS.md", "# A\n\n<!-- docsherpa:map -->\n- [a](docs/a.md)\n")
+    _mk(cur, "docs/a.md", "# A\n본문.\n")
+    r = migrate.verify_migration(base, cur, [])
+    assert r["unaccounted"] == [] and r["new_broken"] == [] and r["anchor_lost"] == []
+    assert r["orphan"] == 0 and r["per_file"] == []
+
+
+def test_verify_migration_flags_cur_only_broken_as_unexplained(tmp_path):
+    # 정체성 안전망: cur에만 있는 파일(scaffold/register가 만든 인덱스 등)의 broken 파일-링크는
+    # classify_links(base만 페어링)의 new_broken에 안 잡히고 orphan도 아니다. gate 전체 broken을
+    # new_broken∪preexisting로 설명 못 하는 잔여를 unexplained_broken으로 잡아 랜딩을 STOP해야 한다.
+    base = tmp_path / "base"; cur = tmp_path / "cur"
+    _mk(base, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(base, "AGENTS.md", "# A\n\n<!-- docsherpa:map -->\n- [map](docs/_map.md)\n")
+    _mk(base, "docs/_map.md", "# M\n\n<!-- docsherpa:index -->\n- [howto](how-to/)\n")
+    _mk(cur, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(cur, "AGENTS.md", "# A\n\n<!-- docsherpa:map -->\n- [map](docs/_map.md)\n")
+    _mk(cur, "docs/_map.md", "# M\n\n<!-- docsherpa:index -->\n- [howto](how-to/)\n")
+    _mk(cur, "docs/how-to/_README.md", "# H\n- [gone](gone.md)\n")   # cur-only, 없는 .md 가리킴
+    r = migrate.verify_migration(base, cur, [])
+    assert ("docs/how-to/_README.md", "gone.md") in r["unexplained_broken"]
+    assert r["new_broken"] == []          # base엔 이 파일 없어 new_broken엔 안 잡히던 gap
+    assert r["orphan"] == 0               # 미도달 아님 — broken이지 orphan 아님
+
+
 def test_build_and_verify_no_false_loss_on_preexisting_index(tmp_path):
     # 이미 내용 있는 index 파일을 가진 repo(부분 마이그레이션)에 문서 추가 → register의 append가
     # 기존 세그먼트에 안 붙어야(content_oracle 오탐 = false STOP 방지).
@@ -231,3 +307,50 @@ def test_assemble_plan_data_renders_without_keyerror():
     html = render_report.render_report(d, "plan")
     assert html.count("<div") == html.count("</div>")
     assert 'style="' not in html
+
+
+def test_register_all_registers_inplace_and_moved_uniformly(tmp_path):
+    import gate
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n<!-- docsherpa:map -->\n- [map](docs/_map.md)\n")
+    _mk(tmp_path, "docs/_map.md", "# Map\n<!-- docsherpa:index -->\n")
+    _mk(tmp_path, "docs/harness/inplace.md", "# 제자리 문서\n")     # 이동 안 함 → 기존 register 누락
+    _mk(tmp_path, "docs/decisions/moved.md", "# 이동된 ADR\n")
+    migrate.register_all(tmp_path)
+    assert not gate.analyze(tmp_path).orphans          # 제자리·이동 전부 도달
+
+
+def test_register_all_progress_guard_raises_on_stuck(tmp_path, monkeypatch):
+    import gate
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n")                # 라우터에 map 마커 없음 → home 없음
+    _mk(tmp_path, "docs/x.md", "# X\n")                # 등록할 home이 없어 도달 불가
+    import pytest
+    with pytest.raises(RuntimeError):
+        migrate.register_all(tmp_path)                  # 무한루프 대신 즉시 error
+
+
+def test_register_all_ignores_fenced_example_links(tmp_path):
+    import gate
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n<!-- docsherpa:map -->\n- [map](docs/_map.md)\n")
+    # 폴더 인덱스에 펜스 코드블록으로 bar.md 링크가 예시로 들어있음(실링크 아님)
+    _mk(tmp_path, "docs/g/_README.md", "# G\n```\n- [예시](bar.md)\n```\n")
+    _mk(tmp_path, "docs/g/bar.md", "# Bar\n")
+    _mk(tmp_path, "docs/_map.md", "# Map\n<!-- docsherpa:index -->\n- [g](g/)\n")
+    migrate.register_all(tmp_path)
+    assert not gate.analyze(tmp_path).orphans          # bar.md가 펜스오탐으로 방치되지 않음
+
+
+def test_register_all_ignores_fenced_example_link_in_home_file(tmp_path):
+    """home(map) 파일 자체의 펜스 예시가 실링크로 오탐되면 진짜 등록이 skip되고
+    진행가드가 (해결 가능한데도) 거짓 RuntimeError를 낸다 — code-review에서 발견."""
+    import gate
+    _mk(tmp_path, "CLAUDE.md", "# C\n@AGENTS.md\n")
+    _mk(tmp_path, "AGENTS.md", "# A\n<!-- docsherpa:map -->\n- [map](docs/_map.md)\n")
+    # home(docs/_map.md) 자체가 펜스 안에 실링크와 똑같은 문법을 예시로 담고 있음
+    _mk(tmp_path, "docs/_map.md",
+        "# Map\n<!-- docsherpa:index -->\n\n예시 문법:\n```\n- [decisions](decisions/)\n```\n")
+    _mk(tmp_path, "docs/decisions/moved.md", "# 이동된 ADR\n")
+    migrate.register_all(tmp_path)                      # RuntimeError 없이 실제로 배선돼야
+    assert not gate.analyze(tmp_path).orphans

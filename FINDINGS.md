@@ -2,6 +2,27 @@
 
 ## 🔜 다음 세션 시작점 (여기부터)
 
+- **✅ 증분 4 `land_migration` 완료 + vd-front 실 dogfood 성공(2026-07-09, subagent-driven 9태스크):**
+  승인된 계획을 git worktree 격리로 실 브랜치에 랜딩 + 재진단. 신규 `land_migration`(이중 worktree·HEAD sha 핀·
+  **검증트리=커밋트리**·통과 시에만 커밋·`finally` 흔적0) · `register_all`(도달성-구동·진행가드·live-link) ·
+  링크 오라클 `classify_links`/`doc_links`(**소스정체성 페어링** — new_broken vs preexisting, 앵커 보존) ·
+  `per_file_accounting`(content_oracle dedup 사각 보완) · `verify_migration`(5-체크 일원화:
+  unaccounted·new_broken·anchor_lost·**unexplained_broken**·orphan·per_file) + build_and_verify 재배선 +
+  render result 모드 + SKILL Phase 3·4. **157 setup-docs + 30 doc-health green, self-gate PASS.**
+  스펙 [landing-migration.md](docs/specs/diagnosis-driven-migration/landing-migration.md)(§0b R1~R9 교차검증=codex+architect),
+  계획 [2026-07-09-increment4-landing-migration.md](docs/plans/2026-07-09-increment4-landing-migration.md). 브랜치 `fix/incr4-exec-gates-g1-g2`.
+  **구현자≠검증자가 잡은 실결함:** Critical(재호출 시 이전 성공 브랜치 force-delete=내용소실0 위반) · HIGH(doc_links가
+  `@import`를 링크로 세어 zip 정렬붕괴 오분류) · 최종리뷰 Important(cur-only 파일 broken 안전망 회귀) · MEDIUM 다수 — 전부 수정·재리뷰.
+  **🎯 vd-front 실 dogfood 성공:** Phase0 진단(58 커밋 docs·등급 F·~35 buried in `src/features/custom/shared/docs/**`)
+  → 병렬 분류 2서브(type우선 D5: project-meta spec폴더→reference 교정·버전쌍 legacy·dnd co-change) → 26 이동
+  → build_and_verify 전부 0 → **land_migration → 실 브랜치 `docsherpa/migrate-59f05e69`(vd-front에 존재, 검토·머지는 사용자)**:
+  unaccounted0·new_broken0·anchor_lost0·**preexisting_broken8(표면화)**·작업트리 무영향·worktree잔재0. Phase4 재진단:
+  **orphan 67→0·markers_ok·docs 48**. broken 6은 전부 **preexisting 검증**(원본이 repo-상대를 doc-상대로 오작성한 부채가
+  도달성 확보로 드러남=D2 실증) — 마이그레이션이 만들지·숨기지·고치지 않고 표면화만(L4/정체성 교과서 준수).
+  **dogfood 발견(이연):** DF1 코드-인접 nested README(mocks·api)는 중앙집중 대상 아님(basename 충돌 시 disposition 개선) ·
+  DF2 nested CLAUDE.md도 router-skip 확장(현재 root만) · DF3(수정됨) `rglob("*.md")` is_file() 가드(`.md`로 끝나는 디렉터리 크래시).
+  **남은 도메인 결정(결정 패널):** org(type-scatter vs 기능응집)·legacy 통합(`docs/legacy/`)·co-change topic(dnd·mobile-preview) — §8 별도 트랙.
+  **다음:** 증분 4 브랜치 PR(마지막 한 번에) · vd-front 브랜치는 사용자 검토·머지 · 이연 findings/도메인결정.
 - **🆕 setup-docs 재설계 — 진단-주도 전체-repo 마이그레이션 (2026-07-08, 브레인스토밍→스펙→증분3 완료):**
   하드닝 루프 발견(G1~G4: docs/ 중심·밖 방치·전-계정팅 부재·설치≠완료)을 재설계로 확장. **미션 = 전 프로젝트
   문서를 `docs/`로 중앙집중 + 유실 0.** 6-Phase(전체-repo 병렬 탐색 → 9차원 등급 채점 → 시각 승인
@@ -39,10 +60,14 @@
   **다음 = 증분 4**(Phase 3·4: 승인된 계획의 실제 이동 실행 — 배치·worktree·subagent-driven-development —
   및 실행결과 재진단). 128 + 30 테스트 green, gate broken=0 orphan=0 markers_ok=True.
   최종 whole-branch 리뷰(opus) READY TO MERGE — 5 정체성 불변식 전부 HOLD(scratch-only 범위), Crit/Imp 0.
-  **⚠️ 증분 4 실행-게이트(실제-repo 쓰기 전 필수 차단, 둘 다 fail-safe라 증분 3은 무영향):**
+  **✅ 증분 4 실행-게이트 G1·G2 닫힘(2026-07-09, RED-first):** 실제-repo 쓰기 전 필수 안전 게이트 2건 해소.
   (G1) `inject_claude_md` frontmatter 분기가 `@AGENTS.md`를 frontmatter 세그먼트에 붙여(빈 줄 없음)
-  build_and_verify가 false-STOP(F3 확장 — 빈 줄 앞에도 삽입 필요). (G2) `apply_moves`·`content_oracle` 둘 다
-  `errors="ignore"`라 invalid UTF-8 바이트 소실이 오라클에 안 잡힘 → 실제 쓰기 전 바이트 비교/surrogateescape.
+  build_and_verify가 false-STOP → **닫는 `---` 뒤 빈 줄 삽입**(`\n@AGENTS.md\n\n`)으로 어느 세그먼트에도
+  병합 안 되게 교정(RED 테스트 = frontmatter 세그먼트 key 보존). (G2) `apply_moves`·`content_oracle` 둘 다
+  `errors="ignore"`라 invalid UTF-8 바이트 소실이 오라클에 안 잡히던 사각 → **읽기/쓰기/seg_key 전부
+  `errors="surrogateescape"`**로 전환(apply_moves 바이트 라운드트립 = 소실 0 + 오라클이 바이트 차이를 key에
+  반영해 감지). RED 테스트 2건(apply_moves 바이트 보존 · collect가 바이트 소실 unaccounted 감지). 131 setup-docs
+  + 30 doc-health green, gate PASS. **→ 실제 파일 쓰기 안전판 확보(증분 4 Phase 3 진입 가능).**
   **🧪 실전 dogfood(vd-backend, 2026-07-08):** Phase 0·1·2 파이프라인을 실 레포에 적용(스크래치, 비파괴).
   75 docs·등급 **F**(정직: 라우터 도달 orphan 67/67 + 마커·척추·성장루프 전무 → 기계 M1~M4 FAIL, M5만 PASS).
   분류 병렬 서브에이전트 4개(완결성 68/68) → plan_moves 이동 43 + legacy/제자리 등록 24 → build_and_verify

@@ -9,6 +9,7 @@ content_oracle이 링크를 정규화해 무시하므로 내용보존=content_or
 import posixpath
 import re
 import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -96,6 +97,9 @@ def apply_moves(root, move_plan):
     쓰기는 2단계(모든 목적지 기록 → 이동으로 비워진 옛 경로만 삭제)로 chained-move
     (dest==다른 src) 내용 소실을 막는다."""
     root = Path(root)
+    missing = [p["src"] for p in move_plan if not (root / p["src"]).exists()]
+    if missing:
+        raise ValueError(f"move_plan.src 부재(조용한 no-op 차단): {missing}")
     move_map = {p["src"]: p["dest"] for p in move_plan}
     srcs = set(move_map)
     # 사전 충돌 감지: dest가 이미 있고, 그게 이동으로 비워질 src가 아니면 STOP.
@@ -106,20 +110,36 @@ def apply_moves(root, move_plan):
     # 1) 모든 .md의 이동전 경로 → 재작성 내용 계산(이동 전 전량 메모리 확보).
     rewritten = {}
     for md in root.rglob("*.md"):
+        if not md.is_file():
+            continue
         old_rel = md.relative_to(root).as_posix()
         rewritten[old_rel] = rewrite_links(
-            md.read_text(encoding="utf-8", errors="ignore"), old_rel, move_map)
+            md.read_text(encoding="utf-8", errors="surrogateescape"), old_rel, move_map)
     dests = {move_map.get(old_rel, old_rel) for old_rel in rewritten}
     # 2) 모든 목적지에 먼저 기록(내용은 메모리에 있어 dest==다른 src여도 안전).
     for old_rel, new_text in rewritten.items():
         dst = root / move_map.get(old_rel, old_rel)
         dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_text(new_text, encoding="utf-8")
+        # surrogateescape로 읽은 invalid UTF-8 바이트를 그대로 되쓴다(소실 0, G2).
+        dst.write_text(new_text, encoding="utf-8", errors="surrogateescape")
     # 3) 이동으로 비워진 옛 경로만 삭제(누군가의 목적지인 경로는 보존).
     for old_rel in rewritten:
         new_rel = move_map.get(old_rel, old_rel)
         if new_rel != old_rel and old_rel not in dests:
             (root / old_rel).unlink()
+
+
+def prune_empty_dirs(root):
+    """이동으로 빈 디렉터리를 제거(R4: git 빈폴더 미커밋 → dir 링크 커밋후 파손 방지). 루트는 보존.
+    deepest-first로 삭제 시점에 빈 여부를 재검사 → 자식을 먼저 지우면 부모가 그 시점에 비어 연쇄 제거되므로
+    중첩 빈 폴더까지 정리된다. 권한거부·경합 삭제는 try/except로 방어(그 폴더만 skip)."""
+    root = Path(root)
+    for d in sorted((p for p in root.rglob("*") if p.is_dir()), key=lambda p: len(p.parts), reverse=True):
+        try:
+            if d != root and not any(d.iterdir()):
+                d.rmdir()
+        except OSError:
+            pass
 
 
 def _ensure_folder_index(folder):
@@ -137,7 +157,9 @@ def _ensure_folder_index(folder):
 def _home_links_index(home_text, rel):
     """home이 rel 폴더의 인덱스에 도달하는 링크(dir 링크 또는 _README/README 파일 링크)를
     이미 가졌는지. 하위 임의 파일 링크(예: rel/other.md)는 인덱스 도달을 보장 못 하므로 제외 —
-    느슨한 substring 매칭이 새 중첩 폴더를 '이미 링크됨'으로 오탐해 orphan을 남기던 버그(F1) 방지."""
+    느슨한 substring 매칭이 새 중첩 폴더를 '이미 링크됨'으로 오탐해 orphan을 남기던 버그(F1) 방지.
+    펜스 코드블록(예시 문법)은 제거 후 검사 — 펜스 속 예시가 실링크로 오탐되는 것 방지(R5)."""
+    home_text = gate.FENCE_RE.sub("", home_text)
     return (f"]({rel}/)" in home_text
             or f"]({rel}/_README.md)" in home_text
             or f"]({rel}/README.md)" in home_text)
@@ -206,6 +228,66 @@ def register_in_indexes(root, move_plan):
         _append_links(home, map_entries)
 
 
+def _live_link_targets(text):
+    """gate와 동일 의미론: 펜스 코드블록 제거 후 실제 ](target) 만 추출(raw substring 오탐 방지, R5)."""
+    return set(gate.LINK_RE.findall(gate.FENCE_RE.sub("", text)))
+
+
+def _append_links_live(path, entries):
+    """_append_links와 동일하나 '이미 있음' 판정을 live-link 파싱으로(R5). 반환=신규 추가 수."""
+    text = path.read_text(encoding="utf-8", errors="surrogateescape") if path.exists() else ""
+    have = _live_link_targets(text)
+    add = [(lab, t) for lab, t in entries if t not in have]
+    if not add:
+        return 0
+    block = "\n".join(f"- [{lab}]({t})" for lab, t in add) + "\n"
+    sep = "" if text.endswith("\n\n") else ("\n" if text.endswith("\n") else ("\n\n" if text else ""))
+    path.write_text(text + sep + block, encoding="utf-8", errors="surrogateescape")
+    return len(add)
+
+
+def register_all(root):
+    """도달성-구동: gate가 orphan으로 보는 docs/**/*.md 전부를 폴더 인덱스·map에 배선.
+    이동/제자리/legacy 균일(L3). 진행 가드로 미수렴 시 RuntimeError(R5).
+    root은 resolve() — gate.analyze가 내부에서 root를 resolve하므로(예: macOS /tmp→/private/tmp
+    심링크) 안 맞추면 orphans의 relative_to(root)가 ValueError로 터진다(build_and_verify가
+    tempfile.mkdtemp()의 미resolve 경로를 넘길 때 실제로 발생)."""
+    root = Path(root).resolve()
+    while True:
+        orphans = [p.relative_to(root).as_posix() for p in gate.analyze(root).orphans]
+        if not orphans:
+            return
+        added = _register_orphan_rels(root, orphans)
+        if added == 0:
+            raise RuntimeError(f"register_all 미수렴 — 등록 불가 orphan: {orphans}")
+
+
+def _register_orphan_rels(root, rels):
+    """orphan 상대경로들을 폴더별로 묶어 인덱스+map에 등록. 반환=신규 링크 수(진행 측정)."""
+    home = _index_home(root)
+    if home is None:
+        raise RuntimeError("register_all 미수렴 — index home(맵/라우터 마커) 없음")
+    home_dir = home.parent.relative_to(root).as_posix()
+    home_text = home.read_text(encoding="utf-8", errors="surrogateescape")
+    by_folder, flats, added = {}, [], 0
+    for rel in rels:
+        folder = posixpath.dirname(rel)
+        (flats if folder == "docs" else by_folder.setdefault(folder, [])).append(rel)
+    map_entries = []
+    for folder, items in sorted(by_folder.items()):
+        idx = _ensure_folder_index(root / folder)
+        names = sorted(posixpath.basename(r) for r in items if (root / folder / posixpath.basename(r)) != idx)
+        added += _append_links_live(idx, [(posixpath.splitext(n)[0], n) for n in names])
+        rel_to_home = posixpath.relpath(folder, home_dir or ".")
+        if not _home_links_index(home_text, rel_to_home):
+            map_entries.append((posixpath.basename(folder), rel_to_home + "/"))
+    for rel in sorted(flats):
+        map_entries.append((posixpath.splitext(posixpath.basename(rel))[0], posixpath.relpath(rel, home_dir or ".")))
+    if map_entries:
+        added += _append_links_live(home, map_entries)
+    return added
+
+
 _COPY_IGNORE = shutil.ignore_patterns("node_modules", ".git", "dist", "build", "vendor")
 
 
@@ -214,9 +296,38 @@ def _copy_tree(repo, dst):
     shutil.copytree(repo, dst, ignore=_COPY_IGNORE, dirs_exist_ok=True)
 
 
+def verify_migration(base_root, cur_root, move_plan):
+    """세 오라클 + per-file + 미설명 broken 안전망 일원화(Phase 1b·Phase 3 공유). 반환 dict.
+
+    unexplained_broken: gate가 cur 전체에서 본 broken 링크 중 classify_links의
+    new_broken∪preexisting_broken으로 설명되지 않는 것. classify_links는 base 문서만 페어링하므로
+    cur-only 파일(scaffold의 _map/router·register_all의 폴더 인덱스)의 broken 파일-링크는 거기 안
+    잡히고 orphan(미도달)도 아니라 랜딩 게이트를 새어나갈 수 있다(증분3이 gate.analyze.broken 전체를
+    직접 게이트하던 안전망을 T6 재배선이 떨어뜨림). register_all 후 orphan=0이라 gate가 cur 전
+    문서를 방문하므로 gate.broken이 cur 전체 broken을 커버한다."""
+    base_keys = set(content_oracle.collect(base_root))
+    cur_keys = set(content_oracle.collect(cur_root))
+    links = classify_links(base_root, cur_root, move_plan)
+    gres = gate.analyze(cur_root)
+    cur_r = Path(cur_root).resolve()
+    explained = set(links["new_broken"]) | set(links["preexisting_broken"])
+    unexplained_broken = sorted(
+        (src.relative_to(cur_r).as_posix(), raw) for src, raw in gres.broken
+        if (src.relative_to(cur_r).as_posix(), raw) not in explained)
+    return {
+        "unaccounted": sorted(base_keys - cur_keys),
+        "new_broken": links["new_broken"],
+        "preexisting_broken": links["preexisting_broken"],
+        "anchor_lost": links["anchor_lost"],
+        "orphan": len(gres.orphans),
+        "unexplained_broken": unexplained_broken,
+        "per_file": per_file_accounting(base_root, cur_root, move_plan),
+    }
+
+
 def build_and_verify(repo, move_plan, plugin_root=None):
     """두 스크래치(base=원본 복사, current=복사+이동+scaffold+등록)로 검증 →
-    {broken, orphan, unaccounted}. 실제 repo는 안 건드림."""
+    {broken, orphan, unaccounted, new_broken, anchor_lost, per_file}. 실제 repo는 안 건드림."""
     repo = Path(repo).resolve()
     base = Path(tempfile.mkdtemp(prefix="docsherpa-base-"))
     current = Path(tempfile.mkdtemp(prefix="docsherpa-cur-"))
@@ -224,17 +335,75 @@ def build_and_verify(repo, move_plan, plugin_root=None):
         _copy_tree(repo, base)
         _copy_tree(repo, current)
         apply_moves(current, move_plan)
+        prune_empty_dirs(current)
         scaffold.scaffold(current, plugin_root_dir=plugin_root)
-        register_in_indexes(current, move_plan)
-        res = gate.analyze(current)
-        base_keys = set(content_oracle.collect(base))
-        cur_keys = set(content_oracle.collect(current))
-        unaccounted = sorted(base_keys - cur_keys)
-        return {"broken": len(res.broken), "orphan": len(res.orphans),
-                "unaccounted": unaccounted}
+        register_all(current)
+        v = verify_migration(base, current, move_plan)
+        return {"broken": len(v["new_broken"]), "orphan": v["orphan"],
+                "unaccounted": v["unaccounted"], "new_broken": v["new_broken"],
+                "anchor_lost": v["anchor_lost"], "unexplained_broken": v["unexplained_broken"],
+                "per_file": v["per_file"]}
     finally:
         shutil.rmtree(base, ignore_errors=True)
         shutil.rmtree(current, ignore_errors=True)
+
+
+def _git_out(cwd, *args):
+    return subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, check=True).stdout
+
+
+def land_migration(repo, move_plan, head_sha, decisions=None, *, plugin_root=None):
+    """검증된 계획을 worktree 격리로 실 브랜치에 랜딩(R3·R8). 통과 시에만 커밋, 실패/크래시 흔적0.
+
+    이중 worktree(wt_cur=적용 대상 새 브랜치, wt_base=오라클 base 둘 다 head_sha에서 분기) →
+    apply_moves→prune_empty_dirs→scaffold→register_all(wt_cur) → verify_migration(wt_base, wt_cur).
+    검증한 그 wt_cur를 그대로 커밋(재실행 없음). finally에서 worktree 2개 제거, 이번 호출이 만든
+    브랜치를 커밋 못 했을 때만 삭제(재호출로 남의 성공 브랜치 force-delete 방지)."""
+    repo = Path(repo).resolve()
+    if not (repo / ".git").exists():
+        raise RuntimeError("git repo 아님 — land_migration은 git 전제(git init 선행).")
+    cur_head = _git_out(repo, "rev-parse", "HEAD").strip()
+    if cur_head != head_sha:
+        raise RuntimeError(f"HEAD 스테일(계획 시 {head_sha[:8]} ≠ 현재 {cur_head[:8]}) — 재진단 필요.")
+    stamp = head_sha[:8]
+    branch = f"docsherpa/migrate-{stamp}"
+    # 브랜치명은 head_sha 결정론 → 이미 이 커밋의 랜딩 브랜치가 있으면 조용히 덮지 말고 STOP.
+    # (자동머지 안 하므로 성공 후 HEAD 불변 → 재호출이 일상 경로. 남의 성공 브랜치 보호 = 내용 소실 0.)
+    if subprocess.run(["git", "-C", str(repo), "branch", "--list", branch],
+                      capture_output=True, text=True).stdout.strip():
+        raise RuntimeError(f"이미 이 커밋에 대한 랜딩 브랜치 {branch}가 있음 — 검토·머지 후 재실행하거나 삭제하라.")
+    wt_cur = Path(tempfile.mkdtemp(prefix="docsherpa-land-"))
+    wt_base = Path(tempfile.mkdtemp(prefix="docsherpa-base-"))
+    branch_created = False
+    committed = False
+    try:
+        subprocess.run(["git", "-C", str(repo), "worktree", "add", "-q", "-b", branch, str(wt_cur), head_sha], check=True)
+        branch_created = True                                       # 이번 호출이 만든 브랜치(뒤 단계 실패 시에만 삭제 대상)
+        subprocess.run(["git", "-C", str(repo), "worktree", "add", "-q", "--detach", str(wt_base), head_sha], check=True)
+        apply_moves(wt_cur, move_plan)
+        prune_empty_dirs(wt_cur)
+        scaffold.scaffold(wt_cur, plugin_root_dir=plugin_root)
+        register_all(wt_cur)
+        v = verify_migration(wt_base, wt_cur, move_plan)
+        ok = (not v["unaccounted"] and not v["new_broken"] and not v["anchor_lost"]
+              and v["orphan"] == 0 and not v["unexplained_broken"] and not v["per_file"])
+        if not ok:
+            raise RuntimeError(f"랜딩 오라클 실패 → 흔적0 STOP: { {k: v[k] for k in ('unaccounted', 'new_broken', 'anchor_lost', 'orphan', 'unexplained_broken', 'per_file')} }")
+        subprocess.run(["git", "-C", str(wt_cur), "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(wt_cur), "commit", "-q", "-m",
+                        f"📦 docs: docsherpa 마이그레이션(이동 {len(move_plan)}건, 검증트리=커밋트리)"], check=True)
+        committed = True
+        return {"branch": branch, "unaccounted": [], "new_broken": [], "anchor_lost": [],
+                "preexisting_broken": v["preexisting_broken"], "moved": len(move_plan)}
+    finally:
+        subprocess.run(["git", "-C", str(repo), "worktree", "remove", "--force", str(wt_cur)],
+                        capture_output=True)
+        subprocess.run(["git", "-C", str(repo), "worktree", "remove", "--force", str(wt_base)],
+                        capture_output=True)
+        shutil.rmtree(wt_cur, ignore_errors=True); shutil.rmtree(wt_base, ignore_errors=True)
+        subprocess.run(["git", "-C", str(repo), "worktree", "prune"], capture_output=True)  # remove 실패 시 메타 잔존 폴백
+        if branch_created and not committed:
+            subprocess.run(["git", "-C", str(repo), "branch", "-D", branch], capture_output=True)  # 이번 호출이 만든 미커밋 브랜치만 삭제(흔적0, R8)
 
 
 def _after_tree(move_plan):
@@ -244,6 +413,96 @@ def _after_tree(move_plan):
         lines.append([p["dest"], "new"])
     sub = f"docs/ 중앙집중 · 이동 {len(move_plan)}건"
     return {"title": "docs/ 중앙집중", "tag": "목표", "sub": sub, "lines": lines}
+
+
+def doc_links(root, rel):
+    """도달성 무관, 한 문서의 본문 링크들을 해석. resolve는 gate.resolve(파일위치 기준).
+
+    본문 링크(](target))만 본다 — 라우터 import(@AGENTS.md)는 제외한다. gate.targets_in은
+    import 매치를 링크 매치보다 앞에 반환하는데, scaffold의 inject_claude_md가 import를 CLAUDE.md
+    맨 앞에 prepend하면 그 앞선 import 한 줄이 링크 리스트 인덱스를 통째로 밀어 classify_links의
+    zip-by-index 정렬을 깨뜨린다(무손실 마이그레이션이 오분류 → 거짓 STOP/거짓 PASS). import는
+    라우터 메커니즘이고 도달성은 gate가 별도로 본다."""
+    root = Path(root); path = root / rel
+    text = path.read_text(encoding="utf-8", errors="surrogateescape")   # G2 일관
+    out = []
+    for raw in gate.LINK_RE.findall(gate.FENCE_RE.sub("", text)):       # 펜스 제거 후 본문 링크만
+        kind, target = gate.resolve(path, raw)
+        anchor = raw.split("#", 1)[1] if "#" in raw else ""
+        if kind == "skip":
+            out.append({"raw": raw, "kind": "skip", "resolved": True, "anchor": anchor}); continue
+        if kind == "dir":
+            resolved = Path(target).is_dir()
+        else:  # file
+            resolved = (not target.name.endswith(".md")) or target.is_file()   # 비-.md는 gate가 skip(해석성공 취급)
+        out.append({"raw": raw, "kind": kind, "resolved": resolved, "anchor": anchor})
+    return out
+
+
+def classify_links(base_root, cur_root, move_plan):
+    """소스정체성 페어링(R1): base 문서 ↔ cur 문서(move_map) · 링크 index zip.
+    new_broken = base-satisfiable & cur-broken. preexisting = 둘 다 broken. anchor_lost = 앵커 축소.
+
+    zip-by-index 가정: register_in_indexes/register_all은 새 링크를 인덱스 문서 "끝에" append하므로
+    (append-at-end), cur의 링크 리스트는 base와 같은 순서로 시작해 뒤에 신규 항목만 덧붙는다.
+    그래서 base[i]↔cur[i]로 앞에서부터 zip해도 정렬이 어긋나지 않는다.
+
+    cur 링크 감소 시 차단 방향 폴백(정체성 fail-safe): cur가 링크를 잃으면(len(cl)<len(bl):
+    삭제/재정렬) index 페어링이 붕괴해 자가유발 broken을 preexisting로 은폐할 수 있다. 그 문서는
+    zip을 신뢰하지 않고 cur의 broken 링크를 전부 new_broken(차단)으로 분류한다."""
+    base_root, cur_root = Path(base_root), Path(cur_root)
+    move_map = {p["src"]: p["dest"] for p in move_plan}
+    res = {"new_broken": [], "preexisting_broken": [], "anchor_lost": []}
+    for bmd in sorted(base_root.rglob("*.md")):
+        if not bmd.is_file():
+            continue
+        old_rel = bmd.relative_to(base_root).as_posix()
+        new_rel = move_map.get(old_rel, old_rel)
+        if not (cur_root / new_rel).is_file():
+            continue                                   # dest 부재는 per_file 회계(Task 4)가 담당
+        bl = [l for l in doc_links(base_root, old_rel) if l["kind"] != "skip"]
+        cl = [l for l in doc_links(cur_root, new_rel) if l["kind"] != "skip"]
+        if len(cl) < len(bl):                          # 링크 감소 → 정렬 붕괴, 차단 방향 폴백
+            for c in cl:
+                if not c["resolved"]:
+                    res["new_broken"].append((new_rel, c["raw"]))
+            continue
+        for i, b in enumerate(bl):                     # append-at-end(register)라 base index가 앞에서 정렬
+            c = cl[i] if i < len(cl) else None
+            if c is None:
+                continue
+            if b["resolved"] and not c["resolved"]:
+                res["new_broken"].append((new_rel, c["raw"]))
+            elif not b["resolved"] and not c["resolved"]:
+                res["preexisting_broken"].append((new_rel, c["raw"]))
+            if b["anchor"] and b["anchor"] != c["anchor"]:
+                res["anchor_lost"].append((new_rel, c["raw"]))
+    return res
+
+
+def per_file_accounting(base_root, cur_root, move_plan):
+    """각 base 문서의 세그먼트 집합이 그 dest 파일에 존재하는지(파일 단위 회계, R7).
+    content_oracle의 '고유 세그먼트 집합' 사각(같은 내용 여러 문서 중 일부 소실)을 base 문서마다
+    dest 도달을 확인해 보완한다. dest 부재 또는 세그먼트 미도달을 잡는다. 반환=위반 리스트([]=ok)."""
+    base_root, cur_root = Path(base_root), Path(cur_root)
+    move_map = {p["src"]: p["dest"] for p in move_plan}
+    viol = []
+    for bmd in sorted(base_root.rglob("*.md")):
+        if not bmd.is_file():
+            continue
+        old_rel = bmd.relative_to(base_root).as_posix()
+        new_rel = move_map.get(old_rel, old_rel)
+        dest = cur_root / new_rel
+        if not dest.is_file():
+            viol.append((new_rel, "dest 파일 미도달")); continue
+        base_keys = {content_oracle.seg_key(s)
+                     for s in content_oracle.segment(bmd.read_text(encoding="utf-8", errors="surrogateescape"))}
+        dest_keys = {content_oracle.seg_key(s)
+                     for s in content_oracle.segment(dest.read_text(encoding="utf-8", errors="surrogateescape"))}
+        missing = base_keys - dest_keys
+        if missing:
+            viol.append((new_rel, f"세그먼트 dest 미도달 {len(missing)}건"))
+    return viol
 
 
 def assemble_plan_data(health, move_plan, decisions=None):

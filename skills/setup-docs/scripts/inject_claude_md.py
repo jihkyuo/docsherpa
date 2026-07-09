@@ -35,7 +35,9 @@ def inject_claude_md(text):
     prefix = "﻿" if had_bom else ""
     fm_end = _frontmatter_end(body)
     if fm_end is not None:
-        new = body[:fm_end] + IMPORT_LINE + "\n\n" + body[fm_end:]
+        # 앞뒤로 빈 줄 — @AGENTS.md가 frontmatter/본문 어느 세그먼트에도 병합되지
+        # 않게(content_oracle false-STOP 방지, G1).
+        new = body[:fm_end] + "\n" + IMPORT_LINE + "\n\n" + body[fm_end:]
     else:
         new = IMPORT_LINE + "\n\n" + body
     return prefix + new, True

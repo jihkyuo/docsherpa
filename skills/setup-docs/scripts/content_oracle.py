@@ -62,16 +62,20 @@ def normalize(seg):
 
 
 def seg_key(seg):
-    return hashlib.sha1(normalize(seg).encode("utf-8")).hexdigest()[:12]
+    return hashlib.sha1(normalize(seg).encode("utf-8", "surrogateescape")).hexdigest()[:12]
 
 
 def collect(root):
     """dir 내 모든 *.md 의 {key: {"preview", "locs": [...]}}."""
     out = {}
     for md in sorted(Path(root).rglob("*.md")):
-        for seg in segment(md.read_text(encoding="utf-8", errors="ignore")):
+        if not md.is_file():
+            continue
+        for seg in segment(md.read_text(encoding="utf-8", errors="surrogateescape")):
             k = seg_key(seg)
-            e = out.setdefault(k, {"preview": normalize(seg)[:70], "locs": []})
+            # preview는 표시용(print) — surrogate를 표시-안전하게(strict stdout 크래시 방지).
+            preview = normalize(seg)[:70].encode("utf-8", "backslashreplace").decode("utf-8")
+            e = out.setdefault(k, {"preview": preview, "locs": []})
             e["locs"].append(str(md.relative_to(root)))
     return out
 
