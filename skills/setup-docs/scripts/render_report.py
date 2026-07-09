@@ -376,19 +376,24 @@ def _render_trees(data: dict) -> str:
             '<div class="tree sc-col"><h4>정리 후 (타입별)</h4>'
             f'<pre>{_tree_pre(after_lines)}</pre></div>'
             '</div></details>')
-    after = f'{_tree(t["after"],"after")}' if t.get("after") else ""
+    has_after = bool(t.get("after"))
+    after = f'{_tree(t["after"],"after")}' if has_after else ""
+    intro = ('왼쪽 = 지금(docs/ 밖 흩어짐), 오른쪽 = 정리 후. 오른쪽 폴더 색 = 문서 타입(아래 범례). '
+              '파일은 무색 — 색은 “어느 타입 폴더에 모였나”를 뜻합니다.' if has_after
+              else 'docs/ 밖에 남아 있는 문서입니다. 폴더 옆 숫자는 그 아래 문서 수.')
+    tkey = (
+        '<div class="tkey"><span><b class="k-prd">■</b> 제품요구(PRD)</span>'
+        '<span><b class="k-spec">■</b> 명세(spec)</span>'
+        '<span><b class="k-adr">■</b> 결정(ADR)</span>'
+        '<span><b class="k-howto">■</b> 작업 절차·복구(how-to)</span>'
+        '<span><b class="k-troubleshooting">■</b> 문제 해결(troubleshooting)</span>'
+        '<span><b class="k-legacy">■</b> 동결(legacy)</span></div>'
+    ) if has_after else ""
     return ('<section aria-labelledby="tr"><h2 class="sec" id="tr">문서 구조 '
             '<span class="n">Before → After</span></h2>'
-            '<p class="sec-intro">왼쪽 = 지금(산재·빨강), 오른쪽 = 정리 후. '
-            '오른쪽 폴더 색 = 문서 타입(아래 범례). 파일은 무색 — 색은 “어느 타입 폴더에 모였나”를 뜻합니다.</p>'
+            f'<p class="sec-intro">{intro}</p>'
             f'<div class="card trees">{_tree(t["before"],"before")}{after}</div>'
-            '<div class="tkey"><span><b class="k-prd">■</b> 제품요구(PRD)</span>'
-            '<span><b class="k-spec">■</b> 명세(spec)</span>'
-            '<span><b class="k-adr">■</b> 결정(ADR)</span>'
-            '<span><b class="k-howto">■</b> 작업 절차·복구(how-to)</span>'
-            '<span><b class="k-troubleshooting">■</b> 문제 해결(troubleshooting)</span>'
-            '<span><b class="k-legacy">■</b> 동결(legacy)</span></div>'
-            f'{scaffold}</section>')
+            f'{tkey}{scaffold}</section>')
 
 
 _BADGE = {"move": '<span class="badge move">move</span>',

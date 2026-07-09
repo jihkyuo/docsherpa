@@ -280,6 +280,28 @@ def test_migration_howto_group_label_aligned():
     assert "작업 절차·복구 (how-to)" in html      # mig-agg 그룹명
 
 
+def test_result_mode_without_after_tree_omits_type_legend():
+    # result 모드는 after 트리가 없다(t.get("after")가 falsy) → 타입색 범례를 걸 곳이 없으니
+    # tkey 범례(및 k-troubleshooting 등 타입색 스와치)를 렌더하면 안 된다(D6 재발 방지: DF5).
+    d = {**MIN, "trees": {"before": {"title": "", "tag": "지금", "sub": "", "lines": []}}}
+    html = render_report(d, "result")
+    assert 'class="tkey"' not in html
+    # CSS(TEMPLATE_CSS)는 동결이라 .k-troubleshooting 규칙 자체는 항상 존재 — 마크업만 확인
+    assert '<b class="k-troubleshooting">' not in html
+
+
+def test_plan_mode_with_after_tree_shows_type_legend():
+    html = render_report(MIN, "plan")   # MIN에는 trees.after가 있음
+    assert 'class="tkey"' in html
+    assert '<b class="k-troubleshooting">' in html
+
+
+def test_trees_intro_does_not_claim_red_for_before_pane():
+    # before 트리 파일은 이제 무색이므로(DF5) 소개문이 "산재·빨강"을 주장하면 안 된다.
+    html = render_report(MIN, "plan")
+    assert "빨강" not in html
+
+
 def test_trees_have_collapsible_full_scaffold():
     d = {**MIN, "migration": [
             {"src": "guides/setup.md", "dest": "docs/how-to/setup.md", "ops": ["move"], "impact": None},

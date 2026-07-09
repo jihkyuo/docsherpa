@@ -184,12 +184,14 @@ def test_assemble_shape_and_keys(tmp_path):
     assert d["posture"] == "HEALTHY"
 
 
-def test_assemble_before_tree_marks_stray(tmp_path):
+def test_assemble_before_tree_files_uncolored(tmp_path):
+    # 파일 클래스는 색 없음(None) — 색은 타입 인코딩용으로 예약됨. "stray"=빨강을 쓰면
+    # troubleshooting 타입색(fail-ink)과 충돌해 범례가 거짓말을 하게 된다.
     _healthy_repo(tmp_path)
     files = ["AGENTS.md", "docs/a.md", "api-help.md"]
     d = scorecard.assemble(tmp_path, files, _judg("warn", "pass", "pass", "pass"))
     lines = d["trees"]["before"]["lines"]
-    assert ["api-help.md", "stray"] in lines
+    assert ["api-help.md", None] in lines
 
 
 def test_assemble_feeds_render_report_without_keyerror(tmp_path):
@@ -280,9 +282,8 @@ def test_before_tree_is_nested_scaffolding_not_flat():
     # 중첩: 상위 폴더 라인(src/·features/ 등)이 개수와 함께 존재(평면이면 없음)
     assert any(s.strip().startswith("src/") and "(" in s for s in texts)
     assert any(s.strip().startswith("docs/") and "(" in s for s in texts)
-    # 파일은 stray 클래스, 폴더는 무색
-    assert any(cls == "stray" for _txt, cls in t["lines"])
-    assert any(cls is None for _txt, cls in t["lines"])
+    # 파일·폴더 모두 무색(색은 타입 인코딩 전용 — troubleshooting과 충돌 방지)
+    assert all(cls is None for _txt, cls in t["lines"])
     # 들여쓰기(중첩) 존재
     assert any(s.startswith("  ") for s in texts)
 

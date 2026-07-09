@@ -146,7 +146,8 @@ def _git_branch(root):
 
 
 def _nested_lines(paths):
-    """repo-상대 경로들 → 중첩 폴더 트리 lines. 폴더=[text(개수),None]·파일=[text,'stray']."""
+    """repo-상대 경로들 → 중첩 폴더 트리 lines. 폴더=[text(개수),None]·파일=[text,None].
+    파일 무색: 색은 타입 인코딩 전용으로 예약(범례 fail-ink=troubleshooting과 충돌 방지)."""
     root = {}
     for p in sorted(paths):
         parts = p.split("/")
@@ -169,7 +170,7 @@ def _nested_lines(paths):
             lines.append([f"{pre}{d}/  ({count(node[d])})", None])
             walk(node[d], pre + "  ")
         for fn in sorted(node.get("__f__", [])):
-            lines.append([f"{pre}{fn}", "stray"])
+            lines.append([f"{pre}{fn}", None])
 
     walk(root, "")
     return lines
