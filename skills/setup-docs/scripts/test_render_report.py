@@ -184,3 +184,28 @@ def test_edges_do_not_crash_or_unbalance():
             html = render_report(d, mode)
             assert html.count("<div") == html.count("</div>")
             assert 'style="' not in html
+
+
+def test_d4_scorecard_kind_and_selfexplaining_labels():
+    d={**MIN,"scorecard":{"mechanical":[{"code":"M1","name":"라우터에서 모든 문서 도달","kind":"필수","status":"fail","sub":"x"},{"code":"M4","name":"코드 변경 시 문서 자동 갱신 장치 3종","kind":"채택도","status":"fail","sub":"y"}],"judgment":[]}}
+    h=render_report(d,"plan")
+    assert "kind req" in h and "kind opt" in h        # 필수/채택도 구분(D4보강)
+    assert "자동 갱신 장치" in h                        # 자기설명 라벨(은어 아님)
+
+def test_d6_migration_aggregated_by_type_with_bar_and_callout():
+    d={**MIN,"migration":[
+        {"src":"a.md","dest":"docs/specs/x/a.md","ops":["move"],"impact":None},
+        {"src":"b.md","dest":"docs/specs/x/b.md","ops":["move"],"impact":None},
+        {"src":"c.md","dest":"docs/decisions/c.md","ops":["move"],"impact":"옮기기 전 링크 확인"}],
+       "decisions":[]}
+    h=render_report(d,"plan")
+    assert "mig-agg" in h and "█" in h            # 타입별 집약 + 텍스트막대
+    assert "callout" in h and "옮기기 전" in h          # impact 콜아웃 격상(D6)
+    assert "<details" in h                             # 전체 목록 접이식
+
+def test_d3_after_tree_type_colored():
+    import migrate
+    tree=migrate._after_tree([{"src":"a.md","dest":"docs/specs/x/a.md","ops":["move"],"impact":None},
+                              {"src":"p.md","dest":"docs/product/prd.md","ops":["move"],"impact":None}])
+    classes={c for _,c in tree["lines"]}
+    assert "t-spec" in classes and "t-prd" in classes  # 폴더=타입색(D3·D6①)

@@ -406,13 +406,43 @@ def land_migration(repo, move_plan, head_sha, decisions=None, *, plugin_root=Non
             subprocess.run(["git", "-C", str(repo), "branch", "-D", branch], capture_output=True)  # 이번 호출이 만든 미커밋 브랜치만 삭제(흔적0, R8)
 
 
+_AFTER_TYPECLS = {"product": "t-prd", "specs": "t-spec",
+                  "decisions": "t-adr", "how-to": "t-howto"}
+_AFTER_ORDER = ["product", "specs", "decisions", "how-to", "_flat"]
 def _after_tree(move_plan):
-    """move_plan → "후" 트리 dict (tag='목표', 문서들을 'new'로 표시)."""
-    lines = [["docs/", None]]
-    for p in move_plan[:12]:
-        lines.append([p["dest"], "new"])
-    sub = f"docs/ 중앙집중 · 이동 {len(move_plan)}건"
-    return {"title": "docs/ 중앙집중", "tag": "목표", "sub": sub, "lines": lines}
+    """move_plan → "후" 트리 dict — docs/ 아래 타입별 폴더(타입색)·파일(무색) 중첩 트리(D3·D6①)."""
+    groups = {}
+    for p in move_plan:
+        parts = p["dest"].split("/")
+        folder = parts[1] if (len(parts) >= 3 and parts[0] == "docs") else "_flat"
+        groups.setdefault(folder, []).append(p["dest"])
+    lines = [["docs/", "t-dir"]]
+    for folder in sorted(groups, key=lambda k: (_AFTER_ORDER.index(k) if k in _AFTER_ORDER else 99, k)):
+        items = sorted(groups[folder])
+        if folder == "_flat":
+            for d in items[:4]:
+                lines.append(["  " + d.split("/")[-1], None])
+            if len(items) > 4:
+                lines.append([f"  … 외 {len(items) - 4}개 (조회·설명)", None])
+            continue
+        cls = _AFTER_TYPECLS.get(folder, "t-dir")
+        lines.append([f"  {folder}/  ({len(items)})", cls])
+        subs = {}
+        for d in items:
+            dp = d.split("/")
+            if len(dp) >= 4:                       # docs/specs/<feature>/file
+                subs.setdefault(dp[2], []).append(d)
+        if subs:
+            for sub in sorted(subs):
+                lines.append([f"    {sub}/  ({len(subs[sub])})", cls])
+        else:
+            for d in items[:3]:
+                lines.append(["    " + d.split("/")[-1], None])
+            if len(items) > 3:
+                lines.append([f"    … 외 {len(items) - 3}개", None])
+    n_type = len([k for k in groups if k != "_flat"])
+    sub = f"docs/ 중앙집중 · 타입별 {n_type}폴더 · 이동 {len(move_plan)}건"
+    return {"title": "정리 후 (타입별)", "tag": "목표", "sub": sub, "lines": lines}
 
 
 def doc_links(root, rel):

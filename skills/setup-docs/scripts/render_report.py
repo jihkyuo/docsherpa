@@ -192,6 +192,49 @@ TEMPLATE_CSS = r"""
 
   .foot { margin-top:var(--s4); text-align:center; font-family:var(--mono); font-size:10.5px; color:var(--faint); letter-spacing:.03em; }
 
+  /* D4 kind tag — 필수(능력) vs 채택도(docsherpa 준수) */
+  .kind { font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:.04em; font-weight:700; padding:1px 6px; border-radius:5px; margin-left:6px; white-space:nowrap; }
+  .kind.req { background:var(--accent-soft); color:var(--accent-ink); }
+  .kind.opt { background:var(--panel-2); color:var(--faint); border:1px solid var(--line); }
+
+  /* D6 마이그레이션 집약뷰(타입별) — 텍스트막대(인라인 style 0) */
+  .mig-agg { display:grid; gap:var(--s2); padding:var(--s4); }
+  .mig-grp { display:grid; grid-template-columns:minmax(130px,1.3fr) minmax(90px,auto) minmax(150px,1.4fr); gap:var(--s3); align-items:center; padding:var(--s2) var(--s3); border:1px solid var(--line); border-left:3px solid var(--line-strong); border-radius:var(--r-sm); background:var(--panel-2); }
+  .mig-grp.tc-adr { border-left-color:var(--warn-ink); }
+  .mig-grp.tc-spec { border-left-color:var(--accent); }
+  .mig-grp.tc-howto { border-left-color:var(--pass); }
+  .mig-grp.tc-prd { border-left-color:var(--accent-ink); }
+  .mig-grp.tc-flat { border-left-color:var(--line-strong); }
+  .mig-grp .gname { font-size:12.5px; font-weight:600; color:var(--ink); min-width:0; }
+  .mig-grp .gname .gsub { font-family:var(--mono); font-size:10px; color:var(--faint); display:block; margin-top:1px; }
+  .mig-grp .gbar { font-family:var(--mono); font-size:11px; letter-spacing:-1px; white-space:nowrap; color:var(--accent); }
+  .mig-grp .gbar .cnt { color:var(--ink); font-weight:700; letter-spacing:0; margin-left:6px; font-size:12px; }
+  .mig-grp .gdest { font-family:var(--mono); font-size:11px; color:var(--muted); word-break:break-all; }
+  .callout { margin:var(--s3) var(--s4) 0; padding:var(--s3) var(--s4); border:1px solid var(--fail); border-left:3px solid var(--fail); border-radius:var(--r-sm); background:var(--fail-soft); }
+  .callout .ct { font-size:12px; font-weight:700; color:var(--fail-ink); margin:0 0 var(--s2); }
+  .callout ul { margin:0; padding-left:18px; }
+  .callout li { font-size:11.5px; color:var(--ink); margin:3px 0; }
+  .callout li .path { font-family:var(--mono); color:var(--fail-ink); }
+
+  /* D3 트리 폴더=타입색(파일 무색) + 접이식 전체보기 */
+  .tree .t-adr { color:var(--warn-ink); font-weight:600; }
+  .tree .t-spec { color:var(--accent-ink); font-weight:600; }
+  .tree .t-howto { color:var(--pass-ink); font-weight:600; }
+  .tree .t-prd { color:var(--accent); font-weight:600; }
+  .tree .t-legacy { color:var(--faint); }
+  .tree .t-dir { color:var(--ink); font-weight:600; }
+  details.full { margin:var(--s3) var(--s4) 0; border-top:1px solid var(--line); padding-top:var(--s3); }
+  details.full > summary { font-family:var(--mono); font-size:11px; color:var(--accent-ink); cursor:pointer; font-weight:600; list-style:none; }
+  details.full > summary::-webkit-details-marker { display:none; }
+  details.full > summary::before { content:"\25B8  "; }
+  details.full[open] > summary::before { content:"\25BE  "; }
+  .tkey { display:flex; flex-wrap:wrap; gap:var(--s2) var(--s4); padding:var(--s3) var(--s4) 0; font-size:11px; color:var(--muted); }
+  .tkey span { display:inline-flex; align-items:center; gap:5px; }
+  .tkey b { font-family:var(--mono); font-weight:700; }
+  .tkey .k-adr { color:var(--warn-ink); } .tkey .k-spec { color:var(--accent-ink); }
+  .tkey .k-howto { color:var(--pass-ink); } .tkey .k-prd { color:var(--accent); }
+  .tkey .k-legacy { color:var(--faint); }
+
   @media (max-width:680px) {
     .hero { padding:var(--s4); }
     .trees { grid-template-columns:1fr; }
@@ -199,6 +242,7 @@ TEMPLATE_CSS = r"""
     .dim { grid-template-columns:1fr; }
     .choices { grid-template-columns:1fr; }
     .vs { display:none; }
+    .mig-grp { grid-template-columns:1fr; gap:var(--s1); }
   }
 """
 
@@ -239,10 +283,14 @@ def _render_hero(data: dict) -> str:
 
 
 _LABEL = {"fail": "미달", "warn": "부분", "pass": "통과"}
+_KIND_CLS = {"필수": "req", "채택도": "opt"}
 def _dim(d: dict) -> str:
     st = d["status"]
+    kind = d.get("kind")
+    kind_tag = (f'<span class="kind {_KIND_CLS.get(kind, "opt")}">{esc(kind)}</span>'
+                if kind else "")
     return (f'<div class="dim d-{st}"><div><div class="name">{esc(d["name"])}'
-            f'<span class="code">{esc(d["code"])}</span></div>'
+            f'<span class="code">{esc(d["code"])}</span>{kind_tag}</div>'
             f'<div class="sub">{esc(d["sub"])}</div></div>'
             f'<span class="chip {st}">{_LABEL[st]}</span></div>')
 
@@ -252,6 +300,9 @@ def _render_scorecard(data: dict) -> str:
     j = "".join(_dim(x) for x in sc["judgment"])
     return ('<section aria-labelledby="sc"><h2 class="sec" id="sc">진단 점수표 '
             '<span class="n">현재 상태</span></h2>'
+            '<p class="sec-intro"><b>필수</b> = 도구와 무관한 실제 문서 건강(도달성·커버리지). '
+            '<b>채택도</b> = docsherpa 특정 장치(라우터 마커·맵 척추·자동 갱신) 설치 여부 — '
+            '자체 등가물이 있으면 “미달”이라도 실제 결함이 아닐 수 있습니다.</p>'
             f'<p class="grp">기계 채점</p><div class="grid">{m}</div>'
             f'<p class="grp">판단 채점</p><div class="grid">{j}</div></section>')
 
@@ -271,12 +322,17 @@ def _tree(side: dict, which: str) -> str:
 
 def _render_trees(data: dict) -> str:
     t = data["trees"]
+    after = f'{_tree(t["after"],"after")}' if t.get("after") else ""
     return ('<section aria-labelledby="tr"><h2 class="sec" id="tr">문서 구조 '
             '<span class="n">Before → After</span></h2>'
-            f'<div class="card trees">{_tree(t["before"],"before")}{_tree(t["after"],"after")}</div>'
-            '<div class="key"><span><span class="sw stray"></span>산재·문제</span>'
-            '<span><span class="sw new"></span>신설</span>'
-            '<span><span class="sw grp"></span>폴더</span></div></section>')
+            '<p class="sec-intro">왼쪽 = 지금(산재·빨강), 오른쪽 = 정리 후. '
+            '오른쪽 폴더 색 = 문서 타입(아래 범례). 파일은 무색 — 색은 “어느 타입 폴더에 모였나”를 뜻합니다.</p>'
+            f'<div class="card trees">{_tree(t["before"],"before")}{after}</div>'
+            '<div class="tkey"><span><b class="k-prd">■</b> 제품요구(PRD)</span>'
+            '<span><b class="k-spec">■</b> 명세(spec)</span>'
+            '<span><b class="k-adr">■</b> 결정(ADR)</span>'
+            '<span><b class="k-howto">■</b> 가이드(how-to)</span>'
+            '<span><b class="k-legacy">■</b> 동결(legacy)</span></div></section>')
 
 
 _BADGE = {"move": '<span class="badge move">move</span>',
@@ -291,15 +347,64 @@ def _mig_row(r: dict) -> str:
     return (f'<tr><td class="path">{esc(r["src"])}<br>→ '
             f'<span class="dest">{esc(r["dest"])}</span></td><td>{ops}</td>{imp}</tr>')
 
+_TYPE_GROUP = {   # docs/ 아래 1단계 폴더 → (표시명, tc-클래스)
+    "decisions": ("결정 기록 (ADR)", "tc-adr"),
+    "specs": ("명세 (spec)", "tc-spec"),
+    "how-to": ("가이드·절차 (how-to)", "tc-howto"),
+    "product": ("제품 요구 (PRD)", "tc-prd"),
+}
+def _mig_group_key(dest: str):
+    parts = dest.split("/")            # docs/<folder>/... 또는 docs/<file>
+    if len(parts) >= 3 and parts[0] == "docs":
+        return parts[1]
+    return "_flat"
+
+def _bar(count: int, mx: int) -> str:
+    n = max(1, round(count / mx * 10)) if mx else 0
+    return "█" * n + "░" * (10 - n)
+
 def _render_migration(data: dict) -> str:
-    rows = "".join(_mig_row(r) for r in data["migration"])
+    mig = data["migration"]
+    groups = {}
+    for r in mig:
+        groups.setdefault(_mig_group_key(r["dest"]), []).append(r)
+    mx = max((len(v) for v in groups.values()), default=1)
+    order = ["product", "specs", "decisions", "how-to", "_flat"]
+    rows = []
+    for key in sorted(groups, key=lambda k: (order.index(k) if k in order else 99, k)):
+        items = groups[key]
+        name, tc = _TYPE_GROUP.get(key, ("조회·설명 (reference/explanation)", "tc-flat"))
+        # 목적지: 공통 폴더(specs는 feature별로 여러 개일 수 있으니 접두 폴더까지)
+        dests = sorted({("/".join(p["dest"].split("/")[:-1]) or "docs") for p in items})
+        dest_disp = dests[0] + ("" if len(dests) == 1 else f" 외 {len(dests)-1}")
+        rows.append(
+            f'<div class="mig-grp {tc}"><div class="gname">{esc(name)}'
+            f'<span class="gsub">{esc(key if key != "_flat" else "docs/ 직속")}</span></div>'
+            f'<div class="gbar" aria-hidden="true">{_bar(len(items), mx)}'
+            f'<span class="cnt">{len(items)}건</span></div>'
+            f'<div class="gdest">→ {esc(dest_disp)}/</div></div>')
+    impacts = [r for r in mig if r.get("impact")]
+    callout = ""
+    if impacts:
+        lis = "".join(
+            f'<li><span class="path">{esc(r["src"].split("/")[-1])}</span> — {esc(r["impact"])}</li>'
+            for r in impacts)
+        callout = (f'<div class="callout"><p class="ct">▲ 옮기기 전 결정·조치할 것 '
+                   f'({len(impacts)}건)</p><ul>{lis}</ul></div>')
+    full = "".join(_mig_row(r) for r in mig)
     return ('<section aria-labelledby="mg"><h2 class="sec" id="mg">이동 계획 '
-            '<span class="n">per-doc · 유실 0</span></h2><div class="card"><div class="tbl-scroll">'
-            '<table><caption class="vh">문서별 이동 계획</caption>'
+            f'<span class="n">타입별 {len(groups)}묶음 · {len(mig)}개 문서 · 유실 0</span></h2>'
+            '<p class="sec-intro">문서를 타입별로 어디로 모으는지 요약입니다. '
+            '막대 = 문서 수(상대), 오른쪽 = 목적지 폴더. ▲는 옮기기 전에 당신이 정해야 할 것. '
+            '문서별 전체 목록은 아래 “전체 펼치기”.</p>'
+            f'<div class="card"><div class="mig-agg">{"".join(rows)}</div>{callout}'
+            '<details class="full"><summary>문서별 전체 이동 목록 펼치기</summary>'
+            '<div class="tbl-scroll"><table><caption class="vh">문서별 이동 계획</caption>'
             '<thead><tr><th scope="col">원본 → 목적지</th><th scope="col">연산</th>'
-            f'<th scope="col">주의</th></tr></thead><tbody>{rows}</tbody></table></div>'
+            f'<th scope="col">주의</th></tr></thead><tbody>{full}</tbody></table></div>'
             '<div class="tbl-key"><span><b>move</b> 이동</span><span><b>rename</b> 개명</span>'
-            '<span><b>frozen</b> 동결</span><span><b>▲</b> 이동 시 깨짐</span></div></div></section>')
+            '<span><b>frozen</b> 동결</span><span><b>▲</b> 이동 시 깨짐</span></div>'
+            '</details></div></section>')
 
 
 def _choice(c: dict) -> str:

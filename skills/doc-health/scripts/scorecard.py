@@ -65,21 +65,24 @@ def machine_dims(res, files):
     m4 = "pass" if _m4_loop_ok(root) else "fail"
     m5 = _m5_status(files)
     outside = outside_content(files)
+    # kind: "필수"=능력(도구 무관 실제 문서 건강) · "채택도"=docsherpa 특정 부품 설치 여부(선택).
+    # (D4보강: 자체 등가물 보유자가 오해 없게 라벨로 구분.)
     return [
-        {"code": "M1", "name": "도달성", "status": m1,
-         "sub": f"broken={len(res.broken)} · orphan={len(res.orphans)}"},
-        {"code": "M2", "name": "라우터+마커", "status": m2,
-         "sub": ("라우터 없음" if not res.router_present
-                 else f"마커 home {n_home}개"
-                 + ("" if n_home == 1 else " (정확히 1 필요)"))},
-        {"code": "M3", "name": "맵 척추", "status": m3,
-         "sub": ("home=docs/_map.md" if m3 == "pass"
-                 else "척추 미분리(인라인 마커 또는 home≠1)")},
-        {"code": "M4", "name": "성장 루프", "status": m4,
-         "sub": ("prime·hook·doc-reconcile 설치" if m4 == "pass"
-                 else "성장 루프 3종 중 누락")},
-        {"code": "M5", "name": "커버리지", "status": m5,
-         "sub": (f"docs/ 밖 content {len(outside)}건" if outside
+        {"code": "M1", "name": "라우터에서 모든 문서 도달", "kind": "필수", "status": m1,
+         "sub": (f"깨진 링크 {len(res.broken)}개 · 어디서도 안 걸리는 문서 {len(res.orphans)}개"
+                 if (res.broken or res.orphans) else "깨진 링크 0 · 고아 문서 0")},
+        {"code": "M2", "name": "진입 라우터 + 계약 마커 설치", "kind": "채택도", "status": m2,
+         "sub": ("진입 라우터(AGENTS.md/CLAUDE.md) 없음" if not res.router_present
+                 else f"마커 담은 인덱스 {n_home}개"
+                 + ("" if n_home == 1 else " (정확히 1개여야)"))},
+        {"code": "M3", "name": "문서 지도(맵)를 중추 문서로 분리", "kind": "채택도", "status": m3,
+         "sub": ("지도 = docs/_map.md (단일 소스)" if m3 == "pass"
+                 else "맵이 라우터에 인라인이거나 인덱스 home이 1개가 아님")},
+        {"code": "M4", "name": "코드 변경 시 문서 자동 갱신 장치 3종", "kind": "채택도", "status": m4,
+         "sub": ("세션 훅·prime·doc-reconcile 스킬 설치됨" if m4 == "pass"
+                 else "자동 갱신 3종(세션 훅·prime·doc-reconcile) 중 누락")},
+        {"code": "M5", "name": "모든 문서가 docs/ 아래(파묻힘 0)", "kind": "필수", "status": m5,
+         "sub": (f"docs/ 밖에 흩어진 content {len(outside)}건" if outside
                  else "docs/ 밖 content 0")},
     ]
 
