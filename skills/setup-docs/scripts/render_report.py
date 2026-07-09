@@ -313,7 +313,7 @@ def _render_scorecard(data: dict) -> str:
             '<span class="n">현재 상태</span></h2>'
             '<p class="sec-intro"><b>필수</b> = 도구와 무관한 실제 문서 건강(도달성·커버리지). '
             '<b>채택도</b> = docsherpa 특정 장치(라우터 마커·맵 척추·자동 갱신) 설치 여부 — '
-            '자체 등가물이 있으면 "미달"이라도 실제 결함이 아닐 수 있습니다.</p>'
+            '자체 등가물이 있으면 “미달”이라도 실제 결함이 아닐 수 있습니다.</p>'
             f'<p class="grp">기계 채점</p><div class="grid">{m}</div>'
             f'<p class="grp">판단 채점</p><div class="grid">{j}</div></section>')
 
@@ -376,7 +376,7 @@ def _render_trees(data: dict) -> str:
     return ('<section aria-labelledby="tr"><h2 class="sec" id="tr">문서 구조 '
             '<span class="n">Before → After</span></h2>'
             '<p class="sec-intro">왼쪽 = 지금(산재·빨강), 오른쪽 = 정리 후. '
-            '오른쪽 폴더 색 = 문서 타입(아래 범례). 파일은 무색 — 색은 "어느 타입 폴더에 모였나"를 뜻합니다.</p>'
+            '오른쪽 폴더 색 = 문서 타입(아래 범례). 파일은 무색 — 색은 “어느 타입 폴더에 모였나”를 뜻합니다.</p>'
             f'<div class="card trees">{_tree(t["before"],"before")}{after}</div>'
             '<div class="tkey"><span><b class="k-prd">■</b> 제품요구(PRD)</span>'
             '<span><b class="k-spec">■</b> 명세(spec)</span>'
@@ -452,7 +452,7 @@ def _render_migration(data: dict) -> str:
             f'<span class="n">타입별 {len(groups)}묶음 · {len(mig)}개 문서 · 유실 0</span></h2>'
             '<p class="sec-intro">문서를 타입별로 어디로 모으는지 요약입니다. '
             '막대 = 문서 수(상대), 오른쪽 = 목적지 폴더. ▲는 옮기기 전에 당신이 정해야 할 것. '
-            '문서별 전체 목록은 아래 "전체 펼치기".</p>'
+            '문서별 전체 목록은 아래 “전체 펼치기”.</p>'
             f'<div class="card">{mig_head}<div class="mig-agg">{"".join(rows)}</div>{callout}'
             '<details class="full"><summary>문서별 전체 이동 목록 펼치기</summary>'
             '<div class="tbl-scroll"><table><caption class="vh">문서별 이동 계획</caption>'
