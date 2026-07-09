@@ -27,11 +27,16 @@ inventory disposition으로 계산한다. 에이전트가 판정을 다시 내�
 맵 척추 문서인가"다. 진입 파일에 라우팅/인덱스를 인라인으로 박아 넣은 repo는 M2는 통과해도
 M3는 실패한다 — 계약은 있지만 척추가 분리되지 않은 상태다.
 
-**M5의 분모는 disposition으로 결정된다.** 모든 문서는 경로 규칙으로 router(진입 라우터 파일) ·
-tooling(`.claude/`류 도구 디렉터리 + README/CONTRIBUTING 같은 루트 관례 파일) · content(그 외
-전부) 3가지로 분류된다. router·tooling은 제자리가 정상이라 M5 분모에서 제외되고, content가
-`docs/` 밖에 있을 때만 M5 위반으로 센다. (완결성 가드는 여전히 성립한다 — router·tooling도
-inventory 매니페스트에는 accounted로 들어간다.)
+**M5의 분모는 disposition으로 결정된다.** 모든 문서는 경로 규칙으로 router(진입 라우터 파일 —
+**어느 깊이든, 중첩 라우터 포함**) · tooling(`.claude/`류 도구 디렉터리 + README/CONTRIBUTING
+같은 루트 관례 파일 + **코드-인접 중첩 `README.md`**) · content(그 외 전부) 3가지로 분류된다.
+router·tooling은 제자리가 정상이라 M5 분모에서 제외되고, content가 `docs/` 밖에 있을 때만 M5
+위반으로 센다. (완결성 가드는 여전히 성립한다 — router·tooling도 inventory 매니페스트에는
+accounted로 들어간다.)
+
+M5의 "파묻힘 0"은 **중앙집중 대상 문서가 모두 `docs/` 아래**라는 뜻이지 레포의 모든 `.md`가
+`docs/` 아래라는 뜻이 아니다 — router·tooling은 제자리가 정상이라 도달성·M5 분모에서 함께
+면제된다(ADR 0018).
 
 ---
 

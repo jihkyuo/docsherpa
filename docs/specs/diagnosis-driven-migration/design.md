@@ -77,7 +77,7 @@ setup-docs는 아키텍처를 "슥 설치하고 끝"이 아니다. **프로젝�
 "방구석까지 다 찾기"는 단일 에이전트가 훑으면 빠뜨린다. **분모는 기계가, 분류는 병렬 에이전트가.**
 
 1. **기계 파일 인벤토리(결정론):** repo 전체 `*.md`·`*.mdx` 나열, 제외 `node_modules`·`.git`·`dist`·`build`·`vendor`. → 모든 문서의 확정 목록(= "잊힌 문서 0"의 분모). 스크립트로 수행.
-2. **병렬 서브에이전트 분류(멀티모달):** 목록을 슬라이스로 나눠 동시에 각 문서 판정 → `{경로, 타입추정(ADR/spec/how-to/reference/PRD/legacy), 역할, 결합(코드참조·외부싱크·동결역사), 요약}`.
+2. **병렬 서브에이전트 분류(멀티모달):** 목록을 슬라이스로 나눠 동시에 각 문서 판정 → `{경로, 타입추정(ADR/spec/how-to/troubleshooting/reference/PRD/legacy), 역할, 결합(코드참조·외부싱크·동결역사), 요약}`.
 
 **완결성 가드:** 분류 매니페스트는 1단계 목록을 **전부** 덮어야 함(unaccounted=0). 파일이 목록에 있는데 매니페스트에 없으면 STOP. 구조적으로 못 빠뜨림.
 
@@ -117,7 +117,7 @@ GREENFIELD / HEALTHY / MESSY(중구난방·자체구조·드리프트된-docsher
 
 인벤토리 → 각 문서에 `docs/` 내 목적지 배정.
 
-- **타입 먼저:** `decisions/`·`how-to/`·`specs/`·`product/`·`reference/`.
+- **타입 먼저:** `decisions/`·`how-to/`·`troubleshooting/`·`specs/`·`product/`·`reference/`.
 - **토픽 폴더는 co-change일 때만:** 서로 같이 읽어야 할 문서 ≥2개일 때 `docs/<topic>/` 승격.
 - **금지:** 1문서1폴더(over-folder)·60개 평면덤프(under-index) 양극단. 폴더>3개면 `_README` 계층화.
 - **정규화(D8):** 위치·이름만 정규화(순수 이동/개명, 유실0). 내부 포맷 재구성은 **opt-in** — 선택 시 content_oracle `transformed`로 세그먼트 계정팅 + 아티팩트에 표시. 미선택 시 verbatim, 이후 성장 루프가 내용 관리.

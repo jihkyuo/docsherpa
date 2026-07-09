@@ -53,7 +53,7 @@ inventory.py check [ROOT] --manifest m.json      # → unaccounted(목록에 있
 ### 2b. 병렬 분류 (SKILL.md 절차 — 코드 아님)
 
 design §6a 2단계. 목록을 슬라이스로 나눠 병렬 서브에이전트가 각 문서 판정 →
-`{path, type(ADR/spec/how-to/reference/PRD/legacy), role, coupling(코드참조·외부싱크·동결역사), summary}`.
+`{path, type(ADR/spec/how-to/troubleshooting/reference/PRD/legacy), role, coupling(코드참조·외부싱크·동결역사), summary}`.
 판단이라 **코드로 박제하지 않는다**(§7.5 anchor_signals.py 삭제 교훈과 정합).
 
 ### 2c. disposition — 결정론 (H1 강제)
@@ -62,9 +62,9 @@ design §6a 2단계. 목록을 슬라이스로 나눠 병렬 서브에이전트�
 
 | disposition | 규칙(경로 기반) | M5 | 이동 |
 |---|---|---|---|
-| **router** | 루트의 `AGENTS.md`·`CLAUDE.md`·`GEMINI.md`(`contract.ENTRY_FILENAMES`) | 제외 | 제자리(진입점 정의상) |
-| **tooling** | `.claude/`·`.github/`·`.cursor/`·`.gitlab/` 하위 + 루트 관례(`README`·`CONTRIBUTING`·`CHANGELOG`·`SECURITY`·`CODE_OF_CONDUCT`, **대소문자 무시** — ADR 0016) | 제외 | 제자리 |
-| **content** | 그 외 전부 | **분모** | 이동 대상(docs/ 밖이면 M5 위반) |
+| **router** | `AGENTS.md`·`CLAUDE.md`·`GEMINI.md`(`contract.ENTRY_FILENAMES`), **어느 깊이든** — 중첩 라우터는 그 서브트리의 제자리 라우터([0018](../../decisions/0018-disposition-in-place-classes.md)) | 제외 | 제자리(진입점 정의상) |
+| **tooling** | `.claude/`·`.github/`·`.cursor/`·`.gitlab/` 하위 + 루트 관례(`README`·`CONTRIBUTING`·`CHANGELOG`·`SECURITY`·`CODE_OF_CONDUCT`, **대소문자 무시** — ADR 0016) + 코드-인접 중첩 `README.md`(부모 경로에 `docs` 세그먼트 없음, 대소문자 무시 — [0018](../../decisions/0018-disposition-in-place-classes.md)) | 제외 | 제자리 |
+| **content** | 그 외 전부. `docs` 트리 안(어느 깊이든)의 `README.md`는 content로 남아 파묻힌 문서 인덱스도 내용과 함께 이주한다 | **분모** | 이동 대상(docs/ 밖이면 M5 위반) |
 
 `scorecard.py`가 이 disposition을 계산 → M5 = `docs/` 밖 **content** 개수. **완결성 가드는 여전히 성립**: router·tooling도 매니페스트에 accounted(disposition으로), unaccounted=0.
 
