@@ -261,6 +261,48 @@ def test_migrate_stops_when_map_exists(tmp_path):
     assert (tmp_path / "docs" / "_map.md").read_text(encoding="utf-8") == "# pre-existing\n"
 
 
+def test_install_loop_skips_tracked_but_deleted(tmp_path):
+    # 커밋된 루프 파일이 워킹트리에서만 지워진 상태 → 조용히 다시 쓰면 안 됨(R4 우회 방지).
+    import subprocess
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    scaffold.install_loop_files(tmp_path, scaffold.plugin_root())   # 최초 설치
+    prime = tmp_path / ".claude/doc-drift-prime.txt"
+    dr = tmp_path / ".claude/skills/doc-reconcile/SKILL.md"
+    assert prime.is_file() and dr.is_file()
+    subprocess.run(["git", "-C", str(tmp_path), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "commit", "-qm", "loop"], check=True)
+    prime.unlink()                                                  # 커밋 후 워킹트리에서만 삭제
+    dr.unlink()
+    result = scaffold.install_loop_files(tmp_path, scaffold.plugin_root())
+    assert not prime.exists()                                      # 조용한 덮어쓰기 없음
+    assert not dr.exists()
+    changed, tracked_deleted = result                              # 확장된 반환 계약
+    assert ".claude/doc-drift-prime.txt" in tracked_deleted        # 호출자에게 보고됨
+    assert ".claude/skills/doc-reconcile/SKILL.md" in tracked_deleted
+    assert changed is False                                        # 새로 설치한 것 없음
+
+
+def test_install_loop_installs_into_subdir_of_a_scaffolded_repo(tmp_path):
+    # 회귀 가드(적대적 리뷰 A4): `HEAD:<path>`는 `-C`가 아니라 **감싸는 레포의 루트** 기준으로
+    # 해석된다. 이미 docsherpa가 설치·커밋된 레포의 하위 디렉터리를 target으로 주면, 부모가
+    # 커밋한 `.claude/...` 때문에 tracked로 오판해 **루프 설치를 조용히 거부**한다.
+    import subprocess
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    scaffold.install_loop_files(tmp_path, scaffold.plugin_root())    # 부모에 설치
+    subprocess.run(["git", "-C", str(tmp_path), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "commit", "-qm", "parent loop"], check=True)
+
+    sub = tmp_path / "sub"                                            # 자체 레포가 아닌 하위 디렉터리
+    sub.mkdir()
+    changed, tracked_deleted = scaffold.install_loop_files(sub, scaffold.plugin_root())
+    assert (sub / ".claude/doc-drift-prime.txt").is_file(), "부모 HEAD 때문에 설치가 거부됐다"
+    assert (sub / ".claude/skills/doc-reconcile/SKILL.md").is_file()
+    assert changed is True
+    assert tracked_deleted == []
+
+
 def test_install_loop_stamp_has_sha(tmp_path):
     import refresh
     scaffold.install_loop_files(tmp_path, scaffold.plugin_root())

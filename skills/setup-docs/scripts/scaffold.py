@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 from pathlib import Path
 
 from contract import ROUTING_MARKER, INDEX_MARKER, MAP_MARKER, ENTRY_FILENAMES, is_marker_home
@@ -220,31 +221,66 @@ def plugin_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
-def install_loop_files(repo_root, plugin_root_dir) -> bool:
-    """prime 텍스트 + doc-reconcile 정본 복사(+version stamp)를 target .claude/에. changed? 반환."""
+def _tracked_in_head(repo_root, rel_path) -> bool:
+    """rel_path가 **repo_root 자신의** git HEAD에 추적돼 있으면 True. 아니면 False(→ 새 설치).
+
+    ⚠️ `HEAD:<path>`는 `-C`가 아니라 **감싸는 레포의 루트** 기준으로 해석된다. repo_root가 이미
+    docsherpa가 설치된 레포의 *하위* 디렉터리면, 부모가 커밋한 `.claude/...` 때문에 참이 되어
+    루프 설치를 조용히 거부하게 된다. 그래서 toplevel이 repo_root와 같은지 먼저 확인한다.
+    git 부재·비-레포·미탄생 HEAD는 모두 안전하게 False."""
+    root = Path(repo_root).resolve()
+    try:
+        top = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                             capture_output=True)
+        if top.returncode != 0:
+            return False
+        if Path(top.stdout.decode("utf-8", "replace").strip()).resolve() != root:
+            return False        # repo_root는 레포 루트가 아니다 — 부모의 HEAD를 보면 안 된다
+        r = subprocess.run(["git", "-C", str(root), "cat-file", "-e", f"HEAD:{rel_path}"],
+                           capture_output=True)
+    except OSError:
+        return False
+    return r.returncode == 0
+
+
+def install_loop_files(repo_root, plugin_root_dir):
+    """prime 텍스트 + doc-reconcile 정본 복사(+version stamp)를 target .claude/에.
+
+    각 루프 파일: 워킹트리에 있으면 skip. 없지만 git HEAD에 추적돼 있으면(커밋 후 워킹트리에서만
+    삭제) 쓰지 않고 경로를 보고 — R4 우회(조용한 덮어쓰기) 방지. 둘 다 없으면 새로 설치.
+    (changed?, [워킹트리에서 지워졌지만 git 추적 중인 경로...]) 반환."""
     root = Path(repo_root)
     plug = Path(plugin_root_dir)
     changed = False
+    tracked_deleted = []
     claude = root / ".claude"
     claude.mkdir(exist_ok=True)
 
     prime_src = plug / "skills" / "setup-docs" / "templates" / "doc-drift-prime.txt"
     prime_dst = claude / "doc-drift-prime.txt"
+    prime_rel = ".claude/doc-drift-prime.txt"
     if prime_src.is_file() and not prime_dst.exists():
-        shutil.copyfile(prime_src, prime_dst)
-        changed = True
+        if _tracked_in_head(root, prime_rel):
+            tracked_deleted.append(prime_rel)
+        else:
+            shutil.copyfile(prime_src, prime_dst)
+            changed = True
 
     dr_src = plug / "skills" / "doc-reconcile" / "SKILL.md"
     dr_dst = claude / "skills" / "doc-reconcile" / "SKILL.md"
+    dr_rel = ".claude/skills/doc-reconcile/SKILL.md"
     if dr_src.is_file() and not dr_dst.exists():
-        dr_dst.parent.mkdir(parents=True, exist_ok=True)
-        version = json.loads(
-            (plug / ".claude-plugin" / "plugin.json").read_text()).get("version", "0")
-        body = dr_src.read_text(encoding="utf-8")
-        stamp = refresh.make_stamp(version, refresh.canonical_hash(body))
-        dr_dst.write_text(body + stamp, encoding="utf-8")
-        changed = True
-    return changed
+        if _tracked_in_head(root, dr_rel):
+            tracked_deleted.append(dr_rel)
+        else:
+            dr_dst.parent.mkdir(parents=True, exist_ok=True)
+            version = json.loads(
+                (plug / ".claude-plugin" / "plugin.json").read_text()).get("version", "0")
+            body = dr_src.read_text(encoding="utf-8")
+            stamp = refresh.make_stamp(version, refresh.canonical_hash(body))
+            dr_dst.write_text(body + stamp, encoding="utf-8")
+            changed = True
+    return changed, tracked_deleted
 
 
 def scaffold(repo_root, plugin_root_dir=None, project_name="[프로젝트명]") -> dict:
@@ -254,11 +290,13 @@ def scaffold(repo_root, plugin_root_dir=None, project_name="[프로젝트명]") 
     # 실패하면 부분 설치를 남기지 않는다(atomic-ish). merge_settings_file은 .claude 존재를 가정.
     (Path(repo_root) / ".claude").mkdir(exist_ok=True)
     settings = merge_settings_file(Path(repo_root) / ".claude", HOOK_CMD)
+    loop_changed, loop_tracked_deleted = install_loop_files(repo_root, plug)
     return {
         "settings": settings,
         "router": write_router(repo_root, project_name),
         "map": write_map(repo_root),
         "docs": write_docs_skeleton(repo_root),
         "claude_md": inject_claude_md_file(repo_root),
-        "loop": install_loop_files(repo_root, plug),
+        "loop": loop_changed,
+        "loop_tracked_deleted": loop_tracked_deleted,
     }
